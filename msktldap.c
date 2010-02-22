@@ -179,6 +179,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(std::string server, int try_tls)
                     g_verbose?0:LDAP_SASL_QUIET |
 #endif
                     LDAP_SASL_INTERACTIVE, sasl_interact, NULL);
+
     if (ret) {
         fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed 4 (%s)\n", ldap_err2string(ret));
         if (is_tls)
@@ -455,7 +456,6 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     VERBOSE("Checking that adding principal %s to %s won't cause a conflict", principal.c_str(), flags->short_hostname.c_str());
     std::string filter = sform("(servicePrincipalName=%s)", principal.c_str());
     flags->ldap->search(&mesg, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
-
     switch (ldap_count_entries(flags->ldap->m_ldap, mesg)) {
         case 0:
             VERBOSE("Adding principal %s to LDAP entry", principal.c_str());
@@ -470,7 +470,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             VERBOSEldap("calling ldap_modify_ext_s");
             ret = ldap_modify_ext_s(flags->ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
             if (ret != LDAP_SUCCESS) {
-                VERBOSE("ldap_modify_ext_s failed (%s)", error_message(ret));
+                VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
             }
 
             return ret;
@@ -482,10 +482,11 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
                 fprintf(stderr, "Error: Inconsistent LDAP entry: No DN value present\n");
                 ret = -1;
             } else if (dn != found_dn) {
-                ret = -1;
                 fprintf(stderr, "Error: Another computer account (%s) has the principal %s\n",
                         found_dn.c_str(), principal.c_str());
-            }
+                ret = -1;
+            } else
+                ret = 0;
             ldap_msgfree(mesg);
             return ret;
         }
@@ -621,7 +622,7 @@ int ldap_check_account_strings(std::string dn, msktutil_flags *flags)
     VERBOSEldap("calling ldap_modify_ext_s");
     ret = ldap_modify_ext_s(flags->ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
     if (ret != LDAP_SUCCESS) {
-        VERBOSE("ldap_modify_ext_s failed (%s)", error_message(ret));
+        VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
     }
 
     ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, flags->des_bit, flags);
