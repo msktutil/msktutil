@@ -1,0 +1,179 @@
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.53)
+AC_INIT(msktutil, 0.3.16)
+AC_CONFIG_HEADER([config.h])
+
+PACKAGE_DATE="January 27, 2006"
+PACKAGE_AUTHOR="Dan Perry"
+AC_SUBST(PACKAGE_DATE)
+AC_SUBST(PACKAGE_AUTHOR)
+
+
+# Checks for programs.
+AC_PROG_CC
+AC_PATH_PROGS(INSTALL, install)
+AC_PATH_PROGS(CAT, cat)
+AC_PATH_PROGS(RM, rm)
+AC_PATH_PROGS(CP, cp)
+AC_PATH_PROGS(ECHO, echo)
+AC_PATH_PROGS(SED, sed)
+AC_PATH_PROGS(MKDIR, mkdir)
+
+
+AC_ARG_WITH(mandir,
+[  --with-mandir=DIR       Where to put man pages ($mandir)],
+[ mandir="$withval" ])
+
+AC_ARG_WITH(krb5dir,
+[  --with-krb5dir=DIR      Where to find the Kerberos 5 includes and libraries],
+[ krb5dir="$withval" ])
+
+AC_ARG_WITH(ldapdir,
+[  --with-ldapdir=DIR      Where to find the LDAP includes and libraries],
+[ ldapdir="$withval" ])
+
+AC_ARG_WITH(sasldir,
+[  --with-sasldir=DIR      Where to find the SASL includes and libraries],
+[ sasldir="$withval" ])
+
+AC_ARG_WITH(tmpdir,
+[  --with-tmpdir=DIR       What temporary directory to use],
+[ tmpdir="$withval" ])
+
+if test x"$krb5dir" != x""; then
+  CPPFLAGS="-I$krb5dir/include $CPPFLAGS"
+  LDFLAGS="-L$krb5dir/lib $LDFLAGS"
+fi
+if test x"$ldapdir" != x""; then
+  if test x"$ldapdir" != x"$krb5dir"; then
+    CPPFLAGS="-I$ldapdir/include $CPPFLAGS"
+    LDFLAGS="-L$ldapdir/lib $LDFLAGS"
+  fi
+fi
+if test x"$sasldir" != x""; then
+  if test x"$sasldir" != x"$krb5dir"; then
+    if test x"$sasldir" != x"$ldapdir"; then
+      CPPFLAGS="-I$sasldir/include $CPPFLAGS"
+      LDFLAGS="-L$sasldir/lib $LDFLAGS"
+    fi
+  fi
+fi
+if test x"$tmpdir" != x""; then
+  CPPFLAGS="$CPPFLAGS -DTMP_DIR=\\\"$tmpdir\\\""
+fi
+CFLAGS="-Wall"
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS([gethostbyaddr gethostbyname gethostname memset socket strdup signal setenv unsetenv])
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([netdb.h])
+if test x"$ac_cv_header_netdb_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without netdb.h])
+fi
+AC_CHECK_HEADERS([string.h])
+if test x"$ac_cv_header_string_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without string.h])
+fi
+AC_CHECK_HEADERS([stdlib.h])
+if test x"$ac_cv_header_stdlib_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without stdlib.h])
+fi
+AC_CHECK_HEADERS([malloc.h])
+if test x"$ac_cv_header_malloc_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without malloc.h])
+fi
+AC_CHECK_HEADERS([signal.h])
+if test x"$ac_cv_header_signal_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without signal.h])
+fi
+AC_CHECK_HEADERS([sys/socket.h])
+if test x"$ac_cv_header_sys_socket_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without sys/socket.h])
+fi
+AC_CHECK_HEADERS([sys/utsname.h])
+if test x"$ac_cv_header_sys_utsname_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without sys/utsname.h])
+fi
+AC_CHECK_HEADERS([unistd.h])
+if test x"$ac_cv_header_unistd_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without unistd.h])
+fi
+AC_CHECK_HEADERS([ldap.h])
+if test x"$ac_cv_header_ldap_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without ldap.h])
+fi
+AC_CHECK_HEADERS([krb5.h])
+if test x"$ac_cv_header_krb5_h" = x"no"; then
+  AC_MSG_ERROR([This program cannot be built without krb5.h])
+fi
+AC_CHECK_HEADERS([com_err.h])
+AC_CHECK_HEADERS([heim_err.h])
+if test x"$ac_cv_header_heim_err_h" = x"no"; then
+  AC_CHECK_HEADERS([heimdal/heim_err.h])
+  if test x"$ac_cv_header_heimdal_heim_err_h" = x"yes"; then
+    AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])    
+  fi
+else
+  AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])
+fi
+
+AC_CHECK_HEADERS([sasl.h])
+if test x"$ac_cv_header_sasl_h" = x"no"; then
+  AC_CHECK_HEADERS([sasl/sasl.h])
+  if test x"$ac_cv_header_sasl_sasl_h" = x"no"; then
+    AC_MSG_ERROR([This program cannot be built without sasl.h])
+  fi
+fi
+
+# Checks for libraries.
+AC_CHECK_LIB([krb5], [krb5_cc_default])
+AC_CHECK_LIB([krb5], [krb5_cc_get_principal])
+AC_CHECK_LIB([krb5], [krb5_cc_initialize])
+AC_CHECK_LIB([krb5], [krb5_cc_resolve])
+AC_CHECK_LIB([krb5], [krb5_cc_store_cred])
+AC_CHECK_LIB([krb5], [krb5_change_password])
+AC_CHECK_LIB([krb5], [krb5_free_context])
+AC_CHECK_LIB([krb5], [krb5_free_cred_contents])
+AC_CHECK_LIB([krb5], [krb5_free_data_contents])
+AC_CHECK_LIB([krb5], [krb5_free_keyblock_contents])
+AC_CHECK_LIB([krb5], [krb5_free_keytab_entry_contents])
+AC_CHECK_LIB([krb5], [krb5_free_principal])
+AC_CHECK_LIB([krb5], [krb5_free_unparsed_name])
+AC_CHECK_LIB([krb5], [krb5_get_init_creds_keytab])
+AC_CHECK_LIB([krb5], [krb5_get_pw_salt])
+AC_CHECK_LIB([krb5], [krb5_init_context])
+AC_CHECK_LIB([krb5], [krb5_kt_add_entry])
+AC_CHECK_LIB([krb5], [krb5_kt_default_name])
+AC_CHECK_LIB([krb5], [krb5_kt_end_seq_get])
+AC_CHECK_LIB([krb5], [krb5_kt_remove_entry])
+AC_CHECK_LIB([krb5], [krb5_kt_resolve])
+AC_CHECK_LIB([krb5], [krb5_kt_start_seq_get])
+AC_CHECK_LIB([krb5], [krb5_parse_name])
+AC_CHECK_LIB([krb5], [krb5_principal2salt])
+AC_CHECK_LIB([krb5], [krb5_set_password_using_ccache])
+AC_CHECK_LIB([krb5], [krb5_string_to_key])
+AC_CHECK_LIB([krb5], [krb5_string_to_key_data_salt])
+AC_CHECK_LIB([krb5], [krb5_unparse_name])
+
+AC_CHECK_LIB([ldap], [ldap_add_ext_s])
+AC_CHECK_LIB([ldap], [ldap_count_entries])
+AC_CHECK_LIB([ldap], [ldap_count_values_len])
+AC_CHECK_LIB([ldap], [ldap_err2string])
+AC_CHECK_LIB([ldap], [ldap_first_entry])
+AC_CHECK_LIB([ldap], [ldap_get_values_len])
+AC_CHECK_LIB([ldap], [ldap_initialize])
+AC_CHECK_LIB([ldap], [ldap_modify_ext_s])
+AC_CHECK_LIB([ldap], [ldap_sasl_interactive_bind_s])
+AC_CHECK_LIB([ldap], [ldap_search_ext_s])
+AC_CHECK_LIB([ldap], [ldap_set_option])
+AC_CHECK_LIB([ldap], [ldap_unbind_ext])
+
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT

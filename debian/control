@@ -1,0 +1,18 @@
+Source: msktutil
+Section: net
+Priority: optional
+Maintainer: Brian Elliott Finley <finley@anl.gov>
+Build-Depends: debhelper (>= 4.0.0), libldap2-dev, libkrb5-dev, libsasl2-dev
+Standards-Version: 3.6.2
+
+Package: msktutil
+Architecture: any
+Depends: ${shlibs:Depends}, libsasl2-modules-gssapi-mit | libsasl2-gssapi-mit | libsasl2-modules-gssapi-heimdal
+Description: A program for interoperability with Active Directory
+ that can:
+ - Create a computer account in Active Directory
+ - Create a system Kerberos keytab
+ - Add and remove principals to and from that keytab
+ - Change the computer account's password
+ .
+ Website: http://www.pppl.gov/~dperry/

@@ -1,0 +1,47 @@
+PROG=@PACKAGE_NAME@
+SHELL=/bin/sh
+VPATH=@srcdir@
+prefix=@prefix@
+sbindir=$(prefix)/sbin
+mandir=@mandir@
+CC=@CC@
+CPPFLAGS=@CPPFLAGS@
+CFLAGS=@CFLAGS@ 
+LDFLAGS=@LDFLAGS@
+LIBS=-lkrb5 -lldap
+INSTALL=@INSTALL@
+RM=@RM@ -rf
+CP=@CP@ -f
+SED=@SED@
+CAT=@CAT@
+ECHO=@ECHO@
+MKDIR=@MKDIR@
+
+
+objects = msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o
+
+all: $(PROG)
+
+$(PROG) : $(objects)
+	@$(ECHO) "Assembling $(PROG)"
+	@$(CC) $(LDFLAGS) $(LIBS) $(objects) -o $(PROG)
+ 
+%.o : %.c msktutil.h
+	@$(ECHO) "Compiling $<"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+ 
+clean :
+	@$(RM) $(PROG) $(objects)
+distclean: clean
+	@$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~
+
+install: all
+	@$(MKDIR) -p $(DESTDIR)$(sbindir)
+	@$(MKDIR) -p $(DESTDIR)$(mandir)/man1
+	@$(INSTALL) $(PROG) $(DESTDIR)$(sbindir)
+	@$(CAT) msktutil.M | $(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" | $(SED) -e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" | $(SED) -e "s/REPLACE_AUTHOR/@PACKAGE_AUTHOR@/g" > $(DESTDIR)$(mandir)/man1/@PACKAGE_NAME@.1
+
+distcheck:
+	@$(ECHO) @PACKAGE_VERSION@
+
