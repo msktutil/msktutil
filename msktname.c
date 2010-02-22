@@ -129,7 +129,8 @@ int get_dc(msktutil_flags *flags)
     endhostent();
 
     VERBOSE("Found Domain Controller: %s", dc);
-    flags->server = dc;
+    flags->server = std::string(dc);
+    free(dc);
     return 0;
 }
 

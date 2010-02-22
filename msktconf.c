@@ -174,6 +174,7 @@ int try_machine_keytab(msktutil_flags *flags)
     if (ret) {
         VERBOSE("krb5_cc_default failed (%s)", error_message(ret));
         VERBOSE("Unable to authenticate using the local keytab");
+        krb5_free_principal(g_context.get(), principal);
         krb5_free_cred_contents(g_context.get(), &creds);
         return ret;
     }

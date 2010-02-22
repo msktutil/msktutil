@@ -209,7 +209,8 @@ int finalize_exec(msktutil_exec *exec)
         untry_machine_keytab();
     }
 
-    if (ldap_connect(flags)) {
+    flags->ldap = ldap_connect(flags->server);
+    if (!flags->ldap.get()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         exit(-1);
     }
@@ -613,7 +614,7 @@ error:
 
 
 msktutil_flags::msktutil_flags() :
-    password(), ldap(NULL), des_bit(VALUE_IGNORE), no_pac(VALUE_IGNORE), delegate(VALUE_IGNORE),
+    password(), ldap(), des_bit(VALUE_IGNORE), no_pac(VALUE_IGNORE), delegate(VALUE_IGNORE),
     ad_userAccountControl(0), ad_enctypes(VALUE_IGNORE), ad_supportedEncryptionTypes(0),
     enctypes(VALUE_IGNORE),
     supportedEncryptionTypes(MS_KERB_ENCTYPE_RC4_HMAC_MD5) /* default values for w2000, w2003 */

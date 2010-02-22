@@ -150,7 +150,7 @@ int update_keytab(msktutil_flags *flags)
 
     VERBOSE("Updating all entires for %s", flags->short_hostname.c_str());
     principals = ldap_list_principals(flags);
-    for (int i = 0; i < principals.size(); ++i) {
+    for (size_t i = 0; i < principals.size(); ++i) {
         ret = add_principal(principals[i], flags);
         if (ret) {
             fprintf(stderr, "Error: add_principal failed\n");

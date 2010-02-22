@@ -62,6 +62,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <memory>
 
 #ifndef PACKAGE_NAME
 #define PACKAGE_NAME "msktutil"
@@ -100,9 +101,12 @@
 #define KVNO_WIN_2000                   0
 
 /* LDAP Binding Attempts */
-#define ATTEMPT_SASL_PARAMS_TLS         0x0
-#define ATTEMPT_SASL_NO_PARAMS_TLS      0x1
-#define ATTEMPT_SASL_NO_TLS             0x2
+#define ATTEMPT_SASL_PARAMS_TLS         0
+#define ATTEMPT_SASL_NO_PARAMS_TLS      1
+#define ATTEMPT_SASL_NO_TLS             2
+
+
+class LDAPConnection;
 
 enum msktutil_val {
     VALUE_OFF = 0,
@@ -126,7 +130,7 @@ struct msktutil_flags {
     std::string samAccountName;
     std::string samAccountName_nodollar;
     std::string password;
-    LDAP *ldap;
+    std::auto_ptr<LDAPConnection> ldap;
     msktutil_val des_bit;
     msktutil_val no_pac;
     msktutil_val delegate;
@@ -152,14 +156,14 @@ struct msktutil_exec {
     ~msktutil_exec();
 };
 
-
 /* Prototypes */
 extern void ldap_cleanup(msktutil_flags *);
 extern void init_password(msktutil_flags *);
 extern std::string get_default_hostname();
 extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
-extern int ldap_connect(msktutil_flags *);
+extern std::auto_ptr<LDAPConnection> ldap_connect(std::string server,
+                                                  int try_tls=ATTEMPT_SASL_PARAMS_TLS);
 extern int ldap_get_base_dn(msktutil_flags *);
 extern std::string complete_hostname(const std::string &);
 extern std::string get_short_hostname(msktutil_flags *);
@@ -169,7 +173,6 @@ extern int add_principal(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
 extern int set_password(msktutil_flags *);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
-extern int ldap_get_des_bit(msktutil_flags *);
 extern std::string ldap_get_pwdLastSet(msktutil_flags *);
 extern std::vector<std::string> ldap_list_principals(msktutil_flags *);
 extern int ldap_add_principal(const std::string &, msktutil_flags *);
@@ -217,16 +220,16 @@ class Exception : public std::exception
 class KRB5Exception : public Exception
 {
   public:
-    explicit KRB5Exception(char const * func, krb5_error_code err) :
-        Exception(sform("Error: %s failed (%s)", func, error_message(err)))
+    explicit KRB5Exception(std::string func, krb5_error_code err) :
+        Exception(sform("Error: %s failed (%s)", func.c_str(), error_message(err)))
     {}
 };
 
 class LDAPException : public Exception
 {
   public:
-    explicit LDAPException(char const * func, int err) :
-        Exception(sform("Error: %s failed (%s)", func, ldap_err2string(err)))
+    explicit LDAPException(std::string func, int err) :
+        Exception(sform("Error: %s failed (%s)", func.c_str(), ldap_err2string(err)))
     {}
 };
 
@@ -238,3 +241,26 @@ class LDAPException : public Exception
 
 
 #include "krb5wrap.h"
+
+
+
+class LDAPConnection {
+public: //fixme
+    LDAP *m_ldap;
+
+public:
+    LDAPConnection(std::string server);
+
+    void set_option(int option, const void *invalue);
+    void get_option(int option, void *outvalue);
+    void start_tls(LDAPControl **serverctrls=NULL, LDAPControl **clientctrls=NULL);
+
+    void search(LDAPMessage **mesg_p,
+                   std::string &base_dn, int scope, std::string &filter, char *attrs[],
+                   int attrsonly=0, LDAPControl **serverctrls=NULL, LDAPControl **clientctrls=NULL,
+                   struct timeval *timeout=NULL, int sizelimit=-1);
+
+    std::string get_one_val(LDAPMessage *mesg, char *name);
+    std::vector<std::string> get_all_vals(LDAPMessage *mesg, char *name);
+    ~LDAPConnection();
+};
