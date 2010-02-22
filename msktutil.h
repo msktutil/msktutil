@@ -263,9 +263,9 @@ public:
     void start_tls(LDAPControl **serverctrls=NULL, LDAPControl **clientctrls=NULL);
 
     void search(LDAPMessage **mesg_p,
-                   std::string &base_dn, int scope, std::string &filter, char *attrs[],
-                   int attrsonly=0, LDAPControl **serverctrls=NULL, LDAPControl **clientctrls=NULL,
-                   struct timeval *timeout=NULL, int sizelimit=-1);
+                const std::string &base_dn, int scope, const std::string &filter, char *attrs[],
+                int attrsonly=0, LDAPControl **serverctrls=NULL, LDAPControl **clientctrls=NULL,
+                struct timeval *timeout=NULL, int sizelimit=-1);
 
     std::string get_one_val(LDAPMessage *mesg, char *name);
     std::vector<std::string> get_all_vals(LDAPMessage *mesg, char *name);

@@ -74,7 +74,22 @@ void get_default_ou(msktutil_flags *flags)
 {
     if (flags->ldap_ou.empty()) {
         /* Only do this on an empty value */
-        flags->ldap_ou = "CN=Computers";
+        std::string dn;
+        LDAPMessage *mesg;
+        char *attrs[] = {"distinguishedName", NULL};
+        std::string wkguid = sform("<WKGUID=aa312825768811d1aded00c04fd8d5cd,%s>", flags->base_dn.c_str());
+        flags->ldap->search(&mesg, wkguid, LDAP_SCOPE_BASE, "objectClass=*", attrs);
+
+        if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
+            mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
+            dn = flags->ldap->get_one_val(mesg, "distinguishedName");
+        }
+        ldap_msgfree(mesg);
+        if (dn.empty()) {
+            fprintf(stderr, "Warning: could not get default computer OU from AD.\n");
+            flags->ldap_ou = "CN=Computers" + flags->base_dn;
+        } else
+            flags->ldap_ou = dn;
         VERBOSE("Determining default OU: %s", flags->ldap_ou.c_str());
     }
 }
@@ -203,7 +218,7 @@ void ldap_cleanup(msktutil_flags *flags)
 
 
 void LDAPConnection::search(LDAPMessage **mesg_p,
-                            std::string &base_dn, int scope, std::string &filter, char *attrs[],
+                            const std::string &base_dn, int scope, const std::string &filter, char *attrs[],
                             int attrsonly, LDAPControl **serverctrls, LDAPControl **clientctrls,
                             struct timeval *timeout, int sizelimit) {
     VERBOSEldap("calling ldap_search_ext_s");
@@ -693,7 +708,7 @@ int ldap_check_account(msktutil_flags *flags)
         VERBOSE("Computer account not found, create the account\n");
         fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
 
-        dn = sform("cn=%s,%s,%s", flags->samAccountName_nodollar.c_str(), flags->ldap_ou.c_str(), flags->base_dn.c_str());
+        dn = sform("cn=%s,%s", flags->samAccountName_nodollar.c_str(), flags->ldap_ou.c_str());
         fprintf(stderr, "dn: %s\n", dn.c_str());
         mod_attrs[attr_count++] = &attrObjectClass;
         attrObjectClass.mod_op = LDAP_MOD_ADD;

@@ -157,7 +157,6 @@ void create_default(msktutil_exec *exec)
     exec->flags->hostname = get_default_hostname();
     exec->principals.push_back("host");
     get_default_keytab(exec->flags);
-    get_default_ou(exec->flags);
 }
 
 
