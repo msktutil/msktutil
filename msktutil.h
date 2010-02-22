@@ -1,6 +1,6 @@
 /*
  *----------------------------------------------------------------------------
- * 
+ *
  * msktutil.h
  *
  * (C) 2004-2006 Dan Perry (dperry@pppl.gov)
@@ -92,84 +92,84 @@
 #ifndef PACKAGE_NAME
 #define PACKAGE_NAME "msktutil"
 #endif
-#define PASSWORD_LEN 			63
-#define MAX_HOSTNAME_LEN		255
-#define MAX_TRIES			10
-#define MAX_SAM_ACCOUNT_LEN		19
+#define PASSWORD_LEN                    63
+#define MAX_HOSTNAME_LEN                255
+#define MAX_TRIES                       10
+#define MAX_SAM_ACCOUNT_LEN             19
 
 #ifndef TMP_DIR
-#define TMP_DIR				"/tmp"
+#define TMP_DIR                         "/tmp"
 #endif
 
 
 /* In case it's not in krb5.h */
 #ifndef MAX_KEYTAB_NAME_LEN
-#define  MAX_KEYTAB_NAME_LEN		1100
+#define  MAX_KEYTAB_NAME_LEN            1100
 #endif
 
 /* From SAM.H */
-#define UF_WORKSTATION_TRUST_ACCOUNT	0x00001000 
-#define UF_DONT_EXPIRE_PASSWORD 	0x00010000
-#define UF_TRUSTED_FOR_DELEGATION	0x00080000
-#define UF_USE_DES_KEY_ONLY		0x00200000
-#define UF_NO_AUTH_DATA_REQUIRED	0x02000000
+#define UF_WORKSTATION_TRUST_ACCOUNT    0x00001000
+#define UF_DONT_EXPIRE_PASSWORD         0x00010000
+#define UF_TRUSTED_FOR_DELEGATION       0x00080000
+#define UF_USE_DES_KEY_ONLY             0x00200000
+#define UF_NO_AUTH_DATA_REQUIRED        0x02000000
 
 /* for msDs-supportedEncryptionTypes  bit defines */
-#define MS_KERB_ENCTYPE_DES_CBC_CRC				0x01
-#define MS_KERB_ENCTYPE_DES_CBC_MD5				0x02
-#define MS_KERB_ENCTYPE_RC4_HMAC_MD5			0x04
-#define MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96	0x08
-#define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96	0x10
+#define MS_KERB_ENCTYPE_DES_CBC_CRC             0x01
+#define MS_KERB_ENCTYPE_DES_CBC_MD5             0x02
+#define MS_KERB_ENCTYPE_RC4_HMAC_MD5            0x04
+#define MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 0x08
+#define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0x10
 
 /* Some KVNO Constansts */
-#define KVNO_FAILURE 			-1
-#define KVNO_WIN_2000 			0
+#define KVNO_FAILURE                    -1
+#define KVNO_WIN_2000                   0
 
 /* LDAP Binding Attempts */
-#define ATTEMPT_SASL_PARAMS_TLS		0x0
-#define ATTEMPT_SASL_NO_PARAMS_TLS 	0x1
-#define ATTEMPT_SASL_NO_TLS		0x2
+#define ATTEMPT_SASL_PARAMS_TLS         0x0
+#define ATTEMPT_SASL_NO_PARAMS_TLS      0x1
+#define ATTEMPT_SASL_NO_TLS             0x2
 
 typedef struct {
-	char *keytab_file;
-	char *ldap_ou;
-	char *hostname;
-	char *description;
-	char *server;
-	char *short_hostname;
-	char *realm_name;
-	char *lower_realm_name;
-	char *base_dn;
-	char *userPrincipalName;
-	char *samAccountName;
-	char *samAccountName_nodollar;
-	char password[PASSWORD_LEN + 1];
-	krb5_context context;
-	LDAP *ldap;
-	int des_bit;
-	int no_pac;
-	int delegate;
-	int verbose;
-	unsigned int ad_userAccountControl; /* value AD has now */
-	int ad_enctypes; 	/* if msDs-supportedEncryptionTypes in AD */
-	unsigned int ad_supportedEncryptionTypes; /* value AD has now */
-	int enctypes; 		/* if --enctypes parameter was set */
-	unsigned int supportedEncryptionTypes;
+    char *keytab_file;
+    char *ldap_ou;
+    char *hostname;
+    char *description;
+    char *server;
+    char *short_hostname;
+    char *realm_name;
+    char *lower_realm_name;
+    char *base_dn;
+    char *userPrincipalName;
+    char *samAccountName;
+    char *samAccountName_nodollar;
+    char password[PASSWORD_LEN + 1];
+    krb5_context context;
+    LDAP *ldap;
+    int des_bit;
+    int no_pac;
+    int delegate;
+    int verbose;
+    unsigned int ad_userAccountControl; /* value AD has now */
+    int ad_enctypes;    /* if msDs-supportedEncryptionTypes in AD */
+    unsigned int ad_supportedEncryptionTypes; /* value AD has now */
+    int enctypes;       /* if --enctypes parameter was set */
+    unsigned int supportedEncryptionTypes;
 } msktutil_flags;
 
 typedef struct {
-	int show_help;
-	int show_version;
-	int update;
-	int flush;
-	char **principals;
-	msktutil_flags *flags;	
+    int show_help;
+    int show_version;
+    int update;
+    int flush;
+    char **principals;
+    msktutil_flags *flags;
 } msktutil_exec;
 
 typedef enum {
-	VALUE_OFF = 0,
-	VALUE_ON = 1,
-	VALUE_IGNORE = 2
+    VALUE_OFF = 0,
+    VALUE_ON = 1,
+    VALUE_IGNORE = 2
 } msktutil_val;
 
 
