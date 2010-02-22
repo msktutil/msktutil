@@ -93,8 +93,8 @@ int try_set_password(msktutil_flags *flags, int time, int try_keytab)
     krb5_data resp_code_string;
     krb5_data resp_string;
     int response = 0;
-    char *old_pwdLastSet;
-    char *current_pwdLastSet;
+    std::string old_pwdLastSet;
+    std::string current_pwdLastSet;
     int i;
 
 
@@ -207,28 +207,23 @@ int try_set_password(msktutil_flags *flags, int time, int try_keytab)
         if (i >= 30 + time) {
             fprintf(stdout, "Re-attempting password reset for %s\n", flags->hostname.c_str());
             init_password(flags);
-            if (current_pwdLastSet) { free(current_pwdLastSet); }
-            if (old_pwdLastSet) { free(old_pwdLastSet); }
             return try_set_password(flags, i, try_keytab);
         }
-        if (!current_pwdLastSet) {
+        if (current_pwdLastSet.empty()) {
             /* Account hasn't replicated yet */
             fprintf(stdout, "Waiting for account replication (%d seconds past)\n", i);
                         sleep(5);
         } else {
             /* The account exists, the domain supports kvno's and we're waiting for
              * the kvno to increment, indicating the password set worked */
-            if (!old_pwdLastSet || strcmp(current_pwdLastSet,old_pwdLastSet)) {
+            if (old_pwdLastSet.empty() || current_pwdLastSet != old_pwdLastSet) {
                 /* Password set has replicated successfully */
                 VERBOSE("Successfully reset computer's password");
-                if (current_pwdLastSet) { free(current_pwdLastSet); }
-                if (old_pwdLastSet) { free(old_pwdLastSet); }
                 return 0;
             }
             fprintf(stdout, "Waiting for password replication (%d seconds past)\n", i);
             sleep(5);
         }
-        if (current_pwdLastSet) { free(current_pwdLastSet); }
     }
 }
 

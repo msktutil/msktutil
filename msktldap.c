@@ -251,15 +251,12 @@ int ldap_flush_principals(msktutil_flags *flags)
 }
 
 
-char **ldap_list_principals(msktutil_flags *flags)
+std::vector<std::string> ldap_list_principals(msktutil_flags *flags)
 {
     BerValue **vals;
     LDAPMessage *mesg;
     char *attrs[] = {"servicePrincipalName", "userPrincipalName", NULL};
-    char **principals = NULL;
-    int i;
-    int j;
-
+    std::vector<std::string> principals;
 
     VERBOSE("Listing principals for LDAP entry");
     ldap_get_computer_attrs(flags, attrs, &mesg);
@@ -268,90 +265,25 @@ char **ldap_list_principals(msktutil_flags *flags)
         mesg = ldap_first_entry(flags->ldap, mesg);
         vals = ldap_get_values_len(flags->ldap, mesg, "servicePrincipalName");
         if (vals) {
-            i = ldap_count_values_len(vals);
-            principals = (char **) malloc((i + 2) * sizeof(char *));
-            if (!principals) {
-                fprintf(stderr, "Error: malloc failed\n");
-                ldap_value_free_len(vals);
-                ldap_msgfree(mesg);
-                return NULL;
-            }
-            memset(principals, 0, (i + 1) * sizeof(char *));
-            for (i = 0; i < ldap_count_values_len(vals); i++) {
-                principals[i] = (char *) malloc(strlen(vals[i]->bv_val) + 1);
-                if (!principals[i]) {
-                    fprintf(stderr, "Error: malloc failed\n");
-                    for (i--; i >= 0; i--) {
-                        free(principals[i]);
-                    }
-                    free(principals);
-                    ldap_value_free_len(vals);
-                    ldap_msgfree(mesg);
-                    return NULL;
-                }
-                memset(principals[i], 0, strlen(vals[i]->bv_val) + 1);
-                strcpy(principals[i], vals[i]->bv_val);
-                VERBOSE("  Found Principal: %s", principals[i]);
+            int len = ldap_count_values_len(vals);
+            for (int i = 0; i < len; ++i) {
+                principals.push_back(std::string(vals[i]->bv_val));
+                VERBOSE("  Found Principal: %s", principals.back().c_str());
             }
             ldap_value_free_len(vals);
-            i++;
-            vals = ldap_get_values_len(flags->ldap, mesg, "userPrincipalName");
-            if (vals) {
-                if (ldap_count_values_len(vals) > 0) {
-                    principals[i] = (char *) malloc(strlen(vals[0]->bv_val) + 1);
-                    if (!principals[i]) {
-                        fprintf(stderr, "Error: malloc failed\n");
-                        for (i--; i >= 0; i--) {
-                            free(principals[i]);
-                        }
-                        free(principals);
-                        ldap_value_free_len(vals);
-                        ldap_msgfree(mesg);
-                        return NULL;
-                    }
-                    memset(principals[i], 0, strlen(vals[0]->bv_val) + 1);
-                    strcpy(principals[i], vals[0]->bv_val);
-                    for (j = 0; *(principals[i] + j); j++) {
-                        if (*(principals[i] + j) == '@') {
-                            *(principals[i] + j) = '\0';
-                            break;
-                        }
-                    }
-                }
-                ldap_value_free_len(vals);
+        }
+
+        vals = ldap_get_values_len(flags->ldap, mesg, "userPrincipalName");
+        if (vals) {
+            if (ldap_count_values_len(vals) > 0) {
+                std::string str(vals[0]->bv_val);
+                size_t pos = str.find('@');
+                if (pos != std::string::npos)
+                    str.erase(pos);
+
+                principals.push_back(str);
             }
-        } else {
-            principals = (char **) malloc(2 * sizeof(char *));
-            if (!principals) {
-                fprintf(stderr, "Error: malloc failed\n");
-                ldap_value_free_len(vals);
-                ldap_msgfree(mesg);
-                return NULL;
-            }
-            memset(principals, 0, 2 * sizeof(char *));
-            vals = ldap_get_values_len(flags->ldap, mesg, "userPrincipalName");
-            if (vals) {
-                if (ldap_count_values_len(vals) > 0) {
-                    principals[0] = (char *) malloc(strlen(vals[0]->bv_val) + 1);
-                    if (!principals[0]) {
-                        fprintf(stderr, "Error: malloc failed\n");
-                        free(principals);
-                        ldap_value_free_len(vals);
-                        ldap_msgfree(mesg);
-                        return NULL;
-                    }
-                    memset(principals[0], 0, strlen(vals[0]->bv_val) + 1);
-                    strcpy(principals[0], vals[0]->bv_val);
-                    for (j = 0; *(principals[0] + j); j++) {
-                        if (*(principals[0] + j) == '@') {
-                            *(principals[0] + j) = '\0';
-                            break;
-                        }
-                    }
-                    VERBOSE("  Found Principal: %s", principals[0]);
-                    ldap_value_free_len(vals);
-                }
-            }
+            ldap_value_free_len(vals);
         }
     }
     ldap_msgfree(mesg);
@@ -365,7 +297,7 @@ krb5_kvno ldap_get_kvno(msktutil_flags *flags)
     krb5_kvno kvno = KVNO_FAILURE;
     BerValue **vals;
     LDAPMessage *mesg;
-    char *attrs[] = {"distinguishedName", "msDS-KeyVersionNumber", NULL};
+    char *attrs[] = {"msDS-KeyVersionNumber", NULL};
 
     ldap_get_computer_attrs(flags, attrs, &mesg);
     if (ldap_count_entries(flags->ldap, mesg) == 1) {
@@ -414,9 +346,9 @@ int ldap_get_des_bit(msktutil_flags *flags)
     return des_bit;
 }
 
-char *ldap_get_pwdLastSet(msktutil_flags *flags)
+std::string ldap_get_pwdLastSet(msktutil_flags *flags)
 {
-    char *pwdLastSet = NULL;
+    std::string pwdLastSet;
     BerValue **vals;
     LDAPMessage *mesg;
     char *attrs[] = {"pwdLastSet", NULL};
@@ -429,16 +361,8 @@ char *ldap_get_pwdLastSet(msktutil_flags *flags)
         vals = ldap_get_values_len(flags->ldap, mesg, "pwdLastSet");
         if (vals) {
             if (ldap_count_values_len(vals) > 0) {
-                pwdLastSet = (char *) malloc(strlen(vals[0]->bv_val) + 1);
-                if (!pwdLastSet) {
-                    fprintf(stderr, "Error: malloc failed\n");
-                    ldap_value_free_len(vals);
-                    ldap_msgfree(mesg);
-                    return pwdLastSet;
-                }
-                memset(pwdLastSet, 0, strlen(vals[0]->bv_val) + 1);
-                strcpy(pwdLastSet, vals[0]->bv_val);
-                VERBOSE("pwdLastSet is %s", pwdLastSet);
+                pwdLastSet = std::string(vals[0]->bv_val);
+                VERBOSE("pwdLastSet is %s", pwdLastSet.c_str());
             }
             ldap_value_free_len(vals);
         }
@@ -463,13 +387,8 @@ int ldap_set_supportedEncryptionTypes(std::string dn, msktutil_flags *flags)
 
         attrsupportedEncryptionTypes.mod_type = "msDs-supportedEncryptionTypes";
         attrsupportedEncryptionTypes.mod_values = vals_supportedEncryptionTypes;
-        vals_supportedEncryptionTypes[0] = (char *) malloc(17);
-        if (!vals_supportedEncryptionTypes[0]) {
-            fprintf(stderr, "Error: malloc failed\n");
-            return ENOMEM;
-        }
-        memset(vals_supportedEncryptionTypes[0], 0, 17);
-        sprintf(vals_supportedEncryptionTypes[0], "%d", flags->supportedEncryptionTypes);
+        std::string supportedEncryptionTypes = sform("%d", flags->supportedEncryptionTypes);
+        vals_supportedEncryptionTypes[0] = const_cast<char*>(supportedEncryptionTypes.c_str());
 
         mod_attrs[1] = NULL;
 
@@ -479,7 +398,7 @@ int ldap_set_supportedEncryptionTypes(std::string dn, msktutil_flags *flags)
 
         VERBOSEldap("calling ldap_modify_ext_s");
         ret = ldap_modify_ext_s(flags->ldap, dn.c_str(), mod_attrs, NULL, NULL);
-        free(vals_supportedEncryptionTypes[0]);
+
         if (ret != LDAP_SUCCESS) {
             VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
         } else {
@@ -512,12 +431,7 @@ int ldap_set_userAccountControl_flag(std::string dn, int mask, msktutil_val valu
     attrUserAccountControl.mod_op = LDAP_MOD_REPLACE;
     attrUserAccountControl.mod_type = "userAccountControl";
     attrUserAccountControl.mod_values = vals_useraccountcontrol;
-    vals_useraccountcontrol[0] = (char *) malloc(17);
-    if (!vals_useraccountcontrol[0]) {
-        fprintf(stderr, "Error: malloc failed\n");
-        return ENOMEM;
-    }
-    memset(vals_useraccountcontrol[0], 0, 17);
+
     switch (value) {
         case VALUE_ON:
             VERBOSE("Setting userAccountControl bit at 0x%x to 0x%x", mask, value);
@@ -531,7 +445,8 @@ int ldap_set_userAccountControl_flag(std::string dn, int mask, msktutil_val valu
             /* Unreachable */
             break;
     }
-    sprintf(vals_useraccountcontrol[0], "%d", new_userAcctFlags);
+    std::string new_userAcctFlags_string = sform("%d", new_userAcctFlags);
+    vals_useraccountcontrol[0] = const_cast<char*>(new_userAcctFlags_string.c_str());
 
     mod_attrs[1] = NULL;
 
@@ -548,7 +463,6 @@ int ldap_set_userAccountControl_flag(std::string dn, int mask, msktutil_val valu
         ret = LDAP_SUCCESS;
     }
 
-    free(vals_useraccountcontrol[0]);
     return ret;
 }
 
@@ -557,7 +471,7 @@ int ldap_set_userAccountControl_flag(std::string dn, int mask, msktutil_val valu
 int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
 {
     BerValue **vals;
-    char *dn = NULL;
+    std::string dn;
     LDAPMessage *mesg;
     char *attrs[] = {"distinguishedName", NULL};
     LDAPMod *mod_attrs[2];
@@ -571,21 +485,13 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
         mesg = ldap_first_entry(flags->ldap, mesg);
         vals = ldap_get_values_len(flags->ldap, mesg, "distinguishedName");
         if (vals) {
-            if (ldap_count_values_len(vals) > 0) {
-                dn = (char *) malloc(strlen(vals[0]->bv_val) + 1);
-                if (!dn) {
-                    fprintf(stderr, "Error: malloc failed\n");
-                    ldap_msgfree(mesg);
-                    return ENOMEM;
-                }
-                memset(dn, 0, strlen(vals[0]->bv_val) + 1);
-                strcpy(dn, vals[0]->bv_val);
-            }
+            if (ldap_count_values_len(vals) > 0)
+                dn = std::string(vals[0]->bv_val);
             ldap_value_free_len(vals);
         }
     }
     ldap_msgfree(mesg);
-    if (!dn) {
+    if (dn.empty()) {
         fprintf(stderr, "Error: an account for %s was not found\n", flags->hostname.c_str());
         return -1;
     }
@@ -611,8 +517,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             mod_attrs[1] = NULL;
 
             VERBOSEldap("calling ldap_modify_ext_s");
-            ret = ldap_modify_ext_s(flags->ldap, dn, mod_attrs, NULL, NULL);
-            free(dn);
+            ret = ldap_modify_ext_s(flags->ldap, dn.c_str(), mod_attrs, NULL, NULL);
             if (ret != LDAP_SUCCESS) {
                 VERBOSE("ldap_modify_ext_s failed (%s)", error_message(ret));
             }
@@ -624,8 +529,8 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             vals = ldap_get_values_len(flags->ldap, mesg, "distinguishedName");
             if (vals) {
                 if (ldap_count_values_len(vals) > 0) {
-                    ret = strcmp(dn, vals[0]->bv_val);
-                    if (ret) {
+                    if (dn != std::string(vals[0]->bv_val)) {
+                        ret = -1;
                         fprintf(stderr, "Error: Another computer account (%s) has the principal %s\n",
                                 vals[0]->bv_val, principal.c_str());
                     }
@@ -635,7 +540,6 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
                 }
                 ldap_value_free_len(vals);
             }
-            free(dn);
             ldap_msgfree(mesg);
             return ret;
         default:
@@ -643,7 +547,6 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             fprintf(stderr, "Error: Multiple (%d) LDAP entries were found containing the principal %s\n",
                     ret, principal.c_str());
             ldap_msgfree(mesg);
-            free(dn);
             return ret;
     }
 }
@@ -853,14 +756,9 @@ int ldap_check_account(msktutil_flags *flags)
         attrUserAccountControl.mod_op = LDAP_MOD_ADD;
         attrUserAccountControl.mod_type = "userAccountControl";
         attrUserAccountControl.mod_values = vals_useraccountcontrol;
-        vals_useraccountcontrol[0] = (char *) malloc(17);
-        if (!vals_useraccountcontrol[0]) {
-            fprintf(stderr, "Error: malloc failed\n");
-            return ENOMEM;
-        }
-        memset(vals_useraccountcontrol[0], 0, 17);
         userAcctFlags = UF_DONT_EXPIRE_PASSWORD | UF_WORKSTATION_TRUST_ACCOUNT;
-        sprintf(vals_useraccountcontrol[0], "%d", userAcctFlags);
+        std::string userAcctFlags_string = sform("%d", userAcctFlags);
+        vals_useraccountcontrol[0] = const_cast<char*>(userAcctFlags_string.c_str());
 
         mod_attrs[attr_count++] = &attrSamAccountName;
         attrSamAccountName.mod_op = LDAP_MOD_ADD;
@@ -868,25 +766,19 @@ int ldap_check_account(msktutil_flags *flags)
         attrSamAccountName.mod_values = vals_samaccountname;
         vals_samaccountname[0] = const_cast<char*>(flags->samAccountName.c_str());
 
+        std::string supportedEncryptionTypes_string;
         if (flags->enctypes != VALUE_IGNORE) {
             mod_attrs[attr_count++] = &attrsupportedEncryptionTypes;
             attrsupportedEncryptionTypes.mod_op = LDAP_MOD_ADD;
             attrsupportedEncryptionTypes.mod_type = "msDs-supportedEncryptionTypes";
             attrsupportedEncryptionTypes.mod_values = vals_supportedEncryptionTypes;
-            vals_supportedEncryptionTypes[0] = (char *) malloc(17);
-            if (!vals_supportedEncryptionTypes[0]) {
-                fprintf(stderr, "Error: malloc failed\n");
-                return ENOMEM;
-            }
-            memset(vals_supportedEncryptionTypes[0], 0, 17);
-            sprintf(vals_supportedEncryptionTypes[0], "%d", flags->supportedEncryptionTypes);
+            supportedEncryptionTypes_string = sform("%d", flags->supportedEncryptionTypes);
+            vals_supportedEncryptionTypes[0] = const_cast<char*>(supportedEncryptionTypes_string.c_str());
         }
         mod_attrs[attr_count++] = NULL;
 
         ret = ldap_add_ext_s(flags->ldap, dn.c_str(), mod_attrs, NULL, NULL);
-        free(vals_useraccountcontrol[0]);
-        if (vals_supportedEncryptionTypes[0])
-            free(vals_supportedEncryptionTypes[0]);
+
         if (ret) {
             fprintf(stderr, "Error: ldap_add_ext_s failed (%s)\n", ldap_err2string(ret));
             return ret;

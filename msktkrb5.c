@@ -137,8 +137,7 @@ int flush_keytab(msktutil_flags *flags)
 
 int update_keytab(msktutil_flags *flags)
 {
-    char **principals;
-    int i;
+    std::vector<std::string> principals;
     int ret = 0;
 
 
@@ -151,19 +150,12 @@ int update_keytab(msktutil_flags *flags)
 
     VERBOSE("Updating all entires for %s", flags->short_hostname.c_str());
     principals = ldap_list_principals(flags);
-    if (principals) {
-        for (i = 0; principals[i]; i++) {
-            ret = add_principal(principals[i], flags);
-            if (ret) {
-                fprintf(stderr, "Error: add_principal failed\n");
-                goto error;
-            }
+    for (int i = 0; i < principals.size(); ++i) {
+        ret = add_principal(principals[i], flags);
+        if (ret) {
+            fprintf(stderr, "Error: add_principal failed\n");
+            return ret;
         }
-error:
-        for (i = 0; principals[i]; i++) {
-            free(principals[i]);
-        }
-        free(principals);
     }
 
     return ret;
