@@ -105,6 +105,14 @@
 #define ATTEMPT_SASL_NO_PARAMS_TLS      1
 #define ATTEMPT_SASL_NO_TLS             2
 
+/* Ways we can authenticate */
+enum auth_types {
+    AUTH_NONE = 0,
+    AUTH_FROM_SAM_KEYTAB,
+    AUTH_FROM_HOSTNAME_KEYTAB,
+    AUTH_FROM_PASSWORD,
+    AUTH_FROM_USER_CREDS,
+};
 
 class LDAPConnection;
 
@@ -126,7 +134,6 @@ struct msktutil_flags {
     std::string realm_name;
     std::string lower_realm_name;
     std::string base_dn;
-    std::string userPrincipalName;
     std::string samAccountName;
     std::string samAccountName_nodollar;
     std::string password;
@@ -139,6 +146,8 @@ struct msktutil_flags {
     unsigned int ad_supportedEncryptionTypes; /* value AD has now */
     int enctypes;       /* if --enctypes parameter was set */
     unsigned int supportedEncryptionTypes;
+
+    int auth_type;
 
     msktutil_flags();
     ~msktutil_flags();
@@ -182,9 +191,7 @@ extern std::string get_host_os();
 extern int ldap_check_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);
 extern int remove_fake_krb5_conf();
-extern int try_machine_keytab(msktutil_flags *);
-extern int untry_machine_keytab();
-
+int find_working_creds(msktutil_flags *flags);
 
 /* Verbose messages */
 #define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }

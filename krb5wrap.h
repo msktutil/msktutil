@@ -22,11 +22,18 @@
  *
  *-----------------------------------------------------------------------------
  */
-class KRB5Context {
+class noncopyable {
+protected:
+    noncopyable() {}
+    ~noncopyable() {}
+private:  // emphasize the following members are private
+    noncopyable( const noncopyable& );
+    const noncopyable& operator=( const noncopyable& );
+};
+
+class KRB5Context : noncopyable {
     krb5_context m_context;
 
-private:
-    bool operator=(const KRB5Context other); // not defined
 public:
     KRB5Context();
     ~KRB5Context();
@@ -39,11 +46,9 @@ public:
 extern KRB5Context g_context;
 
 
-class KRB5Keyblock {
+class KRB5Keyblock : noncopyable{
     krb5_keyblock m_keyblock;
 
-private:
-    bool operator=(const KRB5Keyblock other); // not defined
 public:
     KRB5Keyblock() : m_keyblock() {}
 
@@ -60,11 +65,9 @@ public:
 
 class KRB5Principal;
 
-class KRB5Keytab {
+class KRB5Keytab : noncopyable{
     krb5_keytab m_keytab;
 
-private:
-    bool operator=(const KRB5Keytab other); // not defined
 public:
     KRB5Keytab(std::string &keytab_name) : m_keytab() {
         krb5_error_code ret = krb5_kt_resolve(g_context.get(), keytab_name.c_str(), &m_keytab);
@@ -82,12 +85,60 @@ public:
     void addEntry(KRB5Principal &princ, krb5_kvno kvno, KRB5Keyblock &keyblock);
     void removeEntry(KRB5Principal &princ, krb5_kvno kvno, krb5_enctype enctype);
 
+    krb5_keytab get() { return m_keytab; }
+
     // Defined below...
     class cursor;
 };
 
+class KRB5Creds : noncopyable {
+    krb5_creds m_creds;
 
-class KRB5Principal {
+public:
+
+    KRB5Creds() : m_creds() {}
+    KRB5Creds(KRB5Principal &principal, KRB5Keytab &keytab, const char *tkt_service=NULL);
+    KRB5Creds(KRB5Principal &principal, const std::string &password, const char *tkt_service=NULL);
+    ~KRB5Creds() {
+        krb5_free_cred_contents(g_context.get(), &m_creds);
+        memset(&m_creds, 0, sizeof(m_creds));
+    }
+
+    krb5_creds *get() { return &m_creds; }
+
+    void move_from(KRB5Creds &other) {
+        m_creds = other.m_creds;
+        memset(&other.m_creds, 0, sizeof(m_creds));
+    }
+};
+
+class KRB5CCache : noncopyable {
+    krb5_ccache m_ccache;
+
+public:
+    static const char *defaultName() {
+        return krb5_cc_default_name(g_context.get());
+    }
+
+    KRB5CCache(const char *cc_name) : m_ccache() {
+        krb5_error_code ret = krb5_cc_resolve(g_context.get(), cc_name, &m_ccache);
+        if (ret)
+            throw KRB5Exception("krb5_cc_resolve", ret);
+    }
+
+    ~KRB5CCache() {
+        krb5_cc_close(g_context.get(), m_ccache);
+    }
+
+    krb5_ccache get() { return m_ccache; }
+
+    void initialize(KRB5Principal &principal);
+    void store(KRB5Creds &creds);
+};
+
+
+
+class KRB5Principal : noncopyable {
     friend class KRB5Keytab::cursor;
 
     krb5_principal m_princ;
@@ -98,18 +149,16 @@ class KRB5Principal {
         m_princ = princ;
     }
 
-private:
-    bool operator=(const KRB5Principal other); // not defined
 public:
     KRB5Principal(krb5_principal princ_raw) : m_princ(princ_raw) {}
 
-    KRB5Principal(krb5_ccache ccache) {
-        krb5_error_code ret = krb5_cc_get_principal(g_context.get(), ccache, &m_princ);
+    KRB5Principal(KRB5CCache &ccache) : m_princ() {
+        krb5_error_code ret = krb5_cc_get_principal(g_context.get(), ccache.get(), &m_princ);
         if (ret)
             throw KRB5Exception("krb5_cc_get_principal", ret);
     }
 
-    KRB5Principal(std::string principal_name) {
+    KRB5Principal(std::string principal_name) : m_princ() {
         krb5_error_code ret = krb5_parse_name(g_context.get(), principal_name.c_str(), &m_princ);
         if (ret)
             throw KRB5Exception("krb5_parse_name", ret);
@@ -123,7 +172,7 @@ public:
     std::string name();
 };
 
-class KRB5Keytab::cursor {
+class KRB5Keytab::cursor : noncopyable {
     KRB5Keytab &m_keytab;
     krb5_kt_cursor m_cursor;
     krb5_keytab_entry m_entry;
@@ -131,8 +180,6 @@ class KRB5Keytab::cursor {
     // Duplicates part of entry, but oh well.
     KRB5Principal m_princ;
 
-private:
-    bool operator=(const KRB5Keytab::cursor other); // not defined
 public:
     cursor(KRB5Keytab &keytab);
     ~cursor();
@@ -142,4 +189,3 @@ public:
     krb5_kvno kvno() { return m_entry.vno; }
     krb5_enctype enctype() { return m_entry.key.enctype; }
 };
-

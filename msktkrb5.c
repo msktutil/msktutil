@@ -55,17 +55,8 @@ krb5_error_code krb5_free_keytab_entry_contents(krb5_context context, krb5_keyta
 
 std::string get_user_principal()
 {
-    int ret;
-    krb5_ccache ccache;
-
-
     VERBOSE("Obtaining Principal for the executing user");
-    ret = krb5_cc_default(g_context.get(), &ccache);
-    if (ret) {
-        VERBOSE("krb5_cc_default failed (%s)", error_message(ret));
-        return NULL;
-    }
-
+    KRB5CCache ccache(KRB5CCache::defaultName());
     KRB5Principal principal(ccache);
 
     return principal.name();
@@ -149,6 +140,8 @@ int update_keytab(msktutil_flags *flags)
     }
 
     VERBOSE("Updating all entires for %s", flags->short_hostname.c_str());
+    add_principal(flags->samAccountName, flags);
+
     principals = ldap_list_principals(flags);
     for (size_t i = 0; i < principals.size(); ++i) {
         ret = add_principal(principals[i], flags);
@@ -167,12 +160,6 @@ int add_principal(const std::string &principal, msktutil_flags *flags)
     int ret;
     krb5_kvno kvno;
 
-
-    ret = ldap_add_principal(principal, flags);
-    if (ret) {
-        fprintf(stderr, "Error: ldap_add_principal failed\n");
-        return ret;
-    }
 
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
     std::string keytab_name = sform("WRFILE:%s", flags->keytab_file.c_str());

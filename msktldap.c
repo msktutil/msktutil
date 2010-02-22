@@ -543,9 +543,12 @@ std::string get_user_dn(msktutil_flags *flags)
     char *attrs[] = {"distinguishedName", NULL};
     LDAPMessage *mesg;
 
-
-    user = get_user_principal();
-
+    try {
+        user = get_user_principal();
+    } catch (KRB5Exception &e) {
+        VERBOSE("No user principal available.");
+        return "";
+    }
     std::string filter = sform("(&(objectClass=user)(userPrincipalName=%s))", user.c_str());
     flags->ldap->search(&mesg, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
 
@@ -565,35 +568,27 @@ int ldap_check_account_strings(std::string dn, msktutil_flags *flags)
 {
     int ret;
     LDAPMod *mod_attrs[6];
-    LDAPMod attrUserPrincipalName;
     LDAPMod attrDnsHostName;
-    LDAPMod attrDescription;
-    LDAPMod attrManagedBy;
-    LDAPMod attrOperatingSystem;
-    char *vals_userprincipalname[] = {NULL, NULL};
+//    LDAPMod attrDescription;
+//    LDAPMod attrManagedBy;
+//    LDAPMod attrOperatingSystem;
     char *vals_dnshostname[] = {NULL, NULL};
-    char *vals_description[] = {NULL, NULL};
-    char *vals_managedby[] = {NULL, NULL};
-    char *vals_operatingsystem[] = {NULL, NULL};
+//    char *vals_description[] = {NULL, NULL};
+//    char *vals_managedby[] = {NULL, NULL};
+//    char *vals_operatingsystem[] = {NULL, NULL};
     int attr_count = 0;
     std::string owner_dn;
     std::string system_name;
 
 
     VERBOSE("Inspecting (and updating) computer account attributes");
-    /* Set the UPN value, just in case something has changed it */
-    mod_attrs[attr_count++] = &attrUserPrincipalName;
-    attrUserPrincipalName.mod_op = LDAP_MOD_REPLACE;
-    attrUserPrincipalName.mod_type = "userPrincipalName";
-    attrUserPrincipalName.mod_values = vals_userprincipalname;
-    vals_userprincipalname[0] = const_cast<char*>(flags->userPrincipalName.c_str());
 
     mod_attrs[attr_count++] = &attrDnsHostName;
     attrDnsHostName.mod_op = LDAP_MOD_REPLACE;
     attrDnsHostName.mod_type = "dNSHostName";
     attrDnsHostName.mod_values = vals_dnshostname;
     vals_dnshostname[0] = const_cast<char*>(flags->hostname.c_str());
-
+/*
     if (!flags->description.empty()) {
         mod_attrs[attr_count++] = &attrDescription;
         attrDescription.mod_op = LDAP_MOD_REPLACE;
@@ -617,7 +612,7 @@ int ldap_check_account_strings(std::string dn, msktutil_flags *flags)
         attrOperatingSystem.mod_values = vals_operatingsystem;
         vals_operatingsystem[0] = const_cast<char*>(system_name.c_str());
     }
-
+*/
     mod_attrs[attr_count++] = NULL;
     VERBOSEldap("calling ldap_modify_ext_s");
     ret = ldap_modify_ext_s(flags->ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
@@ -699,7 +694,7 @@ int ldap_check_account(msktutil_flags *flags)
         fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
 
         dn = sform("cn=%s,%s,%s", flags->samAccountName_nodollar.c_str(), flags->ldap_ou.c_str(), flags->base_dn.c_str());
-
+        fprintf(stderr, "dn: %s\n", dn.c_str());
         mod_attrs[attr_count++] = &attrObjectClass;
         attrObjectClass.mod_op = LDAP_MOD_ADD;
         attrObjectClass.mod_type = "objectClass";
@@ -738,11 +733,9 @@ int ldap_check_account(msktutil_flags *flags)
 
         ret = ldap_add_ext_s(flags->ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
 
-        if (ret) {
-            fprintf(stderr, "Error: ldap_add_ext_s failed (%s)\n", ldap_err2string(ret));
-            return ret;
+        if (ret)
+            throw LDAPException("ldap_add_ext_s", ret);
 
-        }
         flags->ad_userAccountControl = userAcctFlags;
         if (flags->enctypes != VALUE_IGNORE) { /* we wrote one above */
             flags->ad_enctypes = VALUE_ON;

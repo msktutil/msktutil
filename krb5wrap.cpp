@@ -58,6 +58,34 @@ void KRB5Keyblock::from_string(krb5_enctype enctype, std::string &password, std:
         throw KRB5Exception("krb5_string_to_key", ret);
 }
 
+void KRB5CCache::initialize(KRB5Principal &principal) {
+    krb5_error_code ret = krb5_cc_initialize(g_context.get(), m_ccache, principal.get());
+    if (ret)
+        throw KRB5Exception("krb5_cc_initialize", ret);
+}
+
+void KRB5CCache::store(KRB5Creds &creds) {
+    krb5_error_code ret = krb5_cc_store_cred(g_context.get(), m_ccache, creds.get());
+    if (ret)
+        throw KRB5Exception("krb5_cc_store_cred", ret);
+}
+
+KRB5Creds::KRB5Creds(KRB5Principal &principal, KRB5Keytab &keytab, const char *tkt_service) : m_creds() {
+    krb5_error_code ret =
+        krb5_get_init_creds_keytab(g_context.get(), &m_creds, principal.get(), keytab.get(), 0, const_cast<char*>(tkt_service), NULL);
+    if (ret)
+        throw KRB5Exception("krb5_get_init_creds_keytab", ret);
+}
+
+KRB5Creds::KRB5Creds(KRB5Principal &principal, const std::string &password, const char *tkt_service) : m_creds() {
+    krb5_error_code ret =
+        krb5_get_init_creds_password(g_context.get(), &m_creds, principal.get(),
+                                     const_cast<char*>(password.c_str()), NULL, NULL,
+                                     0, const_cast<char*>(tkt_service), NULL);
+    if (ret)
+        throw KRB5Exception("krb5_get_init_creds_keytab", ret);
+}
+
 
 std::string KRB5Principal::name() {
     char *principal_string;

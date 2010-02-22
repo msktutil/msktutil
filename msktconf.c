@@ -30,7 +30,6 @@
 
 /* Store the orginal config file and CC name */
 static char *org_config = NULL;
-static char *org_ccname = NULL;
 
 void create_fake_krb5_conf(msktutil_flags *flags)
 {
@@ -78,93 +77,84 @@ int remove_fake_krb5_conf()
     return ret;
 }
 
+#define PRIVATE_CCACHE_NAME "MEMORY:msktutil"
 
-int try_machine_keytab(msktutil_flags *flags)
+void switch_default_ccache(char *ccache_name)
 {
-    std::string filename;
-    krb5_keytab keytab;
-    krb5_principal principal;
-    krb5_ccache ccache;
-    int ret;
+    char *filename = ccache_name;
+    VERBOSE("Using the local credential cache: %s", filename);
 
+    // Is this setenv really necessary given krb5_cc_set_default_name?
+    if (setenv("KRB5CCNAME", filename, 1))
+        throw Exception("Error: setenv failed");
 
-    filename = sform("%s/.mskt-%dkrb5_ccache", TMP_DIR, getpid());
-    VERBOSE("Using the local credential cache: %s", filename.c_str());
+    krb5_cc_set_default_name(g_context.get(), filename);
+}
 
-    if (getenv("KRB5CCNAME")) {
-        org_ccname = strdup(getenv("KRB5CCNAME"));
+bool try_machine_keytab_princ(msktutil_flags *flags, std::string principal_name) {
+    try {
+        VERBOSE("Trying to authenticate for %s from local keytab...", principal_name.c_str());
+        KRB5Keytab keytab(flags->keytab_file);
+        KRB5Principal principal(principal_name);
+        KRB5Creds creds(principal, keytab);
+        KRB5CCache ccache(PRIVATE_CCACHE_NAME);
+        ccache.initialize(principal);
+        ccache.store(creds);
+        switch_default_ccache(PRIVATE_CCACHE_NAME);
+        return true;
+    } catch (KRB5Exception &e) {
+        VERBOSE(e.what());
+        VERBOSE("Authentication with keytab failed");
+        return false;
     }
+}
 
-    ret = setenv("KRB5CCNAME", filename.c_str(), 1);
-    if (ret) {
-        fprintf(stderr, "Error: setenv failed\n");
-        return ret;
+bool try_machine_password(msktutil_flags *flags) {
+    try {
+        VERBOSE("Trying to authenticate for %s with password.", flags->samAccountName.c_str());
+        KRB5Principal principal(flags->samAccountName);
+        KRB5Creds creds(principal, /*password:*/ flags->samAccountName_nodollar);
+        KRB5CCache ccache(PRIVATE_CCACHE_NAME);
+        ccache.initialize(principal);
+        ccache.store(creds);
+        switch_default_ccache(PRIVATE_CCACHE_NAME);
+        return true;
+    } catch (KRB5Exception &e) {
+        VERBOSE(e.what());
+        VERBOSE("Authentication with password failed");
+        return false;
     }
+}
 
-    ret = krb5_kt_resolve(g_context.get(), flags->keytab_file.c_str(), &keytab);
-    if (ret) {
-        VERBOSE("krb5_kt_resolve failed (%s)", error_message(ret));
-        VERBOSE("Unable to authenticate using the local keytab");
-        return ret;
-    }
-    ret = krb5_parse_name(g_context.get(), flags->userPrincipalName.c_str(), &principal);
-    if (ret) {
-        VERBOSE("krb5_parse_name failed (%s)", error_message(ret));
-        VERBOSE("Unable to authenticate using the local keytab");
-        krb5_kt_close(g_context.get(), keytab);
-        return ret;
-    }
+bool try_user_creds() {
+    try {
+        VERBOSE("Checking if default ticket cache has tickets...");
+        // The following is for the side effect of throwing an exception or not.
+        KRB5CCache ccache(KRB5CCache::defaultName());
+        KRB5Principal princ(ccache);
 
-    krb5_creds creds;
-    ret = krb5_get_init_creds_keytab(g_context.get(), &creds, principal, keytab, 0, NULL, NULL);
-    krb5_kt_close(g_context.get(), keytab);
-    if (ret) {
-        VERBOSE("krb5_get_init_creds_keytab failed (%s)", error_message(ret));
-        VERBOSE("Unable to authenticate using the local keytab");
-        return ret;
+        return true;
+    } catch(KRB5Exception &e) {
+        VERBOSE(e.what());
+        VERBOSE("User ticket cache was not valid.");
+        return false;
     }
-    ret = krb5_cc_resolve(g_context.get(), filename.c_str(), &ccache);
-
-    if (ret) {
-        VERBOSE("krb5_cc_default failed (%s)", error_message(ret));
-        VERBOSE("Unable to authenticate using the local keytab");
-        krb5_free_principal(g_context.get(), principal);
-        krb5_free_cred_contents(g_context.get(), &creds);
-        return ret;
-    }
-    ret = krb5_cc_initialize(g_context.get(), ccache, principal);
-    krb5_free_principal(g_context.get(), principal);
-    if (ret) {
-        VERBOSE("krb5_cc_initialize failed (%s)", error_message(ret));
-        VERBOSE("Unable to authenticate using the local keytab");
-        krb5_cc_close(g_context.get(), ccache);
-        krb5_free_cred_contents(g_context.get(), &creds);
-        return ret;
-    }
-    ret = krb5_cc_store_cred(g_context.get(), ccache, &creds);
-    krb5_cc_close(g_context.get(), ccache);
-    krb5_free_cred_contents(g_context.get(), &creds);
-    if (ret) {
-        VERBOSE("krb5_cc_store_cred failed (%s)", error_message(ret));
-        VERBOSE("Unable to authenticate using the local keytab");
-    }
-    return ret;
 }
 
 
-int untry_machine_keytab()
-{
-    std::string filename;
-    int ret;
+int find_working_creds(msktutil_flags *flags) {
+    std::string host_princ = "host/" + flags->hostname;
 
-
-    ret = unsetenv("KRB5CCNAME");
-    if (org_ccname) {
-        ret |= setenv("KRB5CCNAME", org_ccname, 1);
-    }
-
-    filename = sform("%s/.mskt-%dkrb5_ccache", TMP_DIR, getpid());
-    ret = unlink(filename.c_str());
-
-    return ret;
+    if (try_machine_keytab_princ(flags, flags->samAccountName))
+        return AUTH_FROM_SAM_KEYTAB;
+    else if (try_machine_keytab_princ(flags, host_princ))
+        return AUTH_FROM_HOSTNAME_KEYTAB;
+    else if (try_machine_password(flags))
+        return AUTH_FROM_PASSWORD;
+    else if (try_user_creds())
+        return AUTH_FROM_USER_CREDS;
+    else
+        return AUTH_NONE;
 }
+
+

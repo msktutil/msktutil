@@ -51,7 +51,6 @@ std::string sform(const char* format, ...)
 void catch_int(int)
 {
     remove_fake_krb5_conf();
-    untry_machine_keytab();
     exit(1);
 }
 
@@ -92,11 +91,6 @@ void set_samAccountName(msktutil_exec *exec, const std::string &samAccountName)
     exec->flags->samAccountName = samAccountName + "$";
 }
 
-
-void set_userPrincipalName(msktutil_exec *exec, const std::string userPrincipalName)
-{
-    exec->flags->userPrincipalName = userPrincipalName;
-}
 
 
 void set_desbit(msktutil_exec *exec, msktutil_val value)
@@ -155,13 +149,13 @@ void display_help(msktutil_exec *exec)
 void create_default(msktutil_exec *exec)
 {
     exec->principals.clear();
-    exec->flags->userPrincipalName = std::string();
 
     exec->show_help = 0;
     exec->flush = 0;
     exec->update = 1;
     exec->show_version = 0;
     exec->flags->hostname = get_default_hostname();
+    exec->principals.push_back("host");
     get_default_keytab(exec->flags);
     get_default_ou(exec->flags);
 }
@@ -193,32 +187,8 @@ int finalize_exec(msktutil_exec *exec)
     }
     get_default_keytab(flags);
 
-    /* Determine the userPrincipalName, if not set */
-    VERBOSE("Determining user principal name");
-    if (flags->userPrincipalName.empty()) {
-        flags->userPrincipalName = sform("host/%s@%s", flags->hostname.c_str(), flags->realm_name.c_str());
-    } else {
-        flags->userPrincipalName =
-            sform("%s@%s", flags->userPrincipalName.c_str(), flags->realm_name.c_str());
-    }
-    VERBOSE("User Principal Name is: %s", flags->userPrincipalName.c_str());
-
     signal(SIGINT, catch_int);
     create_fake_krb5_conf(flags);
-    if (try_machine_keytab(flags)) {
-        untry_machine_keytab();
-    }
-
-    flags->ldap = ldap_connect(flags->server);
-    if (!flags->ldap.get()) {
-        fprintf(stderr, "Error: ldap_connect failed\n");
-        exit(-1);
-    }
-    if (ldap_get_base_dn(flags)) {
-        fprintf(stderr, "Error: get_ldap_base_dn failed\n");
-        exit(-1);
-    }
-    get_default_ou(flags);
 
     /* Canonicalize the hostname if need be */
     set_hostname(exec, complete_hostname(flags->hostname));
@@ -245,14 +215,36 @@ int finalize_exec(msktutil_exec *exec)
             exec->principals[i].append("/").append(flags->hostname);
     }
 
-    /* Add the UPN to the list of principals as well, but do this after we qualify the list of
-     * service principals.  We don't want something like afs@REALM getting converted into
-     * afs/hostname@REALM */
-    std::string short_upn = flags->userPrincipalName;
-    size_t at_pos = short_upn.rfind('@');
-    if (at_pos != std::string::npos)
-        short_upn.erase(at_pos);
-    exec->principals.push_back(short_upn);
+    // Now, try to get kerberos credentials in order to connect to LDAP.
+    /* We try 3 ways, in order:
+       1) Use principal from keytab. Try both:
+         a) samAccountName
+         b) host/full-hostname (for compat with older msktutil which didn't write the first).
+       2) Use principal samAccountName with default password (samAccountName_nodollar)
+       3) Calling user's existing credentials from their credential cache.
+    */
+
+    flags->auth_type = find_working_creds(flags);
+    if (flags->auth_type == AUTH_NONE) {
+        fprintf(stderr, "Error: could not find any credentials to authenticate with. Neither keytab,\n\
+     default machine password, nor calling user's tickets worked. Try\n\
+     \"kinit\"ing yourself some tickets with permission to create computer\n\
+     objects, or pre-creating the computer object in AD and selecting\n\
+     'reset account'.\n");
+        exit(1);
+    }
+    VERBOSE("Authenticated using method %d\n", flags->auth_type);
+
+    flags->ldap = ldap_connect(flags->server);
+    if (!flags->ldap.get()) {
+        fprintf(stderr, "Error: ldap_connect failed\n");
+        exit(-1);
+    }
+    if (ldap_get_base_dn(flags)) {
+        fprintf(stderr, "Error: get_ldap_base_dn failed\n");
+        exit(-1);
+    }
+    get_default_ou(flags);
 
     return 0;
 }
@@ -322,7 +314,7 @@ int execute(msktutil_exec *exec)
             return 0;
         }
 
-        if (exec->flush || exec->update || exec->principals.size() || flags->userPrincipalName.size()) {
+        if (exec->flush || exec->update || exec->principals.size()) {
             if (flags->hostname.empty()) {
                 fprintf(stderr, "Error: No hostname specified.\n");
                 fprintf(stderr, "       Please specify a hostname using '-h'.\n");
@@ -356,20 +348,23 @@ int execute(msktutil_exec *exec)
                  * the machine has before adding new ones. */
                 ret = update_keytab(flags);
                 if (ret) {
-                    VERBOSE("update_keytab failed, trying using user credentials");
-                    untry_machine_keytab();
-                    ret = update_keytab(flags);
-                    if (ret) {
-                        fprintf(stderr, "Error: update_keytab failed\n");
-                        return ret;
-                    }
+                    fprintf(stderr, "Error: update_keytab failed\n");
+                    return ret;
                 }
             }
 
             for (size_t i = 0; i < exec->principals.size(); ++i) {
-                fprintf(stdout, "Adding principal %s to the keytab %s\n", exec->principals[i].c_str(),
+                std::string principal = exec->principals[i];
+                int loc_ret = ldap_add_principal(principal, flags);
+                if (loc_ret) {
+                    fprintf(stderr, "Error: ldap_add_principal failed\n");
+                    ret = 1;
+                    continue;
+                }
+
+                fprintf(stdout, "Adding principal %s to the keytab %s\n", principal.c_str(),
                         flags->keytab_file.c_str());
-                ret |= add_principal(exec->principals[i], flags);
+                ret |= add_principal(principal, flags);
             }
             return ret;
         }
@@ -466,17 +461,6 @@ int main(int argc, char *argv [])
                 set_samAccountName(exec.get(), argv[i]);
             } else {
                 fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
-                goto error;
-            }
-            continue;
-        }
-
-        /* Use a certain user principal name */
-        if (!strcmp(argv[i], "--upn")) {
-            if (++i < argc) {
-                set_userPrincipalName(exec.get(), argv[i]);
-            } else {
-                fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
                 goto error;
             }
             continue;
@@ -658,14 +642,10 @@ msktutil_exec::msktutil_exec() :
     if (getenv("MSKTUTIL_SAM_NAME")) {
         set_samAccountName(this, getenv("MSKTUTIL_SAM_NAME"));
     }
-    if (getenv("MSKTUTIL_UPN")) {
-        set_userPrincipalName(this, getenv("MSKTUTIL_UPN"));
-    }
 }
 
 msktutil_exec::~msktutil_exec() {
     remove_fake_krb5_conf();
-    untry_machine_keytab();
 
     delete flags;
 }
