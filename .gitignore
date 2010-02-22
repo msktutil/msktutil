@@ -1,0 +1,9 @@
+*.o
+msktutil
+*~
+Makefile
+TAGS
+config.h
+config.status
+config.log
+autom4te.cache

@@ -2789,7 +2789,6 @@ fi
 if test "$tmpdir" != ""; then
   CPPFLAGS="$CPPFLAGS -DTMP_DIR=\\\"$tmpdir\\\""
 fi
-CXXFLAGS="-Wall -Wextra -Wno-write-strings"
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'

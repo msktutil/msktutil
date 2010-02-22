@@ -4,12 +4,21 @@
  * msktutil.h
  *
  * (C) 2004-2006 Dan Perry (dperry@pppl.gov)
+ * (C) 2010 James Y Knight (foom@fuhm.net)
  *
- *
- * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
- * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
- * TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
- * PARTICULAR PURPOSE.
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *-----------------------------------------------------------------------------
  */
@@ -26,7 +35,6 @@
 #include <unistd.h>
 #include <signal.h>
 #include <ctype.h>
-#include <malloc.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
@@ -51,6 +59,9 @@
 #include <sasl/sasl.h>
 #endif
 
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #ifndef PACKAGE_NAME
 #define PACKAGE_NAME "msktutil"
@@ -93,91 +104,137 @@
 #define ATTEMPT_SASL_NO_PARAMS_TLS      0x1
 #define ATTEMPT_SASL_NO_TLS             0x2
 
-typedef enum {
+enum msktutil_val {
     VALUE_OFF = 0,
     VALUE_ON = 1,
     VALUE_IGNORE = 2
-} msktutil_val;
+};
 
-typedef struct {
-    char *keytab_file;
-    char *ldap_ou;
-    char *hostname;
-    char *description;
-    char *server;
-    char *short_hostname;
-    char *realm_name;
-    char *lower_realm_name;
-    char *base_dn;
-    char *userPrincipalName;
-    char *samAccountName;
-    char *samAccountName_nodollar;
-    char password[PASSWORD_LEN + 1];
-    krb5_context context;
+extern int g_verbose;
+
+struct msktutil_flags {
+    std::string keytab_file;
+    std::string ldap_ou;
+    std::string hostname;
+    std::string description;
+    std::string server;
+    std::string short_hostname;
+    std::string realm_name;
+    std::string lower_realm_name;
+    std::string base_dn;
+    std::string userPrincipalName;
+    std::string samAccountName;
+    std::string samAccountName_nodollar;
+    std::string password;
     LDAP *ldap;
     msktutil_val des_bit;
     msktutil_val no_pac;
     msktutil_val delegate;
-    int verbose;
     unsigned int ad_userAccountControl; /* value AD has now */
     int ad_enctypes;    /* if msDs-supportedEncryptionTypes in AD */
     unsigned int ad_supportedEncryptionTypes; /* value AD has now */
     int enctypes;       /* if --enctypes parameter was set */
     unsigned int supportedEncryptionTypes;
-} msktutil_flags;
 
-typedef struct {
+    msktutil_flags();
+    ~msktutil_flags();
+};
+
+struct msktutil_exec {
     int show_help;
     int show_version;
     int update;
     int flush;
-    char **principals;
+    std::vector<std::string> principals;
     msktutil_flags *flags;
-} msktutil_exec;
+
+    msktutil_exec();
+    ~msktutil_exec();
+};
 
 
 /* Prototypes */
-extern void krb5_cleanup(msktutil_flags *);
 extern void ldap_cleanup(msktutil_flags *);
 extern void init_password(msktutil_flags *);
-extern char *get_default_hostname();
-extern int get_default_keytab(msktutil_flags *);
-extern int get_default_ou(msktutil_flags *);
-extern int get_krb5_context(msktutil_flags *);
+extern std::string get_default_hostname();
+extern void get_default_keytab(msktutil_flags *);
+extern void get_default_ou(msktutil_flags *);
 extern int ldap_connect(msktutil_flags *);
 extern int ldap_get_base_dn(msktutil_flags *);
-extern char *complete_hostname(char *);
-extern char *get_short_hostname(msktutil_flags *);
+extern std::string complete_hostname(const std::string &);
+extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
 extern int update_keytab(msktutil_flags *);
-extern int add_principal(char *, msktutil_flags *);
+extern int add_principal(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
 extern int set_password(msktutil_flags *);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
 extern int ldap_get_des_bit(msktutil_flags *);
 extern char *ldap_get_pwdLastSet(msktutil_flags *);
 extern char **ldap_list_principals(msktutil_flags *);
-extern int ldap_add_principal(char *, msktutil_flags *);
+extern int ldap_add_principal(const std::string &, msktutil_flags *);
 extern int get_dc(msktutil_flags *);
-extern char *get_user_principal(msktutil_flags *flags);
-extern char *get_host_os();
+extern std::string get_user_principal();
+extern std::string get_host_os();
 extern int ldap_check_account(msktutil_flags *);
-extern int create_fake_krb5_conf(msktutil_flags *);
+extern void create_fake_krb5_conf(msktutil_flags *);
 extern int remove_fake_krb5_conf();
 extern int try_machine_keytab(msktutil_flags *);
 extern int untry_machine_keytab();
 
 
 /* Verbose messages */
-#define VERBOSE(text...) if (flags->verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }
+#define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }
 
 
-#define VERBOSEldap(text...) if (flags->verbose > 1) { fprintf(stderr, " ###### %s: ", __FUNCTION__); fprintf(stderr, ## text); fprintf(stderr, "\n"); }
+#define VERBOSEldap(text...) if (g_verbose > 1) { fprintf(stderr, " ###### %s: ", __FUNCTION__); fprintf(stderr, ## text); fprintf(stderr, "\n"); }
 #endif
 
+// printf into a C++ string.
+std::string sform(const char* format, ...);
+
+class Exception : public std::exception
+{
+  protected:
+    std::string m_message;
+
+    // Prohibit assignment
+    Exception& operator=(const Exception&);
+
+  public:
+    // Constructors
+
+    // Default construction with no message uses "Exception"
+    Exception() : m_message("Exception") { }
+    explicit Exception(char const * simple_string) : m_message(simple_string) {}
+    explicit Exception(std::string str) : m_message(str) {}
+    Exception(const Exception& src) : m_message(src.m_message) {}
+
+    virtual ~Exception() throw() {};
+    char const * what() const throw() { return m_message.c_str(); }
+};
+
+class KRB5Exception : public Exception
+{
+  public:
+    explicit KRB5Exception(char const * func, krb5_error_code err) :
+        Exception(sform("Error: %s failed (%s)", func, error_message(err)))
+    {}
+};
+
+class LDAPException : public Exception
+{
+  public:
+    explicit LDAPException(char const * func, int err) :
+        Exception(sform("Error: %s failed (%s)", func, ldap_err2string(err)))
+    {}
+};
 
 #ifdef __GNUC__
 #define ATTRUNUSED __attribute__((unused))
 #else
-#define ATTRUNUSED 
+#define ATTRUNUSED
 #endif
+
+
+#include "krb5wrap.h"

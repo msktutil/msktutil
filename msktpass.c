@@ -4,6 +4,7 @@
  * msktpass.c
  *
  * (C) 2004-2006 Dan Perry (dperry@pppl.gov)
+ * (C) 2010 James Y Knight (foom@fuhm.net)
  *
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,10 +29,7 @@
 void init_password(msktutil_flags *flags)
 {
     VERBOSE("Wiping the computer password structure");
-    int i;
-    for (i = 0; i < PASSWORD_LEN + 1; i++) {
-        flags->password[i] = (char) 0;
-    }
+    std::fill(flags->password.begin(), flags->password.end(), '\0');
 }
 
 
@@ -46,6 +44,9 @@ int generate_new_password(msktutil_flags *flags)
     int fd;
     int chars_used = 0;
 
+
+    init_password(flags);
+    flags->password.resize(PASSWORD_LEN);
 
     fd = open("/dev/urandom",O_RDONLY);
     if (fd < 0) {
@@ -112,39 +113,39 @@ int try_set_password(msktutil_flags *flags, int time, int try_keytab)
     if (try_keytab) {   /* Try and use the keytab */
         VERBOSE("Try using keytab to change password\n");
 
-        ret = krb5_kt_resolve(flags->context, flags->keytab_file, &keytab);
+        ret = krb5_kt_resolve(g_context.get(), flags->keytab_file.c_str(), &keytab);
         if (ret) {
             VERBOSE("krb5_kt_resolve failed (%s)", error_message(ret));
             untry_machine_keytab();
             return try_set_password(flags, time, 0);
         }
-        ret = krb5_parse_name(flags->context, flags->userPrincipalName, &principal);
+        ret = krb5_parse_name(g_context.get(), flags->userPrincipalName.c_str(), &principal);
         if (ret) {
             VERBOSE("krb5_parse_name failed (%s)", error_message(ret));
-            krb5_kt_close(flags->context, keytab);
+            krb5_kt_close(g_context.get(), keytab);
             untry_machine_keytab();
             return try_set_password(flags, time, 0);
         }
-        ret = krb5_get_init_creds_keytab(flags->context, &creds, principal, keytab, 0, NULL, NULL);
-        krb5_free_principal(flags->context, principal);
-        krb5_kt_close(flags->context, keytab);
+        ret = krb5_get_init_creds_keytab(g_context.get(), &creds, principal, keytab, 0, NULL, NULL);
+        krb5_free_principal(g_context.get(), principal);
+        krb5_kt_close(g_context.get(), keytab);
         if (ret) {
             VERBOSE("krb5_get_init_creds_keytab failed (%s)", error_message(ret));
             untry_machine_keytab();
             return try_set_password(flags, time, 0);
         }
         old_pwdLastSet = ldap_get_pwdLastSet(flags);
-        ret = krb5_change_password(flags->context, &creds, flags->password, &response,
-                    &resp_code_string, &resp_string);
-        krb5_free_data_contents(flags->context, &resp_string);
-        krb5_free_cred_contents(flags->context, &creds);
+        ret = krb5_change_password(g_context.get(), &creds, const_cast<char*>(flags->password.c_str()),
+                                   &response, &resp_code_string, &resp_string);
+        krb5_free_data_contents(g_context.get(), &resp_string);
+        krb5_free_cred_contents(g_context.get(), &creds);
         if (response) {
             VERBOSE("krb5_change_password failed using keytab: (%d) %s", response, (char *) resp_code_string.data);
-            krb5_free_data_contents(flags->context, &resp_code_string);
+            krb5_free_data_contents(g_context.get(), &resp_code_string);
             untry_machine_keytab();
             return try_set_password(flags, time, 0);
         }
-        krb5_free_data_contents(flags->context, &resp_code_string);
+        krb5_free_data_contents(g_context.get(), &resp_code_string);
         if (ret) {
             fprintf(stderr, "Error: krb5_change_password failed (%s)\n", error_message(ret));
             untry_machine_keytab();
@@ -154,7 +155,7 @@ int try_set_password(msktutil_flags *flags, int time, int try_keytab)
     } else {        /* Use the default ticket cache */
 
         VERBOSE("Try change password using ticket cache\n");
-        ret = krb5_cc_default(flags->context, &ccache);
+        ret = krb5_cc_default(g_context.get(), &ccache);
         if (ret) {
             fprintf(stderr, "Error: krb5_cc_default failed (%s)\n", error_message(ret));
             fprintf(stderr, "Do you have a valid kerberos ticket?\n");
@@ -170,29 +171,30 @@ int try_set_password(msktutil_flags *flags, int time, int try_keytab)
      * W2003 did not do this, and the old code would fail with a
      * response = 3, Authentication error
      */
-        ret = krb5_parse_name(flags->context, flags->samAccountName_nodollar, &principal);
+        ret = krb5_parse_name(g_context.get(), flags->samAccountName_nodollar.c_str(), &principal);
 #else
-        ret = krb5_parse_name(flags->context, flags->userPrincipalName, &principal);
+        ret = krb5_parse_name(g_context.get(), flags->userPrincipalName.c_str(), &principal);
 #endif
         if (ret) {
             fprintf(stderr, "Error: krb5_parse_name failed (%s)\n", error_message(ret));
-            krb5_cc_close(flags->context, ccache);
+            krb5_cc_close(g_context.get(), ccache);
             return ret;
         }
 
         old_pwdLastSet = ldap_get_pwdLastSet(flags);
-        ret = krb5_set_password_using_ccache(flags->context, ccache, flags->password, principal,
-                    &response, &resp_code_string, &resp_string);
-        krb5_free_data_contents(flags->context, &resp_string);
-        krb5_cc_close(flags->context, ccache);
-        krb5_free_principal(flags->context, principal);
+        ret = krb5_set_password_using_ccache(g_context.get(), ccache,
+                                             const_cast<char*>(flags->password.c_str()),
+                                             principal, &response, &resp_code_string, &resp_string);
+        krb5_free_data_contents(g_context.get(), &resp_string);
+        krb5_cc_close(g_context.get(), ccache);
+        krb5_free_principal(g_context.get(), principal);
         if (!ret && response) {
             fprintf(stderr, "Error: Unable to set machine password for %s: (%d) %s\n",
-                flags->short_hostname, response, (char *) resp_code_string.data);
-            krb5_free_data_contents(flags->context, &resp_code_string);
+                    flags->short_hostname.c_str(), response, (char *) resp_code_string.data);
+            krb5_free_data_contents(g_context.get(), &resp_code_string);
             return response;
         }
-        krb5_free_data_contents(flags->context, &resp_code_string);
+        krb5_free_data_contents(g_context.get(), &resp_code_string);
         if (ret) {
             fprintf(stderr, "Error: krb5_set_password_using_ccache failed (%s)\n", error_message(ret));
             return ret;
@@ -203,7 +205,7 @@ int try_set_password(msktutil_flags *flags, int time, int try_keytab)
     for (i = time; ; i += 5) {
         current_pwdLastSet = ldap_get_pwdLastSet(flags);
         if (i >= 30 + time) {
-            fprintf(stdout, "Re-attempting password reset for %s\n", flags->hostname);
+            fprintf(stdout, "Re-attempting password reset for %s\n", flags->hostname.c_str());
             init_password(flags);
             if (current_pwdLastSet) { free(current_pwdLastSet); }
             if (old_pwdLastSet) { free(old_pwdLastSet); }

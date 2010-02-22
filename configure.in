@@ -64,7 +64,6 @@ fi
 if test "$tmpdir" != ""; then
   CPPFLAGS="$CPPFLAGS -DTMP_DIR=\\\"$tmpdir\\\""
 fi
-CXXFLAGS="-Wall -Wextra -Wno-write-strings"
 
 AC_CHECK_HEADERS([krb5.h com_err.h heim_err.h])
 if test "$ac_cv_header_krb5_h" = "no"; then

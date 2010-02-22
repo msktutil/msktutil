@@ -6,7 +6,7 @@ sbindir=$(prefix)/sbin
 mandir=@mandir@
 CXX=@CXX@
 CPPFLAGS=@CPPFLAGS@
-CXXFLAGS=@CXXFLAGS@
+CXXFLAGS=@CXXFLAGS@ $(WARNFLAGS)
 LDFLAGS=@LDFLAGS@
 LIBS=-lkrb5 -lldap
 INSTALL=@INSTALL@
@@ -16,9 +16,10 @@ SED=@SED@
 CAT=@CAT@
 ECHO=@ECHO@
 MKDIR=@MKDIR@
+WARNFLAGS=-Wall -Wextra -Wno-write-strings
 
 
-objects = msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o
+objects = krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o
 
 all: $(PROG)
 

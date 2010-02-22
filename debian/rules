@@ -46,7 +46,6 @@ binary-arch:	checkroot build
 	#install -m 755 debian/postinst debian/prerm debian/tmp/DEBIAN
 	$(MAKE) INSTALL_PROGRAM="$(INSTALL_PROGRAM)" \
 		prefix=$$(pwd)/debian/tmp/usr install
-	cd debian/tmp && mv usr/man usr/share
 	cp -a debian/copyright $(docdir)
 	install -d $(docdir)/examples
 	install -m 755 msktutil.interactive $(docdir)/examples
