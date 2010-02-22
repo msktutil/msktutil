@@ -52,7 +52,7 @@ class KRB5Keyblock : noncopyable{
 public:
     KRB5Keyblock() : m_keyblock() {}
 
-    void from_string(krb5_enctype enctype, std::string &password, std::string &salt);
+    void from_string(krb5_enctype enctype, const std::string &password, const std::string &salt);
 
     ~KRB5Keyblock() {
         krb5_free_keyblock_contents(g_context.get(), &m_keyblock);
@@ -187,5 +187,11 @@ public:
 
     KRB5Principal &principal() { return m_princ; }
     krb5_kvno kvno() { return m_entry.vno; }
-    krb5_enctype enctype() { return m_entry.key.enctype; }
+    krb5_enctype enctype() {
+#ifdef HEIMDAL
+        return static_cast<krb5_enctype>(m_entry.keyblock.keytype);
+#else
+        return m_entry.key.enctype;
+#endif
+    }
 };

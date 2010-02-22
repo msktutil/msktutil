@@ -213,7 +213,6 @@ void ldap_cleanup(msktutil_flags *flags)
 {
     VERBOSE("Disconnecting from LDAP server");
     flags->ldap.reset();
-    sasl_done();
 }
 
 
@@ -635,7 +634,13 @@ int ldap_check_account_strings(std::string dn, msktutil_flags *flags)
         VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
     }
 
-    ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, flags->des_bit, flags);
+    msktutil_val des_only;
+    if (flags->supportedEncryptionTypes == (MS_KERB_ENCTYPE_DES_CBC_CRC|MS_KERB_ENCTYPE_DES_CBC_MD5))
+        des_only = VALUE_ON;
+    else
+        des_only = VALUE_OFF;
+
+    ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, des_only, flags);
     ldap_set_userAccountControl_flag(dn, UF_NO_AUTH_DATA_REQUIRED, flags->no_pac, flags);
     ldap_set_userAccountControl_flag(dn, UF_TRUSTED_FOR_DELEGATION, flags->delegate, flags);
 
@@ -657,12 +662,10 @@ int ldap_check_account(msktutil_flags *flags)
     LDAPMod attrCN;
     LDAPMod attrUserAccountControl;
     LDAPMod attrSamAccountName;
-    LDAPMod attrsupportedEncryptionTypes;
     char *vals_objectClass[] = {"top", "person", "organizationalPerson", "user", "computer", NULL};
     char *vals_cn[] = {NULL, NULL};
     char *vals_useraccountcontrol[] = {NULL, NULL};
     char *vals_samaccountname[] = {NULL, NULL};
-    char *vals_supportedEncryptionTypes[] = {NULL, NULL};
     int attr_count = 0;
 
 
@@ -696,7 +699,7 @@ int ldap_check_account(msktutil_flags *flags)
                 flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
             }
             flags->ad_enctypes = VALUE_OFF; /* this is the assumed default */
-            VERBOSE("Defaulting supportedEncryptionTypes = %d\n",
+            VERBOSE("Found default supportedEncryptionTypes = %d\n",
                     flags->ad_supportedEncryptionTypes);
         }
         ldap_msgfree(mesg);
@@ -735,16 +738,12 @@ int ldap_check_account(msktutil_flags *flags)
         attrSamAccountName.mod_values = vals_samaccountname;
         vals_samaccountname[0] = const_cast<char*>(flags->samAccountName.c_str());
 
-        std::string supportedEncryptionTypes_string;
-        if (flags->enctypes != VALUE_IGNORE) {
-            mod_attrs[attr_count++] = &attrsupportedEncryptionTypes;
-            attrsupportedEncryptionTypes.mod_op = LDAP_MOD_ADD;
-            attrsupportedEncryptionTypes.mod_type = "msDs-supportedEncryptionTypes";
-            attrsupportedEncryptionTypes.mod_values = vals_supportedEncryptionTypes;
-            supportedEncryptionTypes_string = sform("%d", flags->supportedEncryptionTypes);
-            vals_supportedEncryptionTypes[0] = const_cast<char*>(supportedEncryptionTypes_string.c_str());
-        }
         mod_attrs[attr_count++] = NULL;
+
+        // Defaults, will attempt to reset later
+        flags->ad_supportedEncryptionTypes = MS_KERB_ENCTYPE_DES_CBC_CRC | MS_KERB_ENCTYPE_DES_CBC_MD5 |
+            MS_KERB_ENCTYPE_RC4_HMAC_MD5;
+        flags->ad_enctypes = VALUE_OFF;
 
         ret = ldap_add_ext_s(flags->ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
 
@@ -752,13 +751,6 @@ int ldap_check_account(msktutil_flags *flags)
             throw LDAPException("ldap_add_ext_s", ret);
 
         flags->ad_userAccountControl = userAcctFlags;
-        if (flags->enctypes != VALUE_IGNORE) { /* we wrote one above */
-            flags->ad_enctypes = VALUE_ON;
-            flags->ad_supportedEncryptionTypes = flags->supportedEncryptionTypes;
-        } else {
-            flags->ad_enctypes = VALUE_OFF; /* did not write one, so the default */
-            flags->ad_supportedEncryptionTypes = flags->supportedEncryptionTypes;
-        }
     }
 
     ret = ldap_check_account_strings(dn, flags);

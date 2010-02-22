@@ -24,6 +24,21 @@
  */
 #include "msktutil.h"
 
+#ifdef HEIMDAL
+krb5_error_code krb5_free_keytab_entry_contents(krb5_context context, krb5_keytab_entry *entry)
+{
+    if (entry) {
+        krb5_free_principal(context, entry->principal);
+        if (entry->keyblock.keyvalue.data) {
+            memset(entry->keyblock.keyvalue.data, 0, entry->keyblock.keyvalue.length);
+            free(entry->keyblock.keyvalue.data);
+        }
+        return 0;
+    }
+    return -1;
+}
+#endif
+
 KRB5Context::KRB5Context() {
     VERBOSE("Creating Kerberos Context");
     krb5_error_code ret = krb5_init_context(&m_context);
@@ -44,7 +59,23 @@ void KRB5Context::reload() {
         throw KRB5Exception("krb5_init_context", ret);
 }
 
-void KRB5Keyblock::from_string(krb5_enctype enctype, std::string &password, std::string &salt) {
+void KRB5Keyblock::from_string(krb5_enctype enctype, const std::string &password, const std::string &salt) {
+#ifdef HEIMDAL
+    krb5_data pass_data;
+    krb5_salt salt_data;
+
+    salt_data.salttype = KRB5_PW_SALT;
+    salt_data.saltvalue.data = const_cast<char *>(salt.c_str());
+    salt_data.saltvalue.length = salt.length();
+
+    pass_data.data = const_cast<char *>(password.c_str());
+    pass_data.length = password.length();
+
+    krb5_error_code ret = krb5_string_to_key_data_salt(g_context.get(), enctype,
+                                                       pass_data, salt_data, &m_keyblock);
+    if (ret)
+        throw KRB5Exception("krb5_string_to_key_data_salt", ret);
+#else
     krb5_data salt_data, pass_data;
     salt_data.data = const_cast<char *>(salt.c_str());
     salt_data.length = salt.length();
@@ -55,7 +86,8 @@ void KRB5Keyblock::from_string(krb5_enctype enctype, std::string &password, std:
     krb5_error_code ret = krb5_c_string_to_key(g_context.get(), enctype,
                                                &pass_data, &salt_data, &m_keyblock);
     if (ret)
-        throw KRB5Exception("krb5_string_to_key", ret);
+        throw KRB5Exception("krb5_c_string_to_key", ret);
+#endif
 }
 
 void KRB5CCache::initialize(KRB5Principal &principal) {
@@ -95,7 +127,11 @@ std::string KRB5Principal::name() {
 
     std::string result(principal_string);
 
+#ifdef HEIMDAL
+    krb5_xfree(principal_string);
+#else
     krb5_free_unparsed_name(g_context.get(), principal_string);
+#endif
 
     return result;
 }
@@ -105,7 +141,11 @@ void KRB5Keytab::addEntry(KRB5Principal &princ, krb5_kvno kvno, KRB5Keyblock &ke
 
     entry.principal = princ.get();
     entry.vno = kvno;
+#ifdef HEIMDAL
+    entry.keyblock = keyblock.get();
+#else
     entry.key = keyblock.get();
+#endif
     krb5_error_code ret = krb5_kt_add_entry(g_context.get(), m_keytab, &entry);
     if (ret)
         throw KRB5Exception("krb5_kt_add_entry", ret);
@@ -116,7 +156,11 @@ void KRB5Keytab::removeEntry(KRB5Principal &princ, krb5_kvno kvno, krb5_enctype 
 
     entry.principal = princ.get();
     entry.vno = kvno;
+#ifdef HEIMDAL
+    entry.keyblock.keytype = enctype;
+#else
     entry.key.enctype = enctype;
+#endif
 
     krb5_error_code ret = krb5_kt_remove_entry(g_context.get(), m_keytab, &entry);
     if (ret)

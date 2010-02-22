@@ -29,20 +29,33 @@
 std::string complete_hostname(const std::string &hostname)
 {
     // Ask the kerberos lib to canonicalize the hostname, and then pull it out of the principal.
-    krb5_principal temp_princ_raw;
+    krb5_principal temp_princ_raw = NULL;
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), hostname.c_str(), "host",
                                 KRB5_NT_SRV_HST, &temp_princ_raw);
     KRB5Principal temp_princ(temp_princ_raw);
 
-    if (ret != 0 || krb5_princ_size(g_context.get(), temp_princ.get()) != 2) {
+    if (ret != 0) {
         fprintf(stderr, "Warning: hostname canonicalization for %s failed (%s)\n",
                 hostname.c_str(), error_message(ret));
         return hostname;
     }
 
+#ifdef HEIMDAL
+    const char *comp = krb5_principal_get_comp_string(g_context.get(), temp_princ.get(), 1);
+#else
     krb5_data *comp = krb5_princ_component(g_context.get(), temp_princ.get(), 1);
+#endif
+    if (comp == NULL) {
+        std::string name(temp_princ.name());
+        fprintf(stderr, "Warning: hostname canonicalization for %s failed: returned unexpected principal %s\n", hostname.c_str(), name.c_str());
+        return hostname;
+    }
+#ifdef HEIMDAL
+    return std::string(comp);
+#else
     return std::string(comp->data, comp->length);
+#endif
 }
 
 
@@ -55,12 +68,22 @@ std::string get_default_hostname()
 
     KRB5Principal temp_princ(temp_princ_raw);
 
-    if (ret != 0 || krb5_princ_size(g_context.get(), temp_princ.get()) != 2) {
+    if (ret != 0)
         throw KRB5Exception("krb5_sname_to_principal (get_default_hostname)", ret);
-    }
 
+#ifdef HEIMDAL
+    const char *comp = krb5_principal_get_comp_string(g_context.get(), temp_princ.get(), 1);
+#else
     krb5_data *comp = krb5_princ_component(g_context.get(), temp_princ.get(), 1);
+#endif
+    if (comp == NULL)
+        throw Exception("Error: get_default_hostname: couldn't determine hostname, strange value from krb5_sname_to_principal.");
+
+#ifdef HEIMDAL
+    return std::string(comp);
+#else
     return std::string(comp->data, comp->length);
+#endif
 }
 
 

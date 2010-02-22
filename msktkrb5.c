@@ -26,31 +26,6 @@
 #include "msktutil.h"
 #include <cctype>
 #include <algorithm>
-#include <iostream>
-
-#ifdef HEIMDAL
-krb5_error_code krb5_free_unparsed_name(krb5_context context, void *buffer)
-{
-    if (buffer) {
-        free(buffer);
-    }
-    return 0;
-}
-
-
-krb5_error_code krb5_free_keytab_entry_contents(krb5_context context, krb5_keytab_entry *entry)
-{
-    if (entry) {
-        krb5_free_principal(context, entry->principal);
-        if (entry->keyblock.keyvalue.data) {
-            memset(entry->keyblock.keyvalue.data, 0, entry->keyblock.keyvalue.length);
-            free(entry->keyblock.keyvalue.data);
-        }
-        return 0;
-    }
-    return -1;
-}
-#endif
 
 
 std::string get_user_principal()
@@ -202,7 +177,7 @@ int add_principal(const std::string &principal, msktutil_flags *flags)
         keytab.removeEntry(princ, kvno, enctype);
     }
 
-    std::vector<krb5_enctype> enc_types;
+    std::vector<uint32_t> enc_types;
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_CRC)
         enc_types.push_back(ENCTYPE_DES_CBC_CRC);
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_MD5)
@@ -224,107 +199,39 @@ int add_principal(const std::string &principal, msktutil_flags *flags)
         return ret;
     }
 
-#ifndef HEIMDAL     /* MIT */
     std::string salt;
 
     for(size_t i = 0; i < enc_types.size(); ++i) {
         /*
          * Windows uses realm_name+"host"+samAccountName_nodollar+"."+lower_realm_name
-         * for DES and AES i.e. all except RC4.
+         * for the salt. (note: arcfour-hmac doesn't use salts at all; it's irrelevant what you set it to)
+         *
+         * Windows 2000 may have used something different, but who cares.
+         *
+         * FIXME: this is stupid, and unreliable. The salt is supposed to be an implementation
+         * detail that can be changed by the server anytime they feel like. Furthermore, if you
+         * rename an account, the salt doesn't change until next time you reset a password.
+         *
+         * We should be able to simply ask the KDC what salt to use for the account (the very first
+         * message the client sends when authenticating gets the salt as a response...).  However,
+         * at first glance, it looks like the kerberos client APIs don't provide any way to get to
+         * this functionality (??)
          */
-        bool self_allocated = false;
-        if (kvno != KVNO_WIN_2000 && enc_types[i] != ENCTYPE_ARCFOUR_HMAC) {
-            self_allocated = true;
-            std::string lower_accountname = flags->samAccountName_nodollar;
-            for(std::string::iterator it = lower_accountname.begin();
-                it != lower_accountname.end(); ++it)
-                *it = std::tolower(*it);
+        std::string lower_accountname = flags->samAccountName_nodollar;
+        for(std::string::iterator it = lower_accountname.begin();
+            it != lower_accountname.end(); ++it)
+            *it = std::tolower(*it);
 
-            salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(), flags->lower_realm_name.c_str());
-        } else {
-            krb5_data krb5salt;
-            ret = krb5_principal2salt(g_context.get(), princ.get(), &krb5salt);
-            if (ret)
-                throw KRB5Exception("krb5_principal2salt", ret);
-            salt = std::string(krb5salt.data, krb5salt.length);
-            krb5_free_data_contents(g_context.get(), &krb5salt);
-        }
+        salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(), flags->lower_realm_name.c_str());
 
         VERBOSE("    Using salt of %s", salt.c_str());
         KRB5Keyblock keyblock;
 
-        keyblock.from_string(enc_types[i], flags->password, salt);
+        keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]), flags->password, salt);
 
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
         keytab.addEntry(princ, kvno, keyblock);
     }
 
     return 0;
-#else /* HEIMDAL */
-    krb5_salt salt;
-#error reimplement HEIMDAL support
-
-    salt.saltvalue.data = NULL;
-    salt.saltvalue.length = 0;
-    for (i = 0; enc_types[i]; i++) {
-        /*
-         * Windows uses the realm_name+host+samAccountNumber_nodollar+.lower_realm_name
-         * For DES and AES i.e. all accept RC4.
-         */
-        if (kvno != KVNO_WIN_2000 && enc_types[i] != ENCTYPE_ARCFOUR_HMAC) {
-            salt.salttype = KRB5_PW_SALT;
-            salt.saltvalue.data = malloc((strlen(flags->realm_name) * 2) + strlen(flags->samAccountName_nodollar) + 6);
-            if (!salt.saltvalue.data) {
-                fprintf(stderr, "Error: malloc failed\n");
-                ret = ENOMEM;
-                goto error;
-            }
-
-            memset(salt.saltvalue.data, 0, (strlen(flags->realm_name) * 2) + strlen(flags->samAccountName_nodollar) + 6);
-            sprintf(salt.saltvalue.data, "%shost%s.%s", flags->realm_name, flags->samAccountName_nodollar, flags->lower_realm_name);
-            salt.saltvalue.length = strlen(salt.saltvalue.data);
-        } else {
-            ret = krb5_get_pw_salt(g_context.get(), princ, &salt);
-            if (ret) {
-                fprintf(stderr, "Error: krb5_get_pw_salt failed (%s)\n", error_message(ret));
-                goto error;
-            }
-        }
-
-        VERBOSE("    Using salt of %s", (char *) salt.saltvalue.data);
-        pass.data = flags->password.c_str();
-        pass.length = PASSWORD_LEN;
-        ret = krb5_string_to_key_data_salt(g_context.get(), enc_types[i], pass, salt, &key);
-        if (ret) {
-            fprintf(stderr, "Error: krb5_string_to_key_data_salt failed (%s)\n", error_message(ret));
-            krb5_free_data_contents(g_context.get(), &salt.saltvalue);
-            goto error;
-        }
-        entry.principal = princ;
-        entry.vno = kvno;
-        entry.keyblock = key;
-        ret = krb5_kt_add_entry(g_context.get(), keytab, &entry);
-        VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
-        krb5_free_data_contents(g_context.get(), &salt.saltvalue);
-        krb5_free_keyblock_contents(g_context.get(), &key);
-        if (ret) {
-            fprintf(stderr, "Error: krb5_kt_add_entry failed (%s)\n", error_message(ret));
-            goto error;
-        }
-        if (salt.saltvalue.data) {
-            free(salt.saltvalue.data);
-            salt.saltvalue.data = NULL;
-        }
-    }
-error:
-    if (salt.saltvalue.data)
-        free(salt.saltvalue.data);
-    free(enc_types);
-    memset(&key, 0, sizeof(krb5_keyblock));
-    krb5_free_principal(g_context.get(), princ);
-    krb5_kt_close(g_context.get(), keytab);
-
-    return ret;
-
-#endif
 }

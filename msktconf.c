@@ -65,7 +65,6 @@ int remove_fake_krb5_conf()
     std::string filename;
     int ret;
 
-
     ret = unsetenv("KRB5_CONFIG");
     if (org_config) {
         ret |= setenv("KRB5_CONFIG", org_config, 1);

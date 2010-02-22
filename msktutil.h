@@ -93,8 +93,19 @@
 #define MS_KERB_ENCTYPE_DES_CBC_CRC             0x01
 #define MS_KERB_ENCTYPE_DES_CBC_MD5             0x02
 #define MS_KERB_ENCTYPE_RC4_HMAC_MD5            0x04
+
+// Define these if the system supports them, otherwise define to 0.
+#ifdef ENCTYPE_AES128_CTS_HMAC_SHA1_96
 #define MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 0x08
+#else
+#define MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 0
+#endif
+
+#ifdef ENCTYPE_AES256_CTS_HMAC_SHA1_96
 #define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0x10
+#else
+#define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0
+#endif
 
 /* Some KVNO Constansts */
 #define KVNO_FAILURE                    -1
@@ -138,7 +149,6 @@ struct msktutil_flags {
     std::string samAccountName_nodollar;
     std::string password;
     std::auto_ptr<LDAPConnection> ldap;
-    msktutil_val des_bit;
     msktutil_val no_pac;
     msktutil_val delegate;
     unsigned int ad_userAccountControl; /* value AD has now */
