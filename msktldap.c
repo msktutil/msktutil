@@ -42,10 +42,10 @@ int get_default_ou(msktutil_flags *flags)
 }
 
 
-static int sasl_interact(LDAP *ld, unsigned flags, void *defaults, void *in)
+static int sasl_interact(ATTRUNUSED LDAP *ld, ATTRUNUSED unsigned flags, ATTRUNUSED void *defaults, void *in)
 {
     char *dflt = NULL;
-    sasl_interact_t *interact = in;
+    sasl_interact_t *interact = (sasl_interact_t *)in;
     while (interact->id != SASL_CB_LIST_END) {
         dflt = (char *) interact->defresult;
         interact->result = (dflt && *dflt) ? dflt : "";
@@ -115,7 +115,7 @@ int try_ldap_connect(msktutil_flags *flags, int try_tls)
 
     VERBOSE("Connecting to LDAP server: %s try_tls=%s", flags->server,
             (try_tls == ATTEMPT_SASL_NO_TLS)?"NO":"YES");
-    ldap_url = malloc(strlen(flags->server) + 8);
+    ldap_url = (char *)malloc(strlen(flags->server) + 8);
     if (!ldap_url) {
         fprintf(stderr, "Error: malloc failed\n");
         return ENOMEM;
@@ -238,7 +238,7 @@ int ldap_flush_principals(msktutil_flags *flags)
 
 
     VERBOSE("Flushing principals from LDAP entry");
-    filter = malloc(strlen(flags->samAccountName) + 43);
+    filter = (char *)malloc(strlen(flags->samAccountName) + 43);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         return ENOMEM;
@@ -308,7 +308,7 @@ char **ldap_list_principals(msktutil_flags *flags)
 
 
     VERBOSE("Listing principals for LDAP entry");
-    filter = malloc(strlen(flags->samAccountName) + 43);
+    filter = (char *)malloc(strlen(flags->samAccountName) + 43);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         return NULL;
@@ -429,7 +429,7 @@ krb5_kvno ldap_get_kvno(msktutil_flags *flags)
     int ret;
 
 
-    filter = malloc(strlen(flags->samAccountName) + 43);
+    filter = (char *)malloc(strlen(flags->samAccountName) + 43);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         return kvno;
@@ -474,7 +474,7 @@ int ldap_get_des_bit(msktutil_flags *flags)
     int ret;
 
 
-    filter = malloc(strlen(flags->samAccountName) + 43);
+    filter = (char *)malloc(strlen(flags->samAccountName) + 43);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         return des_bit;
@@ -514,7 +514,7 @@ char *ldap_get_pwdLastSet(msktutil_flags *flags)
     int ret;
 
 
-    filter = malloc(strlen(flags->samAccountName) + 43);
+    filter = (char *)malloc(strlen(flags->samAccountName) + 43);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         return pwdLastSet;
@@ -703,7 +703,7 @@ int ldap_add_principal(char *principal, msktutil_flags *flags)
     int ret;
 
 
-    filter = malloc(strlen(flags->samAccountName) + 43);
+    filter = (char *)malloc(strlen(flags->samAccountName) + 43);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         return ENOMEM;
@@ -822,7 +822,7 @@ char *get_user_dn(msktutil_flags *flags)
         VERBOSE("get_user_principal failed");
         return NULL;
     }
-    filter = malloc(strlen(user) + 42);
+    filter = (char *)malloc(strlen(user) + 42);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         free(user);
@@ -967,7 +967,7 @@ int ldap_check_account(msktutil_flags *flags)
 
 
     VERBOSE("Checking that a computer account for %s exists", flags->samAccountName);
-    filter = malloc(strlen(flags->samAccountName) + 43);
+    filter = (char *)malloc(strlen(flags->samAccountName) + 43);
     if (!filter) {
         fprintf(stderr, "Error: malloc failed\n");
         return ENOMEM;

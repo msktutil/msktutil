@@ -25,7 +25,7 @@
 #include "msktutil.h"
 
 
-void catch_int(int sig)
+void catch_int(int)
 {
     remove_fake_krb5_conf();
     untry_machine_keytab();
@@ -111,7 +111,7 @@ void cleanup_exec(msktutil_exec *exec)
 void add_spn(msktutil_exec *exec, char *principal)
 {
     int count = 0;
-    char **new;
+    char **new_princ;
 
 
     if (exec) {
@@ -121,32 +121,32 @@ void add_spn(msktutil_exec *exec, char *principal)
             }
         }
         count += 2;
-        new = (char **) malloc(sizeof(char *) * count);
-        if (!new) {
+        new_princ = (char **) malloc(sizeof(char *) * count);
+        if (!new_princ) {
             fprintf(stderr, "Error: Out of memory\n");
             cleanup_exec(exec);
             exit(ENOMEM);
         }
-        memset(new, 0, count  * sizeof(char *));
+        memset(new_princ, 0, count  * sizeof(char *));
         count = 0;
         if (exec->principals) {
             while (exec->principals[count]) {
-                new[count] = exec->principals[count];
+                new_princ[count] = exec->principals[count];
                 count++;
             }
         }
-        new[count] = malloc(strlen(principal) + 1);
-        if (!new[count]) {
+        new_princ[count] = (char*)malloc(strlen(principal) + 1);
+        if (!new_princ[count]) {
             fprintf(stderr, "Error: Out of memory\n");
             cleanup_exec(exec);
             exit(ENOMEM);
         }
-        memset(new[count], 0, strlen(principal) + 1);
-        strcpy(new[count], principal);
+        memset(new_princ[count], 0, strlen(principal) + 1);
+        strcpy(new_princ[count], principal);
         if (exec->principals) {
             free(exec->principals);
         }
-        exec->principals = new;
+        exec->principals = new_princ;
     }
 }
 
@@ -546,7 +546,7 @@ int finalize_exec(msktutil_exec *exec)
             memset(flags->userPrincipalName, 0, strlen(flags->hostname) + strlen(flags->realm_name) + 7);
             sprintf(flags->userPrincipalName, "host/%s@%s", flags->hostname, flags->realm_name);
         } else {
-            temp_upn = malloc(strlen(flags->userPrincipalName) + strlen(flags->realm_name) + 2);
+            temp_upn = (char*)malloc(strlen(flags->userPrincipalName) + strlen(flags->realm_name) + 2);
             if (!temp_upn) {
                 fprintf(stderr, "Error: malloc failed\n");
                 cleanup_exec(exec);

@@ -398,7 +398,7 @@ int add_principal(char *principal, msktutil_flags *flags)
         }
     }
 
-    enc_types = malloc(33 * sizeof(krb5_enctype));
+    enc_types = (krb5_enctype*)malloc(33 * sizeof(krb5_enctype));
     if (!enc_types) {
         fprintf(stderr, "Error: malloc failed\n");
         krb5_free_principal(flags->context, princ);
@@ -447,7 +447,7 @@ int add_principal(char *principal, msktutil_flags *flags)
          * For DES and AES i.e. all accept RC4.
          */
         if (kvno != KVNO_WIN_2000 && enc_types[i] != ENCTYPE_ARCFOUR_HMAC) {
-            salt.data = malloc((strlen(flags->realm_name) * 2) + strlen(flags->samAccountName_nodollar) + 6);
+            salt.data = (char*)malloc((strlen(flags->realm_name) * 2) + strlen(flags->samAccountName_nodollar) + 6);
             if (!salt.data) {
                 fprintf(stderr, "Error: malloc failed\n");
                 ret = ENOMEM;

@@ -1,16 +1,10 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
+/* Does com_err.h need extern "C" around it? */
+#undef COM_ERR_NEEDS_EXTERN_C
+
 /* Define to 1 if you have the <com_err.h> header file. */
 #undef HAVE_COM_ERR_H
-
-/* Define to 1 if you have the `gethostbyaddr' function. */
-#undef HAVE_GETHOSTBYADDR
-
-/* Define to 1 if you have the `gethostbyname' function. */
-#undef HAVE_GETHOSTBYNAME
-
-/* Define to 1 if you have the `gethostname' function. */
-#undef HAVE_GETHOSTNAME
 
 /* Define to 1 if you have the <heimdal/heim_err.h> header file. */
 #undef HAVE_HEIMDAL_HEIM_ERR_H
@@ -24,30 +18,14 @@
 /* Define to 1 if you have the <krb5.h> header file. */
 #undef HAVE_KRB5_H
 
-/* Define to 1 if you have the <ldap.h> header file. */
-#undef HAVE_LDAP_H
-
 /* Define to 1 if you have the `krb5' library (-lkrb5). */
 #undef HAVE_LIBKRB5
 
 /* Define to 1 if you have the `ldap' library (-lldap). */
 #undef HAVE_LIBLDAP
 
-/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
-   to 0 otherwise. */
-#undef HAVE_MALLOC
-
-/* Define to 1 if you have the <malloc.h> header file. */
-#undef HAVE_MALLOC_H
-
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Define to 1 if you have the `memset' function. */
-#undef HAVE_MEMSET
-
-/* Define to 1 if you have the <netdb.h> header file. */
-#undef HAVE_NETDB_H
 
 /* Define to 1 if you have the <sasl.h> header file. */
 #undef HAVE_SASL_H
@@ -58,23 +36,11 @@
 /* Define to 1 if you have the `setenv' function. */
 #undef HAVE_SETENV
 
-/* Define to 1 if you have the `signal' function. */
-#undef HAVE_SIGNAL
-
-/* Define to 1 if you have the <signal.h> header file. */
-#undef HAVE_SIGNAL_H
-
-/* Define to 1 if you have the `socket' function. */
-#undef HAVE_SOCKET
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
-
-/* Define to 1 if you have the `strdup' function. */
-#undef HAVE_STRDUP
 
 /* Define to 1 if you have the <strings.h> header file. */
 #undef HAVE_STRINGS_H
@@ -82,17 +48,11 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
-/* Define to 1 if you have the <sys/socket.h> header file. */
-#undef HAVE_SYS_SOCKET_H
-
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
-
-/* Define to 1 if you have the <sys/utsname.h> header file. */
-#undef HAVE_SYS_UTSNAME_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
@@ -120,9 +80,3 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Define to empty if `const' does not conform to ANSI C. */
-#undef const
-
-/* Define to rpl_malloc if the replacement function should be used. */
-#undef malloc

@@ -32,7 +32,7 @@ static char *org_ccname = NULL;
 
 #ifndef HAVE_SETENV
 
-int setenv(const char *var, const char *val, int overwrite)
+int setenv(const char *var, const char *val, ATTRUNUSED int overwrite)
 {
     char *env;
     int ret;

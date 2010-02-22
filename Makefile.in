@@ -4,9 +4,9 @@ VPATH=@srcdir@
 prefix=@prefix@
 sbindir=$(prefix)/sbin
 mandir=@mandir@
-CC=@CC@
+CXX=@CXX@
 CPPFLAGS=@CPPFLAGS@
-CFLAGS=@CFLAGS@ 
+CXXFLAGS=@CXXFLAGS@
 LDFLAGS=@LDFLAGS@
 LIBS=-lkrb5 -lldap
 INSTALL=@INSTALL@
@@ -24,13 +24,13 @@ all: $(PROG)
 
 $(PROG) : $(objects)
 	@$(ECHO) "Assembling $(PROG)"
-	@$(CC) $(LDFLAGS) $(LIBS) $(objects) -o $(PROG)
- 
-%.o : %.c msktutil.h
-	@$(ECHO) "Compiling $<"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	@$(CXX) $(LDFLAGS) $(LIBS) $(objects) -o $(PROG)
 
- 
+%.o : %.c msktutil.h config.h
+	@$(ECHO) "Compiling $<"
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+
 clean :
 	@$(RM) $(PROG) $(objects)
 distclean: clean

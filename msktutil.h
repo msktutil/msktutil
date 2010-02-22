@@ -20,50 +20,6 @@
 
 #include "config.h"
 
-/* Check that the required functions are found by autoconf */
-#ifndef HAVE_GETHOSTBYADDR
-#error "gethostbyaddr() is required to build and run this program."
-#endif
-#ifndef HAVE_GETHOSTBYNAME
-#error "gethostbyname() is required to build and run this program."
-#endif
-#ifndef HAVE_GETHOSTNAME
-#error "gethostname() is required to build and run this program."
-#endif
-#ifndef HAVE_KRB5_H
-#error "Kerberos 5 headers are required to build this program."
-#endif
-#ifndef HAVE_LDAP_H
-#error "LDAP headers are required to build this program."
-#endif
-#ifndef HAVE_SASL_H
-#ifndef HAVE_SASL_SASL_H
-#error "SASL headers are required to build this program."
-#endif
-#endif
-#ifndef HAVE_NETDB_H
-#error "The NETDB header is required to build this program."
-#endif
-#ifndef HAVE_SYS_SOCKET_H
-#error "The sys/socket header is required to build this program."
-#endif
-#ifndef HAVE_SYS_UTSNAME_H
-#error "The sys/utsname header is required to build this program."
-#endif
-#ifndef HAVE_STRING_H
-#error "The string header is required to build this program."
-#endif
-#ifndef HAVE_SIGNAL_H
-#error "The signal header is required to build this program."
-#endif
-#ifndef HAVE_LIBKRB5
-#error "A working Kerberos 5 library is required to build and run this program."
-#endif
-#ifndef HAVE_LIBLDAP
-#error "A working LDAP library is required to build and run this program."
-#endif
-
-
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
@@ -78,10 +34,17 @@
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <ldap.h>
-#include <krb5.h>
+
 #ifdef HAVE_COM_ERR_H
+# ifdef COM_ERR_NEEDS_EXTERN_C
+  extern "C" {
+# endif
 #include <com_err.h>
+# ifdef COM_ERR_NEEDS_EXTERN_C
+ }
+# endif
 #endif
+#include <krb5.h>
 #ifdef HAVE_SASL_H
 #include <sasl.h>
 #else
@@ -130,6 +93,12 @@
 #define ATTEMPT_SASL_NO_PARAMS_TLS      0x1
 #define ATTEMPT_SASL_NO_TLS             0x2
 
+typedef enum {
+    VALUE_OFF = 0,
+    VALUE_ON = 1,
+    VALUE_IGNORE = 2
+} msktutil_val;
+
 typedef struct {
     char *keytab_file;
     char *ldap_ou;
@@ -146,9 +115,9 @@ typedef struct {
     char password[PASSWORD_LEN + 1];
     krb5_context context;
     LDAP *ldap;
-    int des_bit;
-    int no_pac;
-    int delegate;
+    msktutil_val des_bit;
+    msktutil_val no_pac;
+    msktutil_val delegate;
     int verbose;
     unsigned int ad_userAccountControl; /* value AD has now */
     int ad_enctypes;    /* if msDs-supportedEncryptionTypes in AD */
@@ -165,12 +134,6 @@ typedef struct {
     char **principals;
     msktutil_flags *flags;
 } msktutil_exec;
-
-typedef enum {
-    VALUE_OFF = 0,
-    VALUE_ON = 1,
-    VALUE_IGNORE = 2
-} msktutil_val;
 
 
 /* Prototypes */
@@ -210,4 +173,11 @@ extern int untry_machine_keytab();
 
 
 #define VERBOSEldap(text...) if (flags->verbose > 1) { fprintf(stderr, " ###### %s: ", __FUNCTION__); fprintf(stderr, ## text); fprintf(stderr, "\n"); }
+#endif
+
+
+#ifdef __GNUC__
+#define ATTRUNUSED __attribute__((unused))
+#else
+#define ATTRUNUSED 
 #endif
