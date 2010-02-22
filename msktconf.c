@@ -32,52 +32,6 @@
 static char *org_config = NULL;
 static char *org_ccname = NULL;
 
-
-#ifndef HAVE_SETENV
-
-int setenv(const char *var, const char *val, ATTRUNUSED int overwrite)
-{
-    char *env;
-    int ret;
-
-
-    env = (char *) malloc(strlen(var) + strlen(val) + 2);
-    if (!env) {
-        fprintf(stderr, "Error: malloc failed\n");
-        return ENOMEM;
-    }
-    memset(env, 0, strlen(var) + strlen(val) + 2);
-    sprintf(env, "%s=%s", var, val);
-    ret = putenv(env);
-
-    return ret;
-}
-
-
-#endif
-#ifndef HAVE_UNSETENV
-
-int unsetenv(const char *var)
-{
-    char *env;
-    int ret;
-
-
-    env = (char *) malloc(strlen(var) + 2);
-    if (!env) {
-        fprintf(stderr, "Error: malloc failed\n");
-        return ENOMEM;
-    }
-    memset(env, 0, strlen(var) + 2);
-    sprintf(env, "%s=", var);
-    ret = putenv(env);
-
-    return ret;
-}
-
-#endif
-
-
 void create_fake_krb5_conf(msktutil_flags *flags)
 {
     std::string filename = sform("%s/.mskt-%dkrb5.conf", TMP_DIR, getpid());;

@@ -21,8 +21,6 @@ AC_PATH_PROGS(ECHO, echo)
 AC_PATH_PROGS(SED, sed)
 AC_PATH_PROGS(MKDIR, mkdir)
 
-AC_CHECK_FUNCS([setenv unsetenv])
-
 AC_ARG_WITH(mandir,
 [  --with-mandir=DIR       Where to put man pages ($mandir)],
 [ mandir="$withval" ])
