@@ -135,13 +135,19 @@ enum msktutil_val {
 
 extern int g_verbose;
 
+enum msktutil_mode {
+    MODE_NONE = 0,
+    MODE_UPDATE,
+    MODE_FLUSH,
+    MODE_PRECREATE
+};
+
 struct msktutil_flags {
     std::string keytab_file;
     std::string ldap_ou;
     std::string hostname;
     std::string description;
     std::string server;
-    std::string short_hostname;
     std::string realm_name;
     std::string lower_realm_name;
     std::string base_dn;
@@ -158,16 +164,13 @@ struct msktutil_flags {
     unsigned int supportedEncryptionTypes;
 
     int auth_type;
-
+    bool user_creds_only;
     msktutil_flags();
     ~msktutil_flags();
 };
 
 struct msktutil_exec {
-    int show_help;
-    int show_version;
-    int update;
-    int flush;
+    msktutil_mode mode;
     std::vector<std::string> principals;
     msktutil_flags *flags;
 
@@ -183,25 +186,26 @@ extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
 extern std::auto_ptr<LDAPConnection> ldap_connect(std::string server,
                                                   int try_tls=ATTEMPT_SASL_PARAMS_TLS);
-extern int ldap_get_base_dn(msktutil_flags *);
+extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string complete_hostname(const std::string &);
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
-extern int update_keytab(msktutil_flags *);
-extern int add_principal(const std::string &, msktutil_flags *);
+extern void update_keytab(msktutil_flags *);
+extern void add_principal_keytab(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
-extern int set_password(msktutil_flags *);
+extern int set_password(msktutil_flags *, int time = 0);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
 extern std::string ldap_get_pwdLastSet(msktutil_flags *);
 extern std::vector<std::string> ldap_list_principals(msktutil_flags *);
 extern int ldap_add_principal(const std::string &, msktutil_flags *);
-extern int get_dc(msktutil_flags *);
+extern std::string get_dc_host(const std::string &realm_name);
 extern std::string get_user_principal();
 extern std::string get_host_os();
 extern int ldap_check_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);
 extern int remove_fake_krb5_conf();
 int find_working_creds(msktutil_flags *flags);
+int generate_new_password(msktutil_flags *flags);
 
 /* Verbose messages */
 #define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }

@@ -142,18 +142,20 @@ bool try_user_creds() {
 
 
 int find_working_creds(msktutil_flags *flags) {
-    std::string host_princ = "host/" + flags->hostname;
+    if (!flags->user_creds_only) {
+        std::string host_princ = "host/" + flags->hostname;
 
-    if (try_machine_keytab_princ(flags, flags->samAccountName))
-        return AUTH_FROM_SAM_KEYTAB;
-    else if (try_machine_keytab_princ(flags, host_princ))
-        return AUTH_FROM_HOSTNAME_KEYTAB;
-    else if (try_machine_password(flags))
-        return AUTH_FROM_PASSWORD;
-    else if (try_user_creds())
+        if (try_machine_keytab_princ(flags, flags->samAccountName))
+            return AUTH_FROM_SAM_KEYTAB;
+        if (try_machine_keytab_princ(flags, host_princ))
+            return AUTH_FROM_HOSTNAME_KEYTAB;
+        if (try_machine_password(flags))
+            return AUTH_FROM_PASSWORD;
+    }
+    if (try_user_creds())
         return AUTH_FROM_USER_CREDS;
-    else
-        return AUTH_NONE;
+
+    return AUTH_NONE;
 }
 
 

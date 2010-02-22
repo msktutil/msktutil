@@ -74,14 +74,6 @@ void do_verbose()
 
 
 
-void create_default(msktutil_exec *exec)
-{
-    exec->update = 1;
-    exec->principals.push_back("host");
-}
-
-
-
 int finalize_exec(msktutil_exec *exec)
 {
     msktutil_flags *flags = exec->flags;
@@ -91,7 +83,7 @@ int finalize_exec(msktutil_exec *exec)
     char *temp_realm;
     if (krb5_get_default_realm(g_context.get(), &temp_realm)) {
         fprintf(stderr, "Error: krb5_get_default_realm failed\n");
-        exit(-1);
+        exit(1);
     }
     flags->realm_name = std::string(temp_realm);
 #ifdef HEIMDAL
@@ -105,41 +97,54 @@ int finalize_exec(msktutil_exec *exec)
         it != flags->lower_realm_name.end(); ++it)
         *it = std::tolower(*it);
 
-    if (get_dc(flags)) {
-        fprintf(stderr, "Error: get_dc failed\n");
-        exit(-1);
+    if (flags->server.empty()) {
+        flags->server = get_dc_host(flags->realm_name);
+        if (flags->server.empty()) {
+            fprintf(stderr, "Error: get_dc_host failed\n");
+            exit(1);
+        }
     }
     get_default_keytab(flags);
 
     signal(SIGINT, catch_int);
     create_fake_krb5_conf(flags);
 
-    /* Canonicalize the hostname if need be */
-    if (exec->flags->hostname.empty())
+    if (exec->mode == MODE_PRECREATE && exec->flags->hostname.empty()) {
+        /* Don't set a default hostname if none provided in precreate mode. */
+        if (exec->flags->samAccountName.empty()) {
+            fprintf(stderr, "You must supply either --computer-name or --hostname when using --precreate.\n");
+            exit(1);
+        }
+    } else if (exec->flags->hostname.empty())
+        /* Canonicalize the hostname if need be */
         exec->flags->hostname = get_default_hostname();
     else
         exec->flags->hostname = complete_hostname(flags->hostname);
 
-    flags->short_hostname = get_short_hostname(flags);
-
     /* Determine the samAccountName, if not set */
     if (flags->samAccountName.empty()) {
-        set_samAccountName(exec, flags->short_hostname);
+        set_samAccountName(exec, get_short_hostname(flags));
     }
+
     /* The samAccountName will cause win 9x, NT problems if longer than MAX_SAM_ACCOUNT_LEN characters */
     if (flags->samAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
         fprintf(stderr, "Error: The SAM name (%s) for this host is longer than the maximum of MAX_SAM_ACCOUNT_LEN characters\n",
                 flags->samAccountName.c_str());
         fprintf(stderr, "You can specify a shorter name using --computer-name\n");
-        exit(-1);
+        exit(1);
     }
     VERBOSE("SAM Account Name is: %s", flags->samAccountName.c_str());
 
     /* Qualify all remaining entries in the principals list */
     for(size_t i = 0; i < exec->principals.size(); ++i) {
         // If no hostname part, add it:
-        if (exec->principals[i].find('/') == std::string::npos)
+        if (exec->principals[i].find('/') == std::string::npos) {
+            if (flags->hostname.empty()) {
+                fprintf(stderr, "Error: default hostname unspecified, and --service argument missing hostname.");
+                exit(1);
+            }
             exec->principals[i].append("/").append(flags->hostname);
+        }
     }
 
     // Now, try to get kerberos credentials in order to connect to LDAP.
@@ -165,99 +170,107 @@ int finalize_exec(msktutil_exec *exec)
     flags->ldap = ldap_connect(flags->server);
     if (!flags->ldap.get()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
-        exit(-1);
+        exit(1);
     }
-    if (ldap_get_base_dn(flags)) {
-        fprintf(stderr, "Error: get_ldap_base_dn failed\n");
-        exit(-1);
-    }
+    ldap_get_base_dn(flags);
     get_default_ou(flags);
 
     return 0;
 }
 
+void do_help() {
+    fprintf(stdout, "Usage: %s [OPTIONS]\n", PACKAGE_NAME);
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Mode options: \n");
+    fprintf(stdout, "  --help                   Displays this message\n");
+    fprintf(stdout, "  -v, --version            Display the current version\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  -c, --create   Creates a keytab for the current host.\n");
+    fprintf(stdout, "                 (same as -u -s host).\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  -f, --flush    Flushes all principals for the current host from the keytab,\n");
+    fprintf(stdout, "                 and deletes servicePrincipalName from AD.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  -u, --update   Updates the keytab for the current host. This changes the host\n");
+    fprintf(stdout, "                 account's password and updates the keytab with entries for all\n");
+    fprintf(stdout, "                 principals in servicePrincipalName and userPrincipalName.\n");
+    fprintf(stdout, "                 It also updates LDAP attributes for supportedEncryptionTypes,\n");
+    fprintf(stdout, "                 dNSDomainName, and applies other options you specify.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  --precreate    Pre-create an account for the given host with default password\n");
+    fprintf(stdout, "                 but do not update local keytab.\n");
+    fprintf(stdout, "                 Requires -h or --computer-name argument.\n");
+    fprintf(stdout, "                 Implies --user-creds-only.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Options: \n");
+    fprintf(stdout, "  -b, --base <base ou>   Sets the LDAP base OU to use when creating an account.\n");
+    fprintf(stdout, "                         The default is read from AD (often CN=computers)\n");
+    fprintf(stdout, "  --computer-name <name> Sets the computer account name to <name>\n");
+    fprintf(stdout, "  --delegation           Set the computer account to be trusted for delegation\n");
+    fprintf(stdout, "  --description <text>   Sets the description field on the computer account\n");
+    fprintf(stdout, "  --disable-delegation   Set the computer account to not be trusted for\n");
+    fprintf(stdout, "                         delegation.\n");
+    fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC\n");
+    fprintf(stdout, "  --enctypes <int>       Sets msDs-supportedEncryptionTypes\n");
+    fprintf(stdout, "                         (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5\n");
+    fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-ctc-hmac-sha1\n");
+    fprintf(stdout, "                                 0x10=aes256-cts-hmac-sha1)\n");
+    fprintf(stdout, "                         Sets des-only in userAccountControl if set to 0x3.\n");
+    fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
+    fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write)\n");
+    fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC\n");
+    fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host.\n");
+    fprintf(stdout, "                         The service is of the form <service>/<hostname>.\n");
+    fprintf(stdout, "                         If the hostname is omitted, assumes current hostname.\n");
+    fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
+    fprintf(stdout, "                         up in DNS based upon realm.\n");
+    fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>\n");
+    fprintf(stdout, "                         The realm name will be appended to this principal\n");
+    fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
+    fprintf(stdout, "                         only use user's credentials (from e.g. kinit)\n");
+    fprintf(stdout, "  --verbose              Enable verbose messages\n");
+    fprintf(stdout, "                         More then once to get LDAP debugging\n");
+}
+
+void do_version() {
+    fprintf(stdout, "%s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+}
 
 int execute(msktutil_exec *exec)
 {
     int ret = 0;
     msktutil_flags *flags = exec->flags;
 
-    if (exec->show_help) {
-
-        fprintf(stdout, "Usage: %s [OPTIONS]\n", PACKAGE_NAME);
-        fprintf(stdout, "\n");
-        fprintf(stdout, "Options: \n");
-        fprintf(stdout, "  -b, --base <base ou>     Sets the LDAP base OU to use when creating an account.\n");
-        fprintf(stdout, "                           The default is read from AD (often CN=computers)\n");
-        fprintf(stdout, "  -c, --create             Creates a default keytab for the local host\n");
-        fprintf(stdout, "                           A default keytab contains a HOST principal\n");
-        fprintf(stdout, "  --computer-name <name>   Sets the computer account name to <name>\n");
-        fprintf(stdout, "  --delegation             Set the computer account to be trusted for delegation\n");
-        fprintf(stdout, "  --description <text>     Sets the description field on the computer account\n");
-        fprintf(stdout, "  --disable-delegation     Set the computer account to not be trusted for delegation\n");
-        fprintf(stdout, "  --disable-no-pac         Sets the service principal to include a PAC\n");
-        fprintf(stdout, "  --enctypes <int>         Sets msDs-supportedEncryptionTypes\n");
-        fprintf(stdout, "                           (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5 0x4=rc4-hmac-md5\n");
-        fprintf(stdout, "                                   0x8=aes128-ctc-hmac-sha1 0x10=aes256-cts-hmac-sha1)\n");
-        fprintf(stdout, "                           Also sets des-bit in userAccountControl if set to 0x3.\n");
-        fprintf(stdout, "  -f, --flush              Flushes all principals for the current host\n");
-        fprintf(stdout, "  -h, --hostname <name>    Sets the current hostname to <name>\n");
-        fprintf(stdout, "  --help                   Displays this message\n");
-        fprintf(stdout, "  -k, --keytab <file>      Use <file> for the keytab\n");
-        fprintf(stdout, "  --no-pac                 Sets the service principal to not include a PAC\n");
-        fprintf(stdout, "  -s, --service <service>  Adds the service <service> for the current host\n");
-        fprintf(stdout, "                           The service is of the form <service>/<hostname>\n");
-        fprintf(stdout, "                           If the hostname is omitted, the hostname given to '-h' is used\n");
-        fprintf(stdout, "  --server <name>          Attempt to use a specific domain controller\n");
-        fprintf(stdout, "  -u, --update             Updates all principals for the current host\n");
-        fprintf(stdout, "                           This changes the host's secret and updates the keytab for all entries\n");
-        fprintf(stdout, "  --upn <principal>        Set the user principal name to be <principal>\n");
-        fprintf(stdout, "                           The realm name will be appended to this principal\n");
-        fprintf(stdout, "  -v, --version            Display the current version\n");
-        fprintf(stdout, "  --verbose                Enable verbose messages\n");
-        fprintf(stdout, "                           More then once to get LDAP debugging\n");
-
-        return 0;
+    ret = finalize_exec(exec);
+    if (ret) {
+        fprintf(stderr, "Error: finalize_exec failed\n");
+        exit(ret);
     }
 
-    if (exec->show_version) {
-        fprintf(stdout, "%s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
-        return 0;
-    }
-
-    if (exec->flush || exec->update || exec->principals.size()) {
-        ret = finalize_exec(exec);
-        if (ret) {
-            fprintf(stderr, "Error: finalize_exec failed\n");
-            exit(ret);
-        }
-    }
-
-    if (exec->flush) {
+    if (exec->mode == MODE_FLUSH) {
         fprintf(stdout, "Flushing all entries for %s from the keytab %s\n", flags->hostname.c_str(),
                 flags->keytab_file.c_str());
         ret = flush_keytab(flags);
         return ret;
-    }
-
-    if (!exec->principals.empty()) {
-        /* Adding a principal will cause the machine account password to be reset - we don't
-         * store the current password anywhere - so we need to update any other principals
-         * the machine has before adding new ones. */
-        exec->update = true;
-    }
-
-    if (exec->update) {
-        fprintf(stdout, "Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
-                flags->keytab_file.c_str());
-        ret = update_keytab(flags);
+    } else if (exec->mode == MODE_UPDATE) {
+        // Generate a random password and store it.
+        ret = generate_new_password(flags);
         if (ret) {
-            fprintf(stderr, "Error: update_keytab failed\n");
+            fprintf(stderr, "Error: generate_new_password failed\n");
             return ret;
         }
-    }
 
-    if (!exec->principals.empty()) {
+        // Call set_password, to check and create the computer account if needed.
+        ret = set_password(flags);
+        if (ret) {
+            fprintf(stderr, "Error: set_password failed\n");
+            return ret;
+        }
+
+        fprintf(stdout, "Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
+                flags->keytab_file.c_str());
+        update_keytab(flags);
+
         for (size_t i = 0; i < exec->principals.size(); ++i) {
             std::string principal = exec->principals[i];
             int loc_ret = ldap_add_principal(principal, flags);
@@ -269,17 +282,43 @@ int execute(msktutil_exec *exec)
 
             fprintf(stdout, "Adding principal %s to the keytab %s\n", principal.c_str(),
                     flags->keytab_file.c_str());
-            ret |= add_principal(principal, flags);
+            add_principal_keytab(principal, flags);
         }
-    }
+        return ret;
+    } else if (exec->mode == MODE_PRECREATE) {
+        // Change account password to default value:
+        flags->password = flags->samAccountName_nodollar;
+        // Set that password (and create computer account if necessary)
+        ret = set_password(flags);
+        if (ret) {
+            fprintf(stderr, "Error: set_password failed\n");
+            return ret;
+        }
 
-    /* Default, no options present */
-    fprintf(stderr, "Error: No command given\n");
-    fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
+        // And add extra principals to servicePrincipalName in LDAP.
+        for (size_t i = 0; i < exec->principals.size(); ++i) {
+            std::string principal = exec->principals[i];
+            int loc_ret = ldap_add_principal(principal, flags);
+            if (loc_ret) {
+                fprintf(stderr, "Error: ldap_add_principal failed\n");
+                ret = 1;
+                continue;
+            }
+        }
+        return ret;
+    }
 
     return 0;
 }
 
+void set_mode(msktutil_exec *exec, msktutil_mode mode) {
+    if (exec->mode != MODE_NONE) {
+        fprintf(stderr, "Error: only one mode argument may be provided.\n");
+        fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
+        exit(1);
+    }
+    exec->mode = mode;
+}
 
 int main(int argc, char *argv [])
 {
@@ -287,6 +326,45 @@ int main(int argc, char *argv [])
     std::auto_ptr<msktutil_exec> exec(new msktutil_exec());
 
     for (i = 1; i < argc; i++) {
+        /* Display Version Message and exit */
+        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+            do_version();
+            return 0;
+        }
+
+        /* Display Help Messages and exit */
+        if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--usage")) {
+            do_help();
+            return 0;
+        }
+
+        /* Flush the keytab */
+        if (!strcmp(argv[i], "--flush") || !strcmp(argv[i], "-f")) {
+            set_mode(exec.get(), MODE_FLUSH);
+            continue;
+        }
+
+        /* Update All Principals */
+        if (!strcmp(argv[i], "--update") || !strcmp(argv[i], "-u")) {
+            set_mode(exec.get(), MODE_UPDATE);
+            continue;
+        }
+
+        /* Create 'Default' Keytab */
+        if (!strcmp(argv[i], "--create") || !strcmp(argv[i], "-c")) {
+            set_mode(exec.get(), MODE_UPDATE);
+            exec->principals.push_back("host");
+            continue;
+        }
+
+        /* Pre-create computer account for another host */
+        if (!strcmp(argv[i], "--precreate")) {
+            set_mode(exec.get(), MODE_PRECREATE);
+            exec->flags->user_creds_only = true;
+            continue;
+        }
+
+
 
         /* Service Principal Name */
         if (!strcmp(argv[i], "--service") || !strcmp(argv[i], "-s")) {
@@ -338,12 +416,6 @@ int main(int argc, char *argv [])
         }
         if (!strcmp(argv[i], "--disable-delegation")) {
             exec->flags->delegate = VALUE_OFF;
-            continue;
-        }
-
-        /* Flush the keytab */
-        if (!strcmp(argv[i], "--flush") || !strcmp(argv[i], "-f")) {
-            exec->flush = true;
             continue;
         }
 
@@ -402,34 +474,15 @@ int main(int argc, char *argv [])
             continue;
         }
 
-        /* Update All Principals */
-        if (!strcmp(argv[i], "--update") || !strcmp(argv[i], "-u")) {
-            exec->update = true;
-            continue;
-        }
-
-        /* Create 'Default' Keytab */
-        if (!strcmp(argv[i], "--create") ||
-            !strcmp(argv[i], "-c")) {
-            create_default(exec.get());
-            continue;
-        }
-
-        /* Display Version Message */
-        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
-            exec->show_version = true;
+        /* Use user kerberos credentials only */
+        if (!strcmp(argv[i], "--user-creds-only")) {
+            exec->flags->user_creds_only = true;
             continue;
         }
 
         /* Display Verbose Messages */
         if (!strcmp(argv[i], "--verbose")) {
             do_verbose();
-            continue;
-        }
-
-        /* Display Help Messages */
-        if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--usage")) {
-            exec->show_help = true;
             continue;
         }
 
@@ -455,11 +508,20 @@ int main(int argc, char *argv [])
         }
     }
 
+    if (exec->mode == MODE_NONE && !exec->principals.empty())
+        set_mode(exec.get(), MODE_UPDATE);
+
+    if (exec->mode == MODE_NONE) {
+        /* Default, no options present */
+        fprintf(stderr, "Error: No command given\n");
+        goto error;
+    }
+
     return execute(exec.get());
 
 error:
     fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
-    return -1;
+    return 1;
 }
 
 
@@ -470,7 +532,8 @@ msktutil_flags::msktutil_flags() :
     /* default values we *want* to support */
     supportedEncryptionTypes(MS_KERB_ENCTYPE_RC4_HMAC_MD5 |
                              MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 |
-                             MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+                             MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96),
+    auth_type(0), user_creds_only(false)
 {}
 
 msktutil_flags::~msktutil_flags() {
@@ -480,7 +543,7 @@ msktutil_flags::~msktutil_flags() {
 
 
 msktutil_exec::msktutil_exec() :
-    show_help(0), show_version(0), update(0), flush(0), flags(new msktutil_flags())
+    mode(MODE_NONE), flags(new msktutil_flags())
 {
     /* Check for environment variables as well.  These variables will be overriden
      * By command line arguments. */

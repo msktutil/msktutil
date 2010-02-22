@@ -70,6 +70,57 @@ LDAPConnection::~LDAPConnection() {
     ldap_unbind_ext(m_ldap, NULL, NULL);
 }
 
+
+class MessageVals {
+    berval** m_vals;
+public:
+    MessageVals(berval **vals) : m_vals(vals) {}
+    ~MessageVals() {
+        if (m_vals)
+            ldap_value_free_len(m_vals);
+    }
+    BerValue *&operator *() { return *m_vals; }
+    BerValue *&operator [](size_t off) { return m_vals[off]; }
+    operator bool() { return m_vals; }
+};
+
+
+
+void LDAPConnection::search(LDAPMessage **mesg_p,
+                            const std::string &base_dn, int scope, const std::string &filter, char *attrs[],
+                            int attrsonly, LDAPControl **serverctrls, LDAPControl **clientctrls,
+                            struct timeval *timeout, int sizelimit) {
+    VERBOSEldap("calling ldap_search_ext_s");
+    int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(), attrs, attrsonly, serverctrls, clientctrls, timeout, sizelimit, mesg_p);
+    if (ret)
+        throw LDAPException("ldap_search_ext_s", ret);
+}
+
+std::string LDAPConnection::get_one_val(LDAPMessage *mesg, char *name) {
+    MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
+    if (vals) {
+        if (vals[0]) {
+            berval *val = vals[0];
+            return std::string(val->bv_val, val->bv_len);
+        }
+    }
+    return "";
+}
+
+std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg, char *name) {
+    MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
+    std::vector<std::string> ret;
+    if (vals) {
+        size_t i = 0;
+        while(berval *val = vals[i]) {
+            ret.push_back(std::string(val->bv_val, val->bv_len));
+            i++;
+        }
+    }
+    return ret;
+
+}
+
 void get_default_ou(msktutil_flags *flags)
 {
     if (flags->ldap_ou.empty()) {
@@ -91,7 +142,8 @@ void get_default_ou(msktutil_flags *flags)
         } else
             flags->ldap_ou = dn;
         VERBOSE("Determining default OU: %s", flags->ldap_ou.c_str());
-    }
+    } else
+        flags->ldap_ou = flags->ldap_ou + flags->base_dn;
 }
 
 
@@ -109,12 +161,8 @@ static int sasl_interact(ATTRUNUSED LDAP *ld, ATTRUNUSED unsigned flags, ATTRUNU
 }
 
 
-int ldap_get_base_dn(msktutil_flags *flags)
+void ldap_get_base_dn(msktutil_flags *flags)
 {
-    if (flags->realm_name.empty()) {
-        return -1;
-    }
-
     if (flags->base_dn.empty()) {
         std::string out;
 
@@ -135,7 +183,6 @@ int ldap_get_base_dn(msktutil_flags *flags)
         flags->base_dn = out;
         VERBOSE("Determining default LDAP base: %s", flags->base_dn.c_str());
     }
-    return 0;
 }
 
 std::auto_ptr<LDAPConnection> ldap_connect(std::string server, int try_tls)
@@ -215,17 +262,6 @@ void ldap_cleanup(msktutil_flags *flags)
     flags->ldap.reset();
 }
 
-
-void LDAPConnection::search(LDAPMessage **mesg_p,
-                            const std::string &base_dn, int scope, const std::string &filter, char *attrs[],
-                            int attrsonly, LDAPControl **serverctrls, LDAPControl **clientctrls,
-                            struct timeval *timeout, int sizelimit) {
-    VERBOSEldap("calling ldap_search_ext_s");
-    int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(), attrs, attrsonly, serverctrls, clientctrls, timeout, sizelimit, mesg_p);
-    if (ret)
-        throw LDAPException("ldap_search_ext_s", ret);
-}
-
 void ldap_get_computer_attrs(msktutil_flags *flags, char **attrs, LDAPMessage **mesg_p) {
     std::string filter;
     filter = sform("(&(objectClass=computer)(sAMAccountName=%s))", flags->samAccountName.c_str());
@@ -252,7 +288,7 @@ int ldap_flush_principals(msktutil_flags *flags)
     }
     ldap_msgfree(mesg);
     if (dn.empty()) {
-        fprintf(stderr, "Error: an account for %s was not found\n", flags->hostname.c_str());
+        fprintf(stderr, "Error: an account for %s was not found\n", flags->samAccountName.c_str());
         return -1;
     }
 
@@ -463,11 +499,11 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     }
     ldap_msgfree(mesg);
     if (dn.empty()) {
-        fprintf(stderr, "Error: an account for %s was not found\n", flags->hostname.c_str());
+        fprintf(stderr, "Error: an account for %s was not found\n", flags->samAccountName.c_str());
         return -1;
     }
 
-    VERBOSE("Checking that adding principal %s to %s won't cause a conflict", principal.c_str(), flags->short_hostname.c_str());
+    VERBOSE("Checking that adding principal %s to %s won't cause a conflict", principal.c_str(), flags->samAccountName.c_str());
     std::string filter = sform("(servicePrincipalName=%s)", principal.c_str());
     flags->ldap->search(&mesg, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
     switch (ldap_count_entries(flags->ldap->m_ldap, mesg)) {
@@ -513,43 +549,6 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     }
 }
 
-class MessageVals {
-    berval** m_vals;
-public:
-    MessageVals(berval **vals) : m_vals(vals) {}
-    ~MessageVals() {
-        if (m_vals)
-            ldap_value_free_len(m_vals);
-    }
-    BerValue *&operator *() { return *m_vals; }
-    BerValue *&operator [](size_t off) { return m_vals[off]; }
-    operator bool() { return m_vals; }
-};
-
-std::string LDAPConnection::get_one_val(LDAPMessage *mesg, char *name) {
-    MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
-    if (vals) {
-        if (vals[0]) {
-            berval *val = vals[0];
-            return std::string(val->bv_val, val->bv_len);
-        }
-    }
-    return "";
-}
-
-std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg, char *name) {
-    MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
-    std::vector<std::string> ret;
-    if (vals) {
-        size_t i = 0;
-        while(berval *val = vals[i]) {
-            ret.push_back(std::string(val->bv_val, val->bv_len));
-            i++;
-        }
-    }
-    return ret;
-
-}
 std::string get_user_dn(msktutil_flags *flags)
 {
     std::string dn;
@@ -597,11 +596,13 @@ int ldap_check_account_strings(std::string dn, msktutil_flags *flags)
 
     VERBOSE("Inspecting (and updating) computer account attributes");
 
-    mod_attrs[attr_count++] = &attrDnsHostName;
-    attrDnsHostName.mod_op = LDAP_MOD_REPLACE;
-    attrDnsHostName.mod_type = "dNSHostName";
-    attrDnsHostName.mod_values = vals_dnshostname;
-    vals_dnshostname[0] = const_cast<char*>(flags->hostname.c_str());
+    if (!flags->hostname.empty()) {
+        mod_attrs[attr_count++] = &attrDnsHostName;
+        attrDnsHostName.mod_op = LDAP_MOD_REPLACE;
+        attrDnsHostName.mod_type = "dNSHostName";
+        attrDnsHostName.mod_values = vals_dnshostname;
+        vals_dnshostname[0] = const_cast<char*>(flags->hostname.c_str());
+    }
 /*
     if (!flags->description.empty()) {
         mod_attrs[attr_count++] = &attrDescription;

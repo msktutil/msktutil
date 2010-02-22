@@ -87,9 +87,9 @@ std::string get_default_hostname()
 }
 
 
-int get_dc(msktutil_flags *flags)
+std::string get_dc_host(const std::string &realm_name)
 {
-    char *dc = NULL;
+    std::string dc;
     struct hostent *host;
     struct sockaddr_in addr;
     struct hostent *hp;
@@ -97,15 +97,11 @@ int get_dc(msktutil_flags *flags)
     int i;
 
 
-    if (!flags->server.empty()) {
-        /* The server has already been specified */
-        return 0;
-    }
     VERBOSE("Attempting to find a Domain Controller to use");
-    host = gethostbyname(flags->realm_name.c_str());
+    host = gethostbyname(realm_name.c_str());
     if (!host) {
         fprintf(stderr, "Error: gethostbyname failed \n");
-        return -1;
+        return "";
     }
 
     for (i = 0; host->h_addr_list[i]; i++) {
@@ -125,36 +121,19 @@ int get_dc(msktutil_flags *flags)
             close(sock);
             /* See if this is the 'lowest' domain controller name... the idea is to always try to
              * use the same domain controller.   Things may become inconsitent otherwise */
-            if (!dc) {
-                dc = (char *) malloc(strlen(hp->h_name) + 1);
-                if (!dc) {
-                    fprintf(stderr, "Error: malloc failed\n");
-                    endhostent();
-                    continue;
-                }
-                memset(dc, 0, strlen(hp->h_name) + 1);
-                strcpy(dc, hp->h_name);
+            if (dc.empty()) {
+                dc = std::string(hp->h_name);
             } else {
-                if (0 > strcmp(dc, (char *) hp->h_name)) {
-                    free(dc);
-                    dc = (char *) malloc(strlen(hp->h_name) + 1);
-                    if (!dc) {
-                        fprintf(stderr, "Error: malloc failed\n");
-                        endhostent();
-                        continue;
-                    }
-                    memset(dc, 0, strlen(hp->h_name) + 1);
-                    strcpy(dc, hp->h_name);
+                if (0 > dc.compare(hp->h_name)) {
+                    dc = std::string(hp->h_name);
                 }
             }
         }
     }
     endhostent();
 
-    VERBOSE("Found Domain Controller: %s", dc);
-    flags->server = std::string(dc);
-    free(dc);
-    return 0;
+    VERBOSE("Found Domain Controller: %s", dc.c_str());
+    return dc;
 }
 
 

@@ -101,38 +101,22 @@ int flush_keytab(msktutil_flags *flags)
 }
 
 
-int update_keytab(msktutil_flags *flags)
+void update_keytab(msktutil_flags *flags)
 {
     std::vector<std::string> principals;
-    int ret = 0;
 
-
-    /* Need to call set_password first, as this will check and create the computer account if needed */
-    ret = set_password(flags);
-    if (ret) {
-        fprintf(stderr, "Error: set_password failed\n");
-        return ret;
-    }
-
-    VERBOSE("Updating all entires for %s", flags->short_hostname.c_str());
-    add_principal(flags->samAccountName, flags);
+    VERBOSE("Updating all entires for %s", flags->samAccountName.c_str());
+    add_principal_keytab(flags->samAccountName, flags);
 
     principals = ldap_list_principals(flags);
     for (size_t i = 0; i < principals.size(); ++i) {
-        ret = add_principal(principals[i], flags);
-        if (ret) {
-            fprintf(stderr, "Error: add_principal failed\n");
-            return ret;
-        }
+        add_principal_keytab(principals[i], flags);
     }
-
-    return ret;
 }
 
 
-int add_principal(const std::string &principal, msktutil_flags *flags)
+void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 {
-    int ret;
     krb5_kvno kvno;
 
 
@@ -143,12 +127,6 @@ int add_principal(const std::string &principal, msktutil_flags *flags)
     std::string principal_string = sform("%s@%s", principal.c_str(), flags->realm_name.c_str());
     KRB5Principal princ(principal_string);
 
-    /* Need to call set_password first, as that produces a 'stable' kvno */
-    ret = set_password(flags);
-    if (ret) {
-        fprintf(stderr, "Error: set_password failed\n");
-        return ret;
-    }
     kvno = ldap_get_kvno(flags);
 
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
@@ -193,12 +171,6 @@ int add_principal(const std::string &principal, msktutil_flags *flags)
         enc_types.push_back(ENCTYPE_AES256_CTS_HMAC_SHA1_96);
 #endif
 
-    ret = set_password(flags);
-    if (ret) {
-        fprintf(stderr, "Error: set_password failed\n");
-        return ret;
-    }
-
     std::string salt;
 
     for(size_t i = 0; i < enc_types.size(); ++i) {
@@ -232,6 +204,4 @@ int add_principal(const std::string &principal, msktutil_flags *flags)
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
         keytab.addEntry(princ, kvno, keyblock);
     }
-
-    return 0;
 }

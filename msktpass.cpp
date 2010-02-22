@@ -83,7 +83,7 @@ int generate_new_password(msktutil_flags *flags)
 }
 
 
-int try_set_password(msktutil_flags *flags, int try_keytab)
+int set_password(msktutil_flags *flags, int time)
 {
     int ret;
     krb5_data resp_code_string;
@@ -91,18 +91,11 @@ int try_set_password(msktutil_flags *flags, int try_keytab)
     int response = 0;
     std::string old_pwdLastSet;
     std::string current_pwdLastSet;
-    int i;
-
 
     VERBOSE("Attempting to reset computer's password");
     ret = ldap_check_account(flags);
     if (ret) {
         fprintf(stderr, "Error: ldap_check_account failed (%s)\n", error_message(ret));
-        return ret;
-    }
-    ret = generate_new_password(flags);
-    if (ret) {
-        fprintf(stderr, "Error: generate_new_password failed\n");
         return ret;
     }
 
@@ -120,7 +113,7 @@ int try_set_password(msktutil_flags *flags, int try_keytab)
 
         if (!ret && response) {
             fprintf(stderr, "Error: Unable to set machine password for %s: (%d) %s\n",
-                    flags->short_hostname.c_str(), response, (char *) resp_code_string.data);
+                    flags->samAccountName.c_str(), response, (char *) resp_code_string.data);
             krb5_free_data_contents(g_context.get(), &resp_code_string);
             return response;
         }
@@ -173,16 +166,19 @@ int try_set_password(msktutil_flags *flags, int try_keytab)
 
     }
     /* Loop and wait for the account and password set to replicate */
-    for (i = 0; ; i += 5) {
+    for (int this_time = 0; ; this_time += 5) {
         current_pwdLastSet = ldap_get_pwdLastSet(flags);
-        if (i >= 30) {
-            fprintf(stdout, "Re-attempting password reset for %s\n", flags->hostname.c_str());
-            init_password(flags);
-            return try_set_password(flags, try_keytab);
+        if (time + this_time >= 60) {
+            fprintf(stdout, "Password reset failed.\n");
+            return 1;
+        }
+        if (this_time >= 30) {
+            fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
+            return set_password(flags);
         }
         if (current_pwdLastSet.empty()) {
             /* Account hasn't replicated yet */
-            fprintf(stdout, "Waiting for account replication (%d seconds past)\n", i);
+            fprintf(stdout, "Waiting for account replication (%d seconds past)\n", time + this_time);
             sleep(5);
         } else {
             /* The account exists: we're waiting for the value to
@@ -192,18 +188,8 @@ int try_set_password(msktutil_flags *flags, int try_keytab)
                 VERBOSE("Successfully reset computer's password");
                 return 0;
             }
-            fprintf(stdout, "Waiting for password replication (%d seconds past)\n", i);
+            fprintf(stdout, "Waiting for password replication (%d seconds past)\n", time + this_time);
             sleep(5);
         }
     }
-}
-
-
-int set_password(msktutil_flags *flags)
-{
-    /* Only reset the password once... */
-    if (!flags->password.empty() && flags->password[0] != '\0') {
-        return 0;
-    }
-    return try_set_password(flags, 1);
 }
