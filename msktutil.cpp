@@ -197,39 +197,48 @@ void do_help() {
     fprintf(stdout, "                 It also updates LDAP attributes for supportedEncryptionTypes,\n");
     fprintf(stdout, "                 dNSDomainName, and applies other options you specify.\n");
     fprintf(stdout, "\n");
+    fprintf(stdout, "  --auto-update  Same as --update, but only if keytab fails to authenticate, or\n");
+    fprintf(stdout, "                 the last password change was more than 30 days ago. Useful to run\n");
+    fprintf(stdout, "                 from a daily cron job.\n");
+    fprintf(stdout, "\n");
     fprintf(stdout, "  --precreate    Pre-create an account for the given host with default password\n");
     fprintf(stdout, "                 but do not update local keytab.\n");
     fprintf(stdout, "                 Requires -h or --computer-name argument.\n");
     fprintf(stdout, "                 Implies --user-creds-only.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "Options: \n");
+    fprintf(stdout, "Connection/setup options: \n");
     fprintf(stdout, "  -b, --base <base ou>   Sets the LDAP base OU to use when creating an account.\n");
     fprintf(stdout, "                         The default is read from AD (often CN=computers)\n");
     fprintf(stdout, "  --computer-name <name> Sets the computer account name to <name>\n");
+    fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
+    fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write)\n");
+    fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
+    fprintf(stdout, "                         up in DNS based upon realm.\n");
+    fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
+    fprintf(stdout, "                         only use user's credentials (from e.g. kinit)\n");
+    fprintf(stdout, "  --verbose              Enable verbose messages\n");
+    fprintf(stdout, "                         More then once to get LDAP debugging\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Attribute-setting options:\n");
     fprintf(stdout, "  --delegation           Set the computer account to be trusted for delegation\n");
-    fprintf(stdout, "  --description <text>   Sets the description field on the computer account\n");
     fprintf(stdout, "  --disable-delegation   Set the computer account to not be trusted for\n");
     fprintf(stdout, "                         delegation.\n");
-    fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC\n");
+    fprintf(stdout, "  --description <text>   Sets the description field on the computer account\n");
+    fprintf(stdout, "  --dont-expire-password Disables password expiration for the computer account.\n");
+    fprintf(stdout, "  --do-expire-password   Undisables (puts back to default) password expiration.\n");
     fprintf(stdout, "  --enctypes <int>       Sets msDs-supportedEncryptionTypes\n");
     fprintf(stdout, "                         (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5\n");
     fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-ctc-hmac-sha1\n");
     fprintf(stdout, "                                 0x10=aes256-cts-hmac-sha1)\n");
     fprintf(stdout, "                         Sets des-only in userAccountControl if set to 0x3.\n");
-    fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
-    fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write)\n");
     fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC\n");
+    fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC\n");
     fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host.\n");
     fprintf(stdout, "                         The service is of the form <service>/<hostname>.\n");
     fprintf(stdout, "                         If the hostname is omitted, assumes current hostname.\n");
-    fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
-    fprintf(stdout, "                         up in DNS based upon realm.\n");
     fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>\n");
     fprintf(stdout, "                         The realm name will be appended to this principal\n");
-    fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
-    fprintf(stdout, "                         only use user's credentials (from e.g. kinit)\n");
-    fprintf(stdout, "  --verbose              Enable verbose messages\n");
-    fprintf(stdout, "                         More then once to get LDAP debugging\n");
+
 }
 
 void do_version() {
@@ -252,7 +261,30 @@ int execute(msktutil_exec *exec)
                 flags->keytab_file.c_str());
         ret = flush_keytab(flags);
         return ret;
-    } else if (exec->mode == MODE_UPDATE) {
+    } else if (exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
+        if (exec->mode == MODE_AUTO_UPDATE) {
+            // Don't bother doing anything if the auth was from the keytab (and not e.g. default password), and the
+            if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB) {
+                std::string pwdLastSet = ldap_get_pwdLastSet(exec->flags);
+                // Windows timestamp is in 100-nanoseconds-since-1601. (or, tenths of microseconds)
+                long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);
+                long long epoch_bias_1601_to_1970 = 116444736000000000;
+                // Unix timestamp is seconds since 1970.
+                long long unix_timestamp;
+                if (windows_timestamp < epoch_bias_1601_to_1970)
+                    unix_timestamp = 0;
+                else
+                    unix_timestamp = (windows_timestamp - epoch_bias_1601_to_1970) / 10000000;
+                time_t current_unix_time = time(NULL);
+                long long days_since_password_change = (current_unix_time - unix_timestamp) / 86400;
+                VERBOSE("Password last set %lld days ago.", days_since_password_change);
+                if (days_since_password_change < 30) {
+                    VERBOSE("Exiting because password was changed recently.");
+                    return 0;
+                }
+            }
+        }
+
         // Generate a random password and store it.
         ret = generate_new_password(flags);
         if (ret) {
@@ -267,7 +299,7 @@ int execute(msktutil_exec *exec)
             return ret;
         }
 
-        fprintf(stdout, "Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
+        VERBOSE("Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
                 flags->keytab_file.c_str());
         update_keytab(flags);
 
@@ -322,6 +354,9 @@ void set_mode(msktutil_exec *exec, msktutil_mode mode) {
 
 int main(int argc, char *argv [])
 {
+    // unbuffer stdout.
+    setbuf(stdout, NULL);
+
     int i;
     std::auto_ptr<msktutil_exec> exec(new msktutil_exec());
 
@@ -347,6 +382,12 @@ int main(int argc, char *argv [])
         /* Update All Principals */
         if (!strcmp(argv[i], "--update") || !strcmp(argv[i], "-u")) {
             set_mode(exec.get(), MODE_UPDATE);
+            continue;
+        }
+
+        /* Update All Principals, if needed */
+        if (!strcmp(argv[i], "--auto-update")) {
+            set_mode(exec.get(), MODE_AUTO_UPDATE);
             continue;
         }
 
@@ -419,12 +460,34 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* Password expiry (is rotation required?) */
+        if (!strcmp(argv[i], "--dont-expire-password")) {
+            exec->flags->dont_expire_password = VALUE_ON;
+            continue;
+        }
+
+        if (!strcmp(argv[i], "--do-expire-password")) {
+            exec->flags->dont_expire_password = VALUE_OFF;
+            continue;
+        }
+
         /* Use a certain sam account name */
         if (!strcmp(argv[i], "--computer-name")) {
             if (++i < argc) {
                 set_samAccountName(exec.get(), argv[i]);
             } else {
                 fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+
+        if (!strcmp(argv[i], "--upn")) {
+            if (++i < argc) {
+                exec->flags->set_userPrincipalName = true;
+                exec->flags->userPrincipalName = argv[i];
+            } else {
+                fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
                 goto error;
             }
             continue;
@@ -455,6 +518,7 @@ int main(int argc, char *argv [])
         /* Set the description on the computer account */
         if (!strcmp(argv[i], "--description")) {
             if (++i < argc) {
+                exec->flags->set_description = true;
                 exec->flags->description = argv[i];
             } else {
                 fprintf(stderr, "Error: No description given after '%s'\n", argv[i - 1]);
@@ -517,7 +581,12 @@ int main(int argc, char *argv [])
         goto error;
     }
 
-    return execute(exec.get());
+    try {
+        return execute(exec.get());
+    } catch (Exception &e) {
+        fprintf(stderr, "%s\n", e.what());
+        exit(1);
+    }
 
 error:
     fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
@@ -526,7 +595,8 @@ error:
 
 
 msktutil_flags::msktutil_flags() :
-    password(), ldap(), no_pac(VALUE_IGNORE), delegate(VALUE_IGNORE),
+    password(), ldap(), set_description(false), set_userPrincipalName(false),
+    no_pac(VALUE_IGNORE), delegate(VALUE_IGNORE),
     ad_userAccountControl(0), ad_enctypes(VALUE_IGNORE), ad_supportedEncryptionTypes(0),
     enctypes(VALUE_IGNORE),
     /* default values we *want* to support */
@@ -547,8 +617,6 @@ msktutil_exec::msktutil_exec() :
 {
     /* Check for environment variables as well.  These variables will be overriden
      * By command line arguments. */
-    if (getenv("MSKTUTIL_DESCRIPTION"))
-        flags->description = getenv("MSKTUTIL_DESCRIPTION");
     if (getenv("MSKTUTIL_KEYTAB"))
         flags->keytab_file = getenv("MSKTUTIL_KEYTAB");
     if (getenv("MSKTUTIL_NO_PAC"))
@@ -557,12 +625,8 @@ msktutil_exec::msktutil_exec() :
         flags->delegate = VALUE_ON;
     if (getenv("MSKTUTIL_LDAP_BASE"))
         flags->ldap_ou = getenv("MSKTUTIL_LDAP_BASE");
-    if (getenv("MSKTUTIL_HOSTNAME"))
-        flags->hostname = getenv("MSKTUTIL_HOSTNAME");
     if (getenv("MSKTUTIL_SERVER"))
         flags->server = getenv("MSKTUTIL_SERVER");
-    if (getenv("MSKTUTIL_SAM_NAME"))
-        set_samAccountName(this, getenv("MSKTUTIL_SAM_NAME"));
 }
 
 msktutil_exec::~msktutil_exec() {

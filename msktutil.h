@@ -138,6 +138,7 @@ extern int g_verbose;
 enum msktutil_mode {
     MODE_NONE = 0,
     MODE_UPDATE,
+    MODE_AUTO_UPDATE,
     MODE_FLUSH,
     MODE_PRECREATE
 };
@@ -154,7 +155,13 @@ struct msktutil_flags {
     std::string samAccountName;
     std::string samAccountName_nodollar;
     std::string password;
+    std::string userPrincipalName;
     std::auto_ptr<LDAPConnection> ldap;
+
+    bool set_description;
+    bool set_userPrincipalName;
+
+    msktutil_val dont_expire_password;
     msktutil_val no_pac;
     msktutil_val delegate;
     unsigned int ad_userAccountControl; /* value AD has now */
@@ -184,7 +191,7 @@ extern void init_password(msktutil_flags *);
 extern std::string get_default_hostname();
 extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
-extern std::auto_ptr<LDAPConnection> ldap_connect(std::string server,
+extern std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
                                                   int try_tls=ATTEMPT_SASL_PARAMS_TLS);
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string complete_hostname(const std::string &);
@@ -231,7 +238,7 @@ class Exception : public std::exception
     // Default construction with no message uses "Exception"
     Exception() : m_message("Exception") { }
     explicit Exception(char const * simple_string) : m_message(simple_string) {}
-    explicit Exception(std::string str) : m_message(str) {}
+    explicit Exception(const std::string &str) : m_message(str) {}
     Exception(const Exception& src) : m_message(src.m_message) {}
 
     virtual ~Exception() throw() {};
@@ -241,7 +248,7 @@ class Exception : public std::exception
 class KRB5Exception : public Exception
 {
   public:
-    explicit KRB5Exception(std::string func, krb5_error_code err) :
+    explicit KRB5Exception(const std::string &func, krb5_error_code err) :
         Exception(sform("Error: %s failed (%s)", func.c_str(), error_message(err)))
     {}
 };
@@ -249,7 +256,7 @@ class KRB5Exception : public Exception
 class LDAPException : public Exception
 {
   public:
-    explicit LDAPException(std::string func, int err) :
+    explicit LDAPException(const std::string &func, int err) :
         Exception(sform("Error: %s failed (%s)", func.c_str(), ldap_err2string(err)))
     {}
 };
@@ -270,7 +277,7 @@ public: //fixme
     LDAP *m_ldap;
 
 public:
-    LDAPConnection(std::string server);
+    LDAPConnection(const std::string &server);
 
     void set_option(int option, const void *invalue);
     void get_option(int option, void *outvalue);

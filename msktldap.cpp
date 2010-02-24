@@ -25,7 +25,7 @@
 
 #include "msktutil.h"
 
-LDAPConnection::LDAPConnection(std::string server) : m_ldap() {
+LDAPConnection::LDAPConnection(const std::string &server) : m_ldap() {
 #ifndef SOLARIS_LDAP_KERBEROS
     std::string ldap_url = "ldap://" + server;
     VERBOSEldap("calling ldap_initialize");
@@ -185,7 +185,7 @@ void ldap_get_base_dn(msktutil_flags *flags)
     }
 }
 
-std::auto_ptr<LDAPConnection> ldap_connect(std::string server, int try_tls)
+std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server, int try_tls)
 {
 #ifndef SOLARIS_LDAP_KERBEROS
     int debug = 0xffffff;
@@ -238,9 +238,11 @@ std::auto_ptr<LDAPConnection> ldap_connect(std::string server, int try_tls)
 
     ret = ldap_sasl_interactive_bind_s(ldap->m_ldap, NULL, "GSSAPI", NULL, NULL,
 #ifndef SOLARIS_LDAP_KERBEROS
-                    g_verbose?0:LDAP_SASL_QUIET |
+                                       g_verbose?0:LDAP_SASL_QUIET,
+#else
+                                       0,
 #endif
-                    LDAP_SASL_INTERACTIVE, sasl_interact, NULL);
+                                       sasl_interact, NULL);
 
     if (ret) {
         fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed 4 (%s)\n", ldap_err2string(ret));
@@ -384,41 +386,46 @@ std::string ldap_get_pwdLastSet(msktutil_flags *flags)
     return pwdLastSet;
 }
 
-int ldap_set_supportedEncryptionTypes(std::string dn, msktutil_flags *flags)
+int ldap_simple_set_attr(LDAPConnection *ldap, const std::string &dn, 
+                         const std::string &attrName, const std::string &val)
 {
-    LDAPMod *mod_attrs[2];
-    LDAPMod attrsupportedEncryptionTypes;
-    char *vals_supportedEncryptionTypes[] = { NULL, NULL};
+    LDAPMod *mod_attrs[2] = {NULL, NULL};
+    LDAPMod attr;
+    char *vals[] = {NULL, NULL};
+    int ret;
+
+    mod_attrs[0] = &attr;
+    attr.mod_op = LDAP_MOD_REPLACE;
+    attr.mod_type = const_cast<char *>(attrName.c_str());
+    attr.mod_values = vals;
+    vals[0] = const_cast<char*>(val.c_str());
+
+    VERBOSE("Calling ldap_modify_ext_s to set %s to %s", attrName.c_str(), val.c_str());
+    ret = ldap_modify_ext_s(ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
+
+    if (ret != LDAP_SUCCESS) {
+        VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
+    }
+
+    return ret;
+}
+int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *flags)
+{
     int ret;
 
     if (flags->ad_supportedEncryptionTypes != flags->supportedEncryptionTypes) {
-        mod_attrs[0] = &attrsupportedEncryptionTypes;
-        if (flags->ad_enctypes == VALUE_ON)
-            attrsupportedEncryptionTypes.mod_op = LDAP_MOD_REPLACE;
-        else
-            attrsupportedEncryptionTypes.mod_op = LDAP_MOD_ADD;
-
-        attrsupportedEncryptionTypes.mod_type = "msDs-supportedEncryptionTypes";
-        attrsupportedEncryptionTypes.mod_values = vals_supportedEncryptionTypes;
         std::string supportedEncryptionTypes = sform("%d", flags->supportedEncryptionTypes);
-        vals_supportedEncryptionTypes[0] = const_cast<char*>(supportedEncryptionTypes.c_str());
 
-        mod_attrs[1] = NULL;
+        VERBOSE("DEE dn=%s old=%d new=%d\n",
+                dn.c_str(), flags->ad_supportedEncryptionTypes, flags->supportedEncryptionTypes);
 
-        VERBOSE("DEE dn=%s mod_op=%s old=%d new=%d\n",
-                dn.c_str(), (attrsupportedEncryptionTypes.mod_op==LDAP_MOD_REPLACE)?"replace":"add",
-                flags->ad_supportedEncryptionTypes, flags->supportedEncryptionTypes);
+        int ret = ldap_simple_set_attr(flags->ldap.get(), dn, "msDs-supportedEncryptionTypes",
+                                       supportedEncryptionTypes);
 
-        VERBOSEldap("calling ldap_modify_ext_s");
-        ret = ldap_modify_ext_s(flags->ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
-
-        if (ret != LDAP_SUCCESS) {
-            VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
-        } else {
+        if (ret == LDAP_SUCCESS) {
             flags->ad_enctypes = VALUE_ON;
             flags->ad_supportedEncryptionTypes = flags->supportedEncryptionTypes;
         }
-
     } else {
         VERBOSE("No need to change msDs-supportedEncryptionTypes they are %d\n",flags->ad_supportedEncryptionTypes);
         ret = LDAP_SUCCESS;
@@ -427,7 +434,7 @@ int ldap_set_supportedEncryptionTypes(std::string dn, msktutil_flags *flags)
     return ret;
 }
 
-int ldap_set_userAccountControl_flag(std::string dn, int mask, msktutil_val value, msktutil_flags *flags)
+int ldap_set_userAccountControl_flag(const std::string &dn, int mask, msktutil_val value, msktutil_flags *flags)
 {
     LDAPMod *mod_attrs[2];
     LDAPMod attrUserAccountControl;
@@ -452,7 +459,7 @@ int ldap_set_userAccountControl_flag(std::string dn, int mask, msktutil_val valu
             break;
         case VALUE_OFF:
             VERBOSE("Setting userAccountControl bit at 0x%x to 0x%x", mask, value);
-            new_userAcctFlags = old_userAcctFlags ^ mask;
+            new_userAcctFlags = old_userAcctFlags & (~mask);
             break;
         case VALUE_IGNORE:
             /* Unreachable */
@@ -577,63 +584,33 @@ std::string get_user_dn(msktutil_flags *flags)
 }
 
 
-int ldap_check_account_strings(std::string dn, msktutil_flags *flags)
+int ldap_check_account_strings(const std::string &dn, msktutil_flags *flags)
 {
-    int ret;
-    LDAPMod *mod_attrs[6];
-    LDAPMod attrDnsHostName;
-//    LDAPMod attrDescription;
-//    LDAPMod attrManagedBy;
-//    LDAPMod attrOperatingSystem;
-    char *vals_dnshostname[] = {NULL, NULL};
-//    char *vals_description[] = {NULL, NULL};
-//    char *vals_managedby[] = {NULL, NULL};
-//    char *vals_operatingsystem[] = {NULL, NULL};
-    int attr_count = 0;
-    std::string owner_dn;
-    std::string system_name;
-
-
     VERBOSE("Inspecting (and updating) computer account attributes");
 
-    if (!flags->hostname.empty()) {
-        mod_attrs[attr_count++] = &attrDnsHostName;
-        attrDnsHostName.mod_op = LDAP_MOD_REPLACE;
-        attrDnsHostName.mod_type = "dNSHostName";
-        attrDnsHostName.mod_values = vals_dnshostname;
-        vals_dnshostname[0] = const_cast<char*>(flags->hostname.c_str());
-    }
+    // NOTE: failures to set all the attributes in this function are ignored, for better or worse..
+
+    if (!flags->hostname.empty())
+        ldap_simple_set_attr(flags->ldap.get(), dn, "dNSHostName", flags->hostname);
+
+    if (flags->set_description)
+        ldap_simple_set_attr(flags->ldap.get(), dn, "description", flags->description);
+
+
 /*
-    if (!flags->description.empty()) {
-        mod_attrs[attr_count++] = &attrDescription;
-        attrDescription.mod_op = LDAP_MOD_REPLACE;
-        attrDescription.mod_type = "description";
-        attrDescription.mod_values = vals_description;
-        vals_description[0] = const_cast<char*>(flags->description.c_str());
-    }
-    owner_dn = get_user_dn(flags);
-    if (!owner_dn.empty()) {
-        mod_attrs[attr_count++] = &attrManagedBy;
-        attrManagedBy.mod_op = LDAP_MOD_REPLACE;
-        attrManagedBy.mod_type = "managedBy";
-        attrManagedBy.mod_values = vals_managedby;
-        vals_managedby[0] = const_cast<char*>(owner_dn.c_str());
-    }
-    system_name = get_host_os();
-    if (!system_name.empty()) {
-        mod_attrs[attr_count++] = &attrOperatingSystem;
-        attrOperatingSystem.mod_op = LDAP_MOD_REPLACE;
-        attrOperatingSystem.mod_type = "operatingSystem";
-        attrOperatingSystem.mod_values = vals_operatingsystem;
-        vals_operatingsystem[0] = const_cast<char*>(system_name.c_str());
-    }
+  Not much use for these, since Computer accounts don't have perms to update them.
+    std::string owner_dn = get_user_dn(flags);
+    if (!owner_dn.empty())
+        ldap_simple_set_attr(flags->ldap, dn, "managedBy", owner_dn);
+    std::string system_name = get_host_os();
+    if (!system_name.empty())
+        ldap_simple_set_attr(flags->ldap, dn, "operatingSystem", system_name);
 */
-    mod_attrs[attr_count++] = NULL;
-    VERBOSEldap("calling ldap_modify_ext_s");
-    ret = ldap_modify_ext_s(flags->ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
-    if (ret != LDAP_SUCCESS) {
-        VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
-    }
+
+    if (flags->set_userPrincipalName)
+        ldap_simple_set_attr(flags->ldap.get(), dn, "userPrincipalName", flags->userPrincipalName + '@' + flags->realm_name);
+
+    ldap_set_supportedEncryptionTypes(dn, flags);
 
     msktutil_val des_only;
     if (flags->supportedEncryptionTypes == (MS_KERB_ENCTYPE_DES_CBC_CRC|MS_KERB_ENCTYPE_DES_CBC_MD5))
@@ -644,8 +621,7 @@ int ldap_check_account_strings(std::string dn, msktutil_flags *flags)
     ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, des_only, flags);
     ldap_set_userAccountControl_flag(dn, UF_NO_AUTH_DATA_REQUIRED, flags->no_pac, flags);
     ldap_set_userAccountControl_flag(dn, UF_TRUSTED_FOR_DELEGATION, flags->delegate, flags);
-
-    ldap_set_supportedEncryptionTypes(dn, flags);
+    ldap_set_userAccountControl_flag(dn, UF_DONT_EXPIRE_PASSWORD, flags->dont_expire_password, flags);
 
     return 0;
 }
@@ -729,7 +705,7 @@ int ldap_check_account(msktutil_flags *flags)
         attrUserAccountControl.mod_op = LDAP_MOD_ADD;
         attrUserAccountControl.mod_type = "userAccountControl";
         attrUserAccountControl.mod_values = vals_useraccountcontrol;
-        userAcctFlags = UF_DONT_EXPIRE_PASSWORD | UF_WORKSTATION_TRUST_ACCOUNT;
+        userAcctFlags = UF_WORKSTATION_TRUST_ACCOUNT;
         std::string userAcctFlags_string = sform("%d", userAcctFlags);
         vals_useraccountcontrol[0] = const_cast<char*>(userAcctFlags_string.c_str());
 

@@ -1,4 +1,5 @@
  msktutil (C) 2004-2006 Dan Perry <dperry@pppl.gov>
+          (C) 2010 James Knight <foom@fuhm.net>
 ----------------------------------------------------------------------------
 
 
@@ -8,3 +9,5 @@ Msktutil is a program for interoperability with Active Directory that can:
  - Create a system Kerberos keytab
  - Add and remove principals to and from that keytab
  - Change the computer account's password
+
+See the man page for more information.
