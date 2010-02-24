@@ -48,7 +48,6 @@ binary-arch:	checkroot build
 		prefix=$$(pwd)/debian/tmp/usr install
 	cp -a debian/copyright $(docdir)
 	install -d $(docdir)/examples
-	install -m 755 msktutil.interactive $(docdir)/examples
 	cp -a debian/changelog $(docdir)/changelog.Debian
 	#cp -a ChangeLog $(docdir)/changelog
 	#cd $(docdir) && gzip -9 changelog changelog.Debian
@@ -63,7 +62,7 @@ binary-arch:	checkroot build
 	dpkg --build debian/tmp ..
 
 define checkdir
-	test -f $(package).c -a -f debian/rules
+	test -f $(package).cpp -a -f debian/rules
 endef
 
 binary: binary-indep binary-arch
