@@ -116,8 +116,6 @@ void update_keytab(msktutil_flags *flags)
 
 void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil_flags *flags)
 {
-
-
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
     std::string keytab_name = sform("WRFILE:%s", flags->keytab_file.c_str());
     KRB5Keytab keytab(keytab_name);
@@ -128,15 +126,40 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
     to_delete_t to_delete;
 
-    // Delete all entries with old kvnos (keep most recent)
+    // Delete entries with obsolete kvnos.
+
+    // Keep all old keys with smaller kvnos which could've been used in the last week (a
+    // conservative guess for reasonable maximum ticket lifetimes).  That is: if kvno 3 has
+    // timestamp Jan 1, 2010, kvno 4 has timestamp Jan 20, 2010, and it is currently Jan 20, 2010,
+    // then keep both kvno 3 and 4, while writing out a new kvno 5. This is needed so that users who
+    // already have a valid service ticket in their credential cache can continue using it to
+    // connect to the server.
     try {
-        KRB5Keytab::cursor cursor(keytab);
-        while (cursor.next()) {
-            std::string curr_principal = cursor.principal().name();
-            if (curr_principal == principal_string &&
-                cursor.kvno() != kvno - 1) {
-                to_delete.push_back(std::make_pair(std::make_pair(curr_principal, cursor.kvno()),
-                                                   cursor.enctype()));
+        krb5_kvno earliest_kvno_to_keep = 0;
+        {
+            krb5_timestamp min_keep_timestamp = time(NULL) - (7*24*60*60);
+
+            KRB5Keytab::cursor cursor(keytab);
+            while (cursor.next()) {
+                std::string curr_principal = cursor.principal().name();
+                if (curr_principal == principal_string) {
+                    if (cursor.kvno() < kvno) {
+                        if (cursor.timestamp() < min_keep_timestamp)
+                            earliest_kvno_to_keep = std::max(earliest_kvno_to_keep, cursor.kvno());
+                    }
+                }
+            }
+        }
+        VERBOSE("Removing entries with kvno < %d", earliest_kvno_to_keep);
+        {
+            KRB5Keytab::cursor cursor(keytab);
+            while (cursor.next()) {
+                std::string curr_principal = cursor.principal().name();
+                if (curr_principal == principal_string &&
+                    (cursor.kvno() >= kvno || cursor.kvno() < earliest_kvno_to_keep)) {
+                    to_delete.push_back(std::make_pair(std::make_pair(curr_principal, cursor.kvno()),
+                                                       cursor.enctype()));
+                }
             }
         }
     } catch (KRB5Exception ex) {

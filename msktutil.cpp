@@ -210,7 +210,7 @@ int add_and_remove_principals(msktutil_exec *exec) {
             }
         } else {
             fprintf(stderr, "Error: principal %s cannot be removed, was not in servicePrincipalName.\n", principal.c_str());
-            for (int i = 0; i < cur_princs.size(); ++i)
+            for (size_t i = 0; i < cur_princs.size(); ++i)
                 fprintf(stderr, "  %s\n", cur_princs[i].c_str());
             ret = 1;
         }

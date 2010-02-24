@@ -194,4 +194,8 @@ public:
         return m_entry.key.enctype;
 #endif
     }
+
+    krb5_timestamp timestamp() {
+        return m_entry.timestamp;
+    }
 };
