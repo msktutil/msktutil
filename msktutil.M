@@ -197,7 +197,7 @@ administrator credentials.
 -s, --service <principal>
 Specifies a service principal to add to the account (and thus keytab, if appropriate). The service is of
 the form <service>/<hostname>.  If the hostname is omitted, assumes current hostname.
-.TP
+.TPo
 --remove-service <principal>
 Specifies a service principal to remove from the account (and keytab if appropriate).
 .TP
@@ -208,24 +208,33 @@ be used to kinit. This is generally unnecessary, since you can always authentica
 whether or not userPrincipalName is set. Generally requires administrator credentials.
 
 .SH EXAMPLES
-The most commonly used option is:
+For unprivileged users the most common invocations are:
 .PP
-.nf 
-REPLACE_PROGNAME --create
+.nf
+REPLACE_PROGNAME -u -s host -s HTTP
 .fi
 .PP
-This will create/update a computer account in Active Directory, and will add the host service
-principal to the keytab file.  Requires administrator credentials only if the account doesn't
-already exist in AD, or if it exists but the password is not either in the keytab already or is the
-default.
+This will update a computer account in Active Directory with a new password, write out a new keytab,
+and ensure that it has both "host" and "HTTP" service principals are on it for the hostname.
+.PP
+.nf
+REPLACE_PROGNAME --auto-update
+.fi
+.PP
+This is useful in a daily cron job to check and rotate the password automatically when it's 30 days
+old.
+
+
+For users with admin privileges in AD, some common uses:
 .PP
 .nf
 REPLACE_PROGNAME --precreate --host computer1.example.com
 .fi
 .PP
-This will pre-create an account for computer1 with the default password using the logged in user's
-credentials. This can be done on a central host, e.g. to script the addition of many hosts. You can
-then use REPLACE_PROGNAME --create on the hosts themselves to join the domain.
+This will pre-create an account for computer1 with the default password using your credentials. This
+can be done on a central host, e.g. to script the addition of many hosts. You can then use
+REPLACE_PROGNAME --create on the hosts themselves (without special credentials) to join them to the
+domain.
 .PP
 .nf
 REPLACE_PROGNAME --host afs --service afs --enctypes 0x03

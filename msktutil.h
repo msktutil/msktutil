@@ -158,6 +158,11 @@ struct msktutil_flags {
     std::string userPrincipalName;
     std::auto_ptr<LDAPConnection> ldap;
 
+    std::string ad_computerDn;
+    std::string ad_dnsHostName;
+    std::string ad_userPrincipal;
+    std::vector<std::string> ad_principals;
+
     bool set_description;
     bool set_userPrincipalName;
 
@@ -178,7 +183,8 @@ struct msktutil_flags {
 
 struct msktutil_exec {
     msktutil_mode mode;
-    std::vector<std::string> principals;
+    std::vector<std::string> add_principals;
+    std::vector<std::string> remove_principals;
     msktutil_flags *flags;
 
     msktutil_exec();
@@ -198,17 +204,18 @@ extern std::string complete_hostname(const std::string &);
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
-extern void add_principal_keytab(const std::string &, msktutil_flags *);
+extern void add_principal_keytab(const std::string &, krb5_kvno kvno, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
 extern int set_password(msktutil_flags *, int time = 0);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
 extern std::string ldap_get_pwdLastSet(msktutil_flags *);
 extern std::vector<std::string> ldap_list_principals(msktutil_flags *);
 extern int ldap_add_principal(const std::string &, msktutil_flags *);
+int ldap_remove_principal(const std::string &principal, msktutil_flags *flags);
 extern std::string get_dc_host(const std::string &realm_name);
 extern std::string get_user_principal();
 extern std::string get_host_os();
-extern int ldap_check_account(msktutil_flags *);
+extern void ldap_check_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);
 extern int remove_fake_krb5_conf();
 int find_working_creds(msktutil_flags *flags);

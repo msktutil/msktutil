@@ -103,21 +103,19 @@ int flush_keytab(msktutil_flags *flags)
 
 void update_keytab(msktutil_flags *flags)
 {
-    std::vector<std::string> principals;
-
     VERBOSE("Updating all entires for %s", flags->samAccountName.c_str());
-    add_principal_keytab(flags->samAccountName, flags);
+    krb5_kvno kvno = ldap_get_kvno(flags);
 
-    principals = ldap_list_principals(flags);
-    for (size_t i = 0; i < principals.size(); ++i) {
-        add_principal_keytab(principals[i], flags);
+    add_principal_keytab(flags->samAccountName, kvno, flags);
+
+    for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
+        add_principal_keytab(flags->ad_principals[i], kvno, flags);
     }
 }
 
 
-void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
+void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil_flags *flags)
 {
-    krb5_kvno kvno;
 
 
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
@@ -126,8 +124,6 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 
     std::string principal_string = sform("%s@%s", principal.c_str(), flags->realm_name.c_str());
     KRB5Principal princ(principal_string);
-
-    kvno = ldap_get_kvno(flags);
 
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
     to_delete_t to_delete;

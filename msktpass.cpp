@@ -93,12 +93,6 @@ int set_password(msktutil_flags *flags, int time)
     std::string current_pwdLastSet;
 
     VERBOSE("Attempting to reset computer's password");
-    ret = ldap_check_account(flags);
-    if (ret) {
-        fprintf(stderr, "Error: ldap_check_account failed (%s)\n", error_message(ret));
-        return ret;
-    }
-
     if (flags->auth_type == AUTH_FROM_USER_CREDS) {
         VERBOSE("Try change password using user's ticket cache\n");
 

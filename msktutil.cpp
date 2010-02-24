@@ -26,6 +26,7 @@
 #include "msktutil.h"
 #include <cctype>
 #include <memory>
+#include <algorithm>
 
 // GLOBALS
 
@@ -72,7 +73,18 @@ void do_verbose()
     g_verbose++; /* allow for ldap debuging */
 }
 
-
+void qualify_principal_vec(std::vector<std::string> &principals, const std::string &hostname) {
+    for(size_t i = 0; i < principals.size(); ++i) {
+        // If no hostname part, add it:
+        if (principals[i].find('/') == std::string::npos) {
+            if (hostname.empty()) {
+                fprintf(stderr, "Error: default hostname unspecified, and service argument missing hostname.\n");
+                exit(1);
+            }
+            principals[i].append("/").append(hostname);
+        }
+    }
+}
 
 int finalize_exec(msktutil_exec *exec)
 {
@@ -135,17 +147,9 @@ int finalize_exec(msktutil_exec *exec)
     }
     VERBOSE("SAM Account Name is: %s", flags->samAccountName.c_str());
 
-    /* Qualify all remaining entries in the principals list */
-    for(size_t i = 0; i < exec->principals.size(); ++i) {
-        // If no hostname part, add it:
-        if (exec->principals[i].find('/') == std::string::npos) {
-            if (flags->hostname.empty()) {
-                fprintf(stderr, "Error: default hostname unspecified, and --service argument missing hostname.");
-                exit(1);
-            }
-            exec->principals[i].append("/").append(flags->hostname);
-        }
-    }
+    /* Qualify entries in the principals list */
+    qualify_principal_vec(exec->add_principals, flags->hostname);
+    qualify_principal_vec(exec->remove_principals, flags->hostname);
 
     // Now, try to get kerberos credentials in order to connect to LDAP.
     /* We try 3 ways, in order:
@@ -176,6 +180,42 @@ int finalize_exec(msktutil_exec *exec)
     get_default_ou(flags);
 
     return 0;
+}
+
+int add_and_remove_principals(msktutil_exec *exec) {
+    int ret = 0;
+    std::vector<std::string> &cur_princs(exec->flags->ad_principals);
+
+    for (size_t i = 0; i < exec->add_principals.size(); ++i) {
+        std::string principal = exec->add_principals[i];
+        if (std::find(cur_princs.begin(), cur_princs.end(), principal) == cur_princs.end()) {
+            // Not already in the list, so add it.
+            int loc_ret = ldap_add_principal(principal, exec->flags);
+            if (loc_ret) {
+                fprintf(stderr, "Error: ldap_add_principal failed\n");
+                ret = 1;
+                continue;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < exec->remove_principals.size(); ++i) {
+        std::string principal = exec->remove_principals[i];
+        if (std::find(cur_princs.begin(), cur_princs.end(), principal) != cur_princs.end()) {
+            int loc_ret = ldap_remove_principal(principal, exec->flags);
+            if (loc_ret) {
+                fprintf(stderr, "Error: ldap_remove_principal failed\n");
+                ret = 1;
+                continue;
+            }
+        } else {
+            fprintf(stderr, "Error: principal %s cannot be removed, was not in servicePrincipalName.\n", principal.c_str());
+            for (int i = 0; i < cur_princs.size(); ++i)
+                fprintf(stderr, "  %s\n", cur_princs[i].c_str());
+            ret = 1;
+        }
+    }
+    return ret;
 }
 
 void do_help() {
@@ -236,6 +276,7 @@ void do_help() {
     fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host.\n");
     fprintf(stdout, "                         The service is of the form <service>/<hostname>.\n");
     fprintf(stdout, "                         If the hostname is omitted, assumes current hostname.\n");
+    fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
     fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>\n");
     fprintf(stdout, "                         The realm name will be appended to this principal\n");
 
@@ -292,51 +333,39 @@ int execute(msktutil_exec *exec)
             return ret;
         }
 
-        // Call set_password, to check and create the computer account if needed.
+        // Check if computer account exists, update if so, create if not.
+        ldap_check_account(flags);
+
+        // Set the password.
         ret = set_password(flags);
         if (ret) {
             fprintf(stderr, "Error: set_password failed\n");
             return ret;
         }
+
+        // And add and remove principals to servicePrincipalName in LDAP.
+        add_and_remove_principals(exec);
 
         VERBOSE("Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
                 flags->keytab_file.c_str());
         update_keytab(flags);
 
-        for (size_t i = 0; i < exec->principals.size(); ++i) {
-            std::string principal = exec->principals[i];
-            int loc_ret = ldap_add_principal(principal, flags);
-            if (loc_ret) {
-                fprintf(stderr, "Error: ldap_add_principal failed\n");
-                ret = 1;
-                continue;
-            }
-
-            fprintf(stdout, "Adding principal %s to the keytab %s\n", principal.c_str(),
-                    flags->keytab_file.c_str());
-            add_principal_keytab(principal, flags);
-        }
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
         // Change account password to default value:
         flags->password = flags->samAccountName_nodollar;
-        // Set that password (and create computer account if necessary)
+        // Check if computer account exists, update if so, create if not.
+        ldap_check_account(flags);
+
+        // Set the password.
         ret = set_password(flags);
         if (ret) {
             fprintf(stderr, "Error: set_password failed\n");
             return ret;
         }
 
-        // And add extra principals to servicePrincipalName in LDAP.
-        for (size_t i = 0; i < exec->principals.size(); ++i) {
-            std::string principal = exec->principals[i];
-            int loc_ret = ldap_add_principal(principal, flags);
-            if (loc_ret) {
-                fprintf(stderr, "Error: ldap_add_principal failed\n");
-                ret = 1;
-                continue;
-            }
-        }
+        // And add and remove principals to servicePrincipalName in LDAP.
+        add_and_remove_principals(exec);
         return ret;
     }
 
@@ -394,7 +423,7 @@ int main(int argc, char *argv [])
         /* Create 'Default' Keytab */
         if (!strcmp(argv[i], "--create") || !strcmp(argv[i], "-c")) {
             set_mode(exec.get(), MODE_UPDATE);
-            exec->principals.push_back("host");
+            exec->add_principals.push_back("host");
             continue;
         }
 
@@ -410,7 +439,16 @@ int main(int argc, char *argv [])
         /* Service Principal Name */
         if (!strcmp(argv[i], "--service") || !strcmp(argv[i], "-s")) {
             if (++i < argc) {
-                exec->principals.push_back(argv[i]);
+                exec->add_principals.push_back(argv[i]);
+            } else {
+                fprintf(stderr, "Error: No service principal given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+        if (!strcmp(argv[i], "--remove-service")) {
+            if (++i < argc) {
+                exec->remove_principals.push_back(argv[i]);
             } else {
                 fprintf(stderr, "Error: No service principal given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -563,7 +601,7 @@ int main(int argc, char *argv [])
                         MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
 
         if ((exec->flags->supportedEncryptionTypes|known) != known) {
-            fprintf(stderr, " Unsupported --enctypes must be integer that fits mask=0x%x", known);
+            fprintf(stderr, " Unsupported --enctypes must be integer that fits mask=0x%x\n", known);
             goto error;
         }
         if (exec->flags->supportedEncryptionTypes == 0) {
@@ -572,7 +610,7 @@ int main(int argc, char *argv [])
         }
     }
 
-    if (exec->mode == MODE_NONE && !exec->principals.empty())
+    if (exec->mode == MODE_NONE && !exec->add_principals.empty())
         set_mode(exec.get(), MODE_UPDATE);
 
     if (exec->mode == MODE_NONE) {
