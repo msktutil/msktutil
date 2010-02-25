@@ -49,9 +49,13 @@ std::string sform(const char* format, ...)
 }
 
 
+void remove_files_at_exit() {
+    remove_fake_krb5_conf();
+    remove_ccache();
+}
 void catch_int(int)
 {
-    remove_fake_krb5_conf();
+    remove_files_at_exit();
     exit(1);
 }
 
@@ -119,6 +123,7 @@ int finalize_exec(msktutil_exec *exec)
     get_default_keytab(flags);
 
     signal(SIGINT, catch_int);
+    atexit(remove_files_at_exit);
     create_fake_krb5_conf(flags);
 
     if (exec->mode == MODE_PRECREATE && exec->flags->hostname.empty()) {
@@ -174,6 +179,9 @@ int finalize_exec(msktutil_exec *exec)
     flags->ldap = ldap_connect(flags->server);
     if (!flags->ldap.get()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
+        // Print a hint as to the likely cause:
+        if (flags->auth_type == AUTH_FROM_USER_CREDS)
+            fprintf(stderr, "--> Is your kerberos ticket expired? You might try re-\"kinit\"ing.\n");
         exit(1);
     }
     ldap_get_base_dn(flags);
@@ -668,7 +676,9 @@ msktutil_exec::msktutil_exec() :
 }
 
 msktutil_exec::~msktutil_exec() {
+    VERBOSE("Destroying msktutil_exec");
     remove_fake_krb5_conf();
+    remove_ccache();
 
     delete flags;
 }

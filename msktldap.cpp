@@ -246,7 +246,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server, int try_tl
                                        sasl_interact, NULL);
 
     if (ret) {
-        fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed 4 (%s)\n", ldap_err2string(ret));
+        fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed (%s)\n", ldap_err2string(ret));
         if (is_tls)
             return ldap_connect(server, ATTEMPT_SASL_NO_TLS);
         return std::auto_ptr<LDAPConnection>(NULL);

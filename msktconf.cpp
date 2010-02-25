@@ -28,13 +28,28 @@
 #include <fstream>
 
 
-/* Store the orginal config file and CC name */
-static char *org_config = NULL;
+/* Filenames to delete on exit (temporary config / ccaches) */
+static std::string g_config_filename;
+static std::string g_ccache_filename;
+
+std::string get_tempfile_name(const char *name) {
+    std::string full_template = sform("%s/%s-XXXXXX", TMP_DIR, name);
+    char template_arr[full_template.size() + 1];
+    memcpy(template_arr, full_template.c_str(), full_template.size() + 1);
+
+    int fd = mkstemp(template_arr);
+    if (fd < 0)
+        throw Exception(sform("Error: mkstemp failed: %d", errno));
+
+    // Didn't need an fd, just to have the filename created securely.
+    close(fd);
+    return std::string(template_arr);
+}
 
 void create_fake_krb5_conf(msktutil_flags *flags)
 {
-    std::string filename = sform("%s/.mskt-%dkrb5.conf", TMP_DIR, getpid());;
-    std::ofstream file(filename.c_str());
+    g_config_filename = get_tempfile_name(".msktkrb5.conf");
+    std::ofstream file(g_config_filename.c_str());
 
     file << "[libdefaults]\n"
          << " default_realm = " << flags->realm_name << "\n"
@@ -47,12 +62,8 @@ void create_fake_krb5_conf(msktutil_flags *flags)
          << " }\n";
     file.close();
 
-    if (getenv("KRB5_CONFIG")) {
-        org_config = strdup(getenv("KRB5_CONFIG"));
-    }
-
-    int ret = setenv("KRB5_CONFIG", filename.c_str(), 1);
-    VERBOSE("Created a fake krb5.conf file: %s", filename.c_str());
+    int ret = setenv("KRB5_CONFIG", g_config_filename.c_str(), 1);
+    VERBOSE("Created a fake krb5.conf file: %s", g_config_filename.c_str());
     if (ret)
         throw Exception("setenv failed");
 
@@ -60,46 +71,44 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 }
 
 
-int remove_fake_krb5_conf()
+void remove_fake_krb5_conf()
 {
-    std::string filename;
-    int ret;
-
-    ret = unsetenv("KRB5_CONFIG");
-    if (org_config) {
-        ret |= setenv("KRB5_CONFIG", org_config, 1);
+    if (!g_config_filename.empty()) {
+        unlink(g_config_filename.c_str());
+        g_config_filename.clear();
     }
-
-    filename = sform("%s/.mskt-%dkrb5.conf", TMP_DIR, getpid());
-    ret = unlink(filename.c_str());
-
-    return ret;
 }
 
-#define PRIVATE_CCACHE_NAME "MEMORY:msktutil"
-
-void switch_default_ccache(char *ccache_name)
+void remove_ccache() {
+    if (!g_ccache_filename.empty()) {
+        unlink(g_ccache_filename.c_str());
+        g_ccache_filename.clear();
+    }
+}
+void switch_default_ccache(const char *ccache_name)
 {
-    char *filename = ccache_name;
-    VERBOSE("Using the local credential cache: %s", filename);
+    VERBOSE("Using the local credential cache: %s", ccache_name);
 
     // Is this setenv really necessary given krb5_cc_set_default_name?
-    if (setenv("KRB5CCNAME", filename, 1))
+    // ...answer: YES, because ldap's sasl won't be using our context object,
+    // and may in fact be using a different implementation of kerberos entirely!
+    if (setenv("KRB5CCNAME", ccache_name, 1))
         throw Exception("Error: setenv failed");
 
-    krb5_cc_set_default_name(g_context.get(), filename);
+    krb5_cc_set_default_name(g_context.get(), ccache_name);
 }
 
-bool try_machine_keytab_princ(msktutil_flags *flags, std::string principal_name) {
+bool try_machine_keytab_princ(msktutil_flags *flags, const std::string &principal_name,
+                              const char *ccache_name) {
     try {
         VERBOSE("Trying to authenticate for %s from local keytab...", principal_name.c_str());
         KRB5Keytab keytab(flags->keytab_file);
         KRB5Principal principal(principal_name);
         KRB5Creds creds(principal, keytab);
-        KRB5CCache ccache(PRIVATE_CCACHE_NAME);
+        KRB5CCache ccache(ccache_name);
         ccache.initialize(principal);
         ccache.store(creds);
-        switch_default_ccache(PRIVATE_CCACHE_NAME);
+        switch_default_ccache(ccache_name);
         return true;
     } catch (KRB5Exception &e) {
         VERBOSE(e.what());
@@ -108,15 +117,15 @@ bool try_machine_keytab_princ(msktutil_flags *flags, std::string principal_name)
     }
 }
 
-bool try_machine_password(msktutil_flags *flags) {
+bool try_machine_password(msktutil_flags *flags, const char *ccache_name) {
     try {
         VERBOSE("Trying to authenticate for %s with password.", flags->samAccountName.c_str());
         KRB5Principal principal(flags->samAccountName);
         KRB5Creds creds(principal, /*password:*/ flags->samAccountName_nodollar);
-        KRB5CCache ccache(PRIVATE_CCACHE_NAME);
+        KRB5CCache ccache(ccache_name);
         ccache.initialize(principal);
         ccache.store(creds);
-        switch_default_ccache(PRIVATE_CCACHE_NAME);
+        switch_default_ccache(ccache_name);
         return true;
     } catch (KRB5Exception &e) {
         VERBOSE(e.what());
@@ -145,11 +154,19 @@ int find_working_creds(msktutil_flags *flags) {
     if (!flags->user_creds_only) {
         std::string host_princ = "host/" + flags->hostname;
 
-        if (try_machine_keytab_princ(flags, flags->samAccountName))
+        // NOTE: we have to use an actual file for the credential cache, and not a MEMORY: type,
+        // because libsasl may be using heimdal, while this program may be compiled against MIT
+        // kerberos. So, while it's all in the same process and you'd think an in-mem ccache would
+        // be the right thing, the two kerberos implementations cannot share an in-memory ccache, so
+        // we have to use a file. Sigh.
+        g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
+        std::string ccache_name = "FILE:" + g_ccache_filename;
+
+        if (try_machine_keytab_princ(flags, flags->samAccountName, ccache_name.c_str()))
             return AUTH_FROM_SAM_KEYTAB;
-        if (try_machine_keytab_princ(flags, host_princ))
+        if (try_machine_keytab_princ(flags, host_princ, ccache_name.c_str()))
             return AUTH_FROM_HOSTNAME_KEYTAB;
-        if (try_machine_password(flags))
+        if (try_machine_password(flags, ccache_name.c_str()))
             return AUTH_FROM_PASSWORD;
     }
     if (try_user_creds())

@@ -217,7 +217,8 @@ extern std::string get_user_principal();
 extern std::string get_host_os();
 extern void ldap_check_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);
-extern int remove_fake_krb5_conf();
+extern void remove_fake_krb5_conf();
+extern void remove_ccache();
 int find_working_creds(msktutil_flags *flags);
 int generate_new_password(msktutil_flags *flags);
 
