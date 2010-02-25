@@ -5,11 +5,8 @@
 
  Installing
 
-To install msktutil, you'll need to unpack the source.   I'm guessing you've
-gotten this far if you're reading this file :-)
-
-Msktutil uses a standard autoconf system to build...  Just run './configure' 
-followed by 'make' and (as root) 'make install'.   Note that in order to 
+Msktutil uses a standard autoconf system to build...  Just run './configure'
+followed by 'make' and (as root) 'make install'.   Note that in order to
 build this you will need development headers and libraries for MIT Kerberos,
 LDAP, and SASL.  If these packages are installed elsewhere, you can use the
 following options to the configure script:
@@ -18,21 +15,16 @@ following options to the configure script:
    --with-ldapdir=/path/to/ldap
    --with-sasldir=/path/to/sasl
 
-Note the pathes specified are expected to a base path.  For example, the 
-configure script expects that an 'include' and 'lib' directory exists in 
-each of the base pathes with the appropriate headers and libraries.  You 
-also can set the LDFLAGS and CPPFLAGS enviroment variables to specify other 
+Note the paths specified are expected to a base path.  For example, th
+configure script expects that an 'include' and 'lib' directory exists in
+each of the base paths with the appropriate headers and libraries.  You
+also can set the LDFLAGS and CPPFLAGS enviroment variables to specify other
 paths for these headers and libraries.
-
-
 
  Portability
 
-This code has been tested under Linux, (specifically RedHat) using OpenLDAP
-2.2.10+, CMU SASL 2, and MIT Kerberos 1.3.0+.  This code may work correctly 
-with other combinations of software versions, but it hasn't been tested. If 
-you get this code to work on other platforms and in other LDAP/Kerberos 
-environments, send me an email letting me know about your success.  Likewise,
-I'm happy to take suggests on how to make the code more portable.
-
+This code has been tested under Debian Linux "Lenny", using OpenLDAP
+2.4.11 CMU SASL 2.1.22, and MIT Kerberos 1.6 or Heimdal 1.2. I know of
+no reason it should not work with other versions, but I have not
+tested it with them at this point.
 
