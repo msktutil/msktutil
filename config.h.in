@@ -6,6 +6,14 @@
 /* Define to 1 if you have the <com_err.h> header file. */
 #undef HAVE_COM_ERR_H
 
+/* Define to 1 if you have the declaration of
+   `ENCTYPE_AES128_CTS_HMAC_SHA1_96', and to 0 if you don't. */
+#undef HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+
+/* Define to 1 if you have the declaration of
+   `ENCTYPE_AES256_CTS_HMAC_SHA1_96', and to 0 if you don't. */
+#undef HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+
 /* Define to 1 if you have the <heimdal/heim_err.h> header file. */
 #undef HAVE_HEIMDAL_HEIM_ERR_H
 

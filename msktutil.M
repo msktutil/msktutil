@@ -197,7 +197,7 @@ administrator credentials.
 -s, --service <principal>
 Specifies a service principal to add to the account (and thus keytab, if appropriate). The service is of
 the form <service>/<hostname>.  If the hostname is omitted, assumes current hostname.
-.TPo
+.TP
 --remove-service <principal>
 Specifies a service principal to remove from the account (and keytab if appropriate).
 .TP

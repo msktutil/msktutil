@@ -44,29 +44,40 @@ void get_default_keytab(msktutil_flags *flags)
 
     if (flags->keytab_file.empty()) {
         /* Only set the field to a default if it's empty */
+
         krb5_error_code ret = krb5_kt_default_name(g_context.get(), keytab_name, MAX_KEYTAB_NAME_LEN);
         if (ret)
             throw KRB5Exception("krb5_kt_default_name (get_default_keytab)", ret);
+        flags->keytab_readname = std::string(keytab_name);
 
+#ifdef HEIMDAL
+        ret = krb5_kt_default_modify_name(g_context.get(), keytab_name, MAX_KEYTAB_NAME_LEN);
+        if (ret)
+            throw KRB5Exception("krb5_kt_default_modify_name (get_default_keytab)", ret);
+        flags->keytab_writename = std::string(keytab_name);
+#else
         if (!strncmp(keytab_name, "FILE:", 5)) {
-            /* Ignore the opening FILE: part */
-            flags->keytab_file = std::string(keytab_name + 5);
+            /* Ignore opening FILE: part */
+            flags->keytab_writename = std::string(keytab_name + 5);
         } else if (!strncmp(keytab_name, "WRFILE:", 7)) {
             /* Ignore the opening WRFILE: part */
-            flags->keytab_file = std::string(keytab_name + 7);
+            flags->keytab_writename = std::string(keytab_name);
         } else {
             /* No prefix to the keytab path */
-            flags->keytab_file = std::string(keytab_name);
+            flags->keytab_writename = "WRFILE:" + std::string(keytab_name);
         }
-        VERBOSE("Obtaining the default keytab name: %s", flags->keytab_file.c_str());
+#endif
+        VERBOSE("Obtaining the default keytab name: %s", flags->keytab_readname.c_str());
+    } else {
+        flags->keytab_writename = "WRFILE:" + flags->keytab_file;
+        flags->keytab_readname = "FILE:" + flags->keytab_file;
     }
 }
 
 int flush_keytab(msktutil_flags *flags)
 {
     VERBOSE("Flushing the keytab");
-    std::string keytab_name = sform("WRFILE:%s", flags->keytab_file.c_str());
-    KRB5Keytab keytab(keytab_name);
+    KRB5Keytab keytab(flags->keytab_writename);
 
     // Delete all entries for this host
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
@@ -117,8 +128,7 @@ void update_keytab(msktutil_flags *flags)
 void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil_flags *flags)
 {
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
-    std::string keytab_name = sform("WRFILE:%s", flags->keytab_file.c_str());
-    KRB5Keytab keytab(keytab_name);
+    KRB5Keytab keytab(flags->keytab_writename);
 
     std::string principal_string = sform("%s@%s", principal.c_str(), flags->realm_name.c_str());
     KRB5Principal princ(principal_string);
@@ -181,11 +191,11 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
         enc_types.push_back(ENCTYPE_DES_CBC_MD5);
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_RC4_HMAC_MD5)
         enc_types.push_back(ENCTYPE_ARCFOUR_HMAC);
-#ifdef ENCTYPE_AES128_CTS_HMAC_SHA1_96
+#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96)
         enc_types.push_back(ENCTYPE_AES128_CTS_HMAC_SHA1_96);
 #endif
-#ifdef ENCTYPE_AES256_CTS_HMAC_SHA1_96
+#if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
         enc_types.push_back(ENCTYPE_AES256_CTS_HMAC_SHA1_96);
 #endif

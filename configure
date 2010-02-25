@@ -4165,6 +4165,144 @@ _ACEOF
 fi
 fi
 
+# Check that the AES enctypes are found
+{ echo "$as_me:$LINENO: checking whether ENCTYPE_AES256_CTS_HMAC_SHA1_96 is declared" >&5
+echo $ECHO_N "checking whether ENCTYPE_AES256_CTS_HMAC_SHA1_96 is declared... $ECHO_C" >&6; }
+if test "${ac_cv_have_decl_ENCTYPE_AES256_CTS_HMAC_SHA1_96+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <krb5.h>
+
+int
+main ()
+{
+#ifndef ENCTYPE_AES256_CTS_HMAC_SHA1_96
+  (void) ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_have_decl_ENCTYPE_AES256_CTS_HMAC_SHA1_96=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_have_decl_ENCTYPE_AES256_CTS_HMAC_SHA1_96=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_have_decl_ENCTYPE_AES256_CTS_HMAC_SHA1_96" >&5
+echo "${ECHO_T}$ac_cv_have_decl_ENCTYPE_AES256_CTS_HMAC_SHA1_96" >&6; }
+if test $ac_cv_have_decl_ENCTYPE_AES256_CTS_HMAC_SHA1_96 = yes; then
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96 1
+_ACEOF
+
+
+else
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0
+_ACEOF
+
+
+fi
+{ echo "$as_me:$LINENO: checking whether ENCTYPE_AES128_CTS_HMAC_SHA1_96 is declared" >&5
+echo $ECHO_N "checking whether ENCTYPE_AES128_CTS_HMAC_SHA1_96 is declared... $ECHO_C" >&6; }
+if test "${ac_cv_have_decl_ENCTYPE_AES128_CTS_HMAC_SHA1_96+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <krb5.h>
+
+int
+main ()
+{
+#ifndef ENCTYPE_AES128_CTS_HMAC_SHA1_96
+  (void) ENCTYPE_AES128_CTS_HMAC_SHA1_96;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_have_decl_ENCTYPE_AES128_CTS_HMAC_SHA1_96=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_have_decl_ENCTYPE_AES128_CTS_HMAC_SHA1_96=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_have_decl_ENCTYPE_AES128_CTS_HMAC_SHA1_96" >&5
+echo "${ECHO_T}$ac_cv_have_decl_ENCTYPE_AES128_CTS_HMAC_SHA1_96" >&6; }
+if test $ac_cv_have_decl_ENCTYPE_AES128_CTS_HMAC_SHA1_96 = yes; then
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96 1
+_ACEOF
+
+
+else
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96 0
+_ACEOF
+
+
+fi
+
+
+
 ac_config_files="$ac_config_files Makefile"
 
 cat >confcache <<\_ACEOF

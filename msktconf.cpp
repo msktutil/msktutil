@@ -102,7 +102,7 @@ bool try_machine_keytab_princ(msktutil_flags *flags, const std::string &principa
                               const char *ccache_name) {
     try {
         VERBOSE("Trying to authenticate for %s from local keytab...", principal_name.c_str());
-        KRB5Keytab keytab(flags->keytab_file);
+        KRB5Keytab keytab(flags->keytab_readname);
         KRB5Principal principal(principal_name);
         KRB5Creds creds(principal, keytab);
         KRB5CCache ccache(ccache_name);

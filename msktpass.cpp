@@ -128,7 +128,7 @@ int set_password(msktutil_flags *flags, int time)
                 princ_name = flags->samAccountName;
             VERBOSE("Try using keytab for %s to change password\n", princ_name.c_str());
 
-            KRB5Keytab keytab(flags->keytab_file);
+            KRB5Keytab keytab(flags->keytab_readname);
             KRB5Principal principal(flags->samAccountName);
             KRB5Creds local_creds(principal, keytab, "kadmin/changepw");
             creds.move_from(local_creds);

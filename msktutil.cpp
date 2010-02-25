@@ -307,7 +307,7 @@ int execute(msktutil_exec *exec)
 
     if (exec->mode == MODE_FLUSH) {
         fprintf(stdout, "Flushing all entries for %s from the keytab %s\n", flags->hostname.c_str(),
-                flags->keytab_file.c_str());
+                flags->keytab_writename.c_str());
         ret = flush_keytab(flags);
         return ret;
     } else if (exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
@@ -355,7 +355,7 @@ int execute(msktutil_exec *exec)
         add_and_remove_principals(exec);
 
         VERBOSE("Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
-                flags->keytab_file.c_str());
+                flags->keytab_writename.c_str());
         update_keytab(flags);
 
         return ret;

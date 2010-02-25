@@ -1,0 +1,23 @@
+msktutil (0.4)
+Changes since msktutil_0.3.16-7 downloaded from:
+  http://download.systemimager.org/~finley/msktutil/
+
+  * James Y Knight took over maintainance.
+  * Made everything that can work properly with only the machine account
+    credentials.
+  * Attempts to authenticate with the default machine account password so
+    that AD "reset account" is functional.
+  * Get default LDAP OU to create new machines in from the magic GUID from
+    AD, instead of assuming CN=Computers.
+  * Added --precreate option to allow an administrator to script creation
+    of accounts.
+  * Added --auto-update for use from a crontab to auto-rotate password.
+  * No longer attempts to disable password expiry by default: so note, you
+    need to either run --auto-update from cron or else pass the (new)
+    argument --dont-expire-password.
+  * Added --remove-service argument.
+  * Fixed old kvno expiration policy so that it keeps old principals
+    around in the keytab for a week, instead of just keeping the
+    immediately-prior kvno.
+  * Switched languages from C to C++.
+  * Lots of other cleanup and various minor bugs.

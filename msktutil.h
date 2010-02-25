@@ -95,13 +95,13 @@
 #define MS_KERB_ENCTYPE_RC4_HMAC_MD5            0x04
 
 // Define these if the system supports them, otherwise define to 0.
-#ifdef ENCTYPE_AES128_CTS_HMAC_SHA1_96
+#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 #define MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 0x08
 #else
 #define MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 0
 #endif
 
-#ifdef ENCTYPE_AES256_CTS_HMAC_SHA1_96
+#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 #define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0x10
 #else
 #define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0
@@ -145,6 +145,8 @@ enum msktutil_mode {
 
 struct msktutil_flags {
     std::string keytab_file;
+    std::string keytab_writename;
+    std::string keytab_readname;
     std::string ldap_ou;
     std::string hostname;
     std::string description;
