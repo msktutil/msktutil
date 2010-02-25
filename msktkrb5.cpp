@@ -58,7 +58,7 @@ void get_default_keytab(msktutil_flags *flags)
 #else
         if (!strncmp(keytab_name, "FILE:", 5)) {
             /* Ignore opening FILE: part */
-            flags->keytab_writename = std::string(keytab_name + 5);
+            flags->keytab_writename = "WRFILE:" + std::string(keytab_name + 5);
         } else if (!strncmp(keytab_name, "WRFILE:", 7)) {
             /* Ignore the opening WRFILE: part */
             flags->keytab_writename = std::string(keytab_name);
