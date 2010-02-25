@@ -47,7 +47,6 @@ binary-arch:	checkroot build
 	$(MAKE) INSTALL_PROGRAM="$(INSTALL_PROGRAM)" \
 		prefix=$$(pwd)/debian/tmp/usr install
 	cp -a debian/copyright $(docdir)
-	install -d $(docdir)/examples
 	cp -a debian/changelog $(docdir)/changelog.Debian
 	#cp -a ChangeLog $(docdir)/changelog
 	#cd $(docdir) && gzip -9 changelog changelog.Debian

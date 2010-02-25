@@ -1,23 +1,44 @@
-msktutil (0.4)
+msktutil 0.4:
+
 Changes since msktutil_0.3.16-7 downloaded from:
   http://download.systemimager.org/~finley/msktutil/
 
-  * James Y Knight took over maintainance.
-  * Made everything that can work properly with only the machine account
-    credentials.
-  * Attempts to authenticate with the default machine account password so
-    that AD "reset account" is functional.
-  * Get default LDAP OU to create new machines in from the magic GUID from
-    AD, instead of assuming CN=Computers.
-  * Added --precreate option to allow an administrator to script creation
-    of accounts.
-  * Added --auto-update for use from a crontab to auto-rotate password.
-  * No longer attempts to disable password expiry by default: so note, you
-    need to either run --auto-update from cron or else pass the (new)
-    argument --dont-expire-password.
-  * Added --remove-service argument.
-  * Fixed old kvno expiration policy so that it keeps old principals
-    around in the keytab for a week, instead of just keeping the
-    immediately-prior kvno.
-  * Switched languages from C to C++.
-  * Lots of other cleanup and various minor bugs.
+- James Y Knight took over maintainance.
+
+- Made most functionality work properly with only the machine account
+  credentials.
+
+- Adds COMPUTERNAME$ to the keytab, and authenticates with that, so
+  that setting userPrincipalName to host/COMPUTERNAME.DOMAIN@REALM
+  isn't necessary. (since userPrincipalName isn't settable without
+  admin perms)
+
+- Now attempts to authenticate with the default machine account
+  password so that AD "reset account" is functional.
+
+- Gets the default LDAP OU to create new machines in from the magic
+  GUID from AD, instead of assuming CN=Computers.
+
+- Added --precreate option to allow an administrator to script
+  creation of accounts without touching a local keytab.
+
+- Added --auto-update for use from a crontab to auto-rotate password.
+
+- No longer attempts to disable password expiry by default: So note,
+  you need to either run --auto-update from cron or else pass the
+  (new) argument --dont-expire-password when creating the account.
+
+- Added --remove-service argument.
+
+- Fixed old kvno expiration policy so that it keeps old principals
+   around in the keytab for a week, instead of just keeping the
+   immediately-prior kvno.
+
+- Switched languages from C to C++.
+
+- Lots of other cleanup and various bugfixes.
+
+- Removed --des-only option, you can use --supportedEncryptionTypes if
+  you really want to use single DES. (which, of course, you shouldn't,
+  given that it's now 2010 and Single DES was known to be utterly
+  broken for over 10 years by now!)
