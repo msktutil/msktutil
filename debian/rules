@@ -43,13 +43,15 @@ binary-arch:	checkroot build
 	$(checkdir)
 	rm -rf debian/tmp
 	install -d debian/tmp/DEBIAN $(docdir)
-	#install -m 755 debian/postinst debian/prerm debian/tmp/DEBIAN
+	install -m 755 debian/postinst debian/tmp/DEBIAN
 	$(MAKE) INSTALL_PROGRAM="$(INSTALL_PROGRAM)" \
 		prefix=$$(pwd)/debian/tmp/usr install
 	cp -a debian/copyright $(docdir)
 	cp -a debian/changelog $(docdir)/changelog.Debian
 	#cp -a ChangeLog $(docdir)/changelog
 	#cd $(docdir) && gzip -9 changelog changelog.Debian
+	install -d debian/tmp/etc/cron.daily
+	install -m 755 debian/cron-daily.sh debian/tmp/etc/cron.daily/msktutil
 	dh_strip
 	cd $(docdir) && gzip -9 changelog.Debian
 	gzip -r9 debian/tmp/usr/share/man
