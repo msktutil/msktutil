@@ -1,9 +1,7 @@
-msktutil 0.4:
+Release 0.4:
 
-Changes since msktutil_0.3.16-7 downloaded from:
-  http://download.systemimager.org/~finley/msktutil/
-
-- James Y Knight took over maintainance.
+- James Y Knight took over maintainance, based upon msktutil_0.3.16-7
+  downloaded from: http://download.systemimager.org/~finley/msktutil/
 
 - Made most functionality work properly with only the machine account
   credentials.
@@ -47,3 +45,49 @@ Changes since msktutil_0.3.16-7 downloaded from:
 - Switched languages from C to C++.
 
 - Lots of other cleanup and various bugfixes.
+
+****
+
+Changelog of non-packaging changes from previous releases:
+
+msktutil 0.3.16-7
+
+  * fix keytab bug in 0.3.16-6
+
+ -- Doug Engert <deengert@anl.gov>  Fri, 17 Apr 2009 10:48:00 -0500
+
+msktutil 0.3.16-6
+
+  * Work with W2008 without hotfix 951191
+
+  * SASL ssf varied depending on TLS to circumvent another W2008 bug
+
+  * added --enctypes N where N is defind with W2008
+    http://msdn.microsoft.com/en-us/library/cc223853(PROT.10).aspx
+    msDs-supportedEncrtptionTypes. 1=DES, 2=DES, 4=RC4,
+    8=AES128 16=AES256. N is sum of these.
+
+  * Use /dev/urandom and 63 character password.
+
+  * --verbose --verbose turns on LDAP debugging
+
+  * #ifdef for use with Solairs LDAP
+
+  * Cleanup of other ldap code and error handing
+
+  * msktutil.interactive updated to work on Solaris and use msktutil
+    from same directory.
+
+ -- Doug Engert <deengert@anl.gov>  Tue, 14 Apr 2009 11:16:53 -0500
+
+msktutil (0.3.16-5)
+
+  * Updated msktutil.interactive example script.
+
+ -- Brian Elliott Finley <brian@thefinleys.com>  Mon, 07 Aug 2006 16:59:24 -0500
+
+msktutil (0.3.16-4)
+
+  * Updated msktutil.interactive example script.
+
+ -- Brian Elliott Finley <brian@thefinleys.com>  Thu, 27 Jul 2006 16:31:17 -0500

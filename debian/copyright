@@ -1,11 +1,8 @@
-This package was debianized by Brian Elliott Finley <brian@thefinleys.com> on
-Fri, 3 Mar 2006 15:42:00 -0600.
-
-It was originally downloaded from http://www.pppl.gov/~dperry/
-It was then downloaded from http://download.systemimager.org/~finley/msktutil/
-It now lives at http://fuhm.net/software/msktutil/
+This package now lives at http://fuhm.net/software/msktutil/
 
 Copyright (C) 2004-2006 Dan Perry <dperry@pppl.gov>
+Copyright (C) 2006 Brian Elliott Finley (finley@anl.gov)
+Copyright (C) 2009-2010 Doug Engert (deengert@anl.gov)
 Copyright (C) 2010 James Y Knight <foom@fuhm.net>
 
     This program is free software; you can redistribute it and/or modify

@@ -1,8 +1,23 @@
  msktutil (C) 2004-2006 Dan Perry <dperry@pppl.gov>
+ 	  (C) 2006 Brian Elliott Finley (finley@anl.gov)
+	  (C) 2009-2010 Doug Engert (deengert@anl.gov)
           (C) 2010 James Knight <foom@fuhm.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
 ----------------------------------------------------------------------------
-
-
 
 Msktutil is a program for interoperability with Active Directory that can:
  - Create a computer account in Active Directory
@@ -10,4 +25,21 @@ Msktutil is a program for interoperability with Active Directory that can:
  - Add and remove principals to and from that keytab
  - Change the computer account's password
 
-See the man page for more information.
+See the man page for more information on how to use it.
+
+----------------------------------------------------------------------------
+
+This package has been through a few maintainers over the years.
+
+It was originally written by Dan Perry, and available from
+<http://www.pppl.gov/~dperry/>
+
+Then, it was downloaded from there and debianized by Brian Elliott
+Finley in Mar 2006.
+
+Then, Doug Engbert made a number of changes to it during 2009.
+
+Then, in Feb 2010, James Knight then downloaded the debian package with
+changes from <http://download.systemimager.org/~finley/msktutil/>, and
+made even more changes. That's what you have now. :)
+

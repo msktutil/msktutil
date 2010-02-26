@@ -4,6 +4,8 @@
  * msktldap.c
  *
  * (C) 2004-2006 Dan Perry (dperry@pppl.gov)
+ * (C) 2006 Brian Elliott Finley (finley@anl.gov)
+ * (C) 2009-2010 Doug Engert (deengert@anl.gov)
  * (C) 2010 James Y Knight (foom@fuhm.net)
  *
     This program is free software; you can redistribute it and/or modify
