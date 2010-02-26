@@ -205,18 +205,31 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
     for(size_t i = 0; i < enc_types.size(); ++i) {
         /*
          * Windows uses realm_name+"host"+samAccountName_nodollar+"."+lower_realm_name
-         * for the salt. (note: arcfour-hmac doesn't use salts at all; it's irrelevant what you set it to)
+         * for the salt. (note: only for DES/AES; arcfour-hmac-md5 doesn't use salts at all)
          *
          * Windows 2000 may have used something different, but who cares.
          *
-         * FIXME: this is stupid, and unreliable. The salt is supposed to be an implementation
-         * detail that can be changed by the server anytime they feel like. Furthermore, if you
-         * rename an account, the salt doesn't change until next time you reset a password.
+         * FIXME: this is stupid, and not future proof. The salt is supposed to be an implementation
+         * detail that the server can set to whatever it feels like (so long as it doesn't change it
+         * except when the password changes). A future version of windows may change the salting
+         * algorithm to something else, or may even start using random salts.
          *
-         * We should be able to simply ask the KDC what salt to use for the account (the very first
-         * message the client sends when authenticating gets the salt as a response...).  However,
-         * at first glance, it looks like the kerberos client APIs don't provide any way to get to
-         * this functionality (??)
+         * In the normal authentication path, the client asks the KDC what salt to use when
+         * encrypting the password for the account, and then uses that. And for the creation of a
+         * keytab in MIT kerberos (in the suual case), you use the kadmin protocol to download the
+         * already salted key block.
+         *
+         * But, here, we need to take a password and encrypt it the same way the server is going to,
+         * in order to store it in the keytab. All we need is to ask the server what salt it wants
+         * to use...But, as far as I can tell, there exists no API in libkrb5 that can retrieve the
+         * salt that should be used with a given principal, even though it's clearly available in
+         * the network protocol.
+         *
+         * What we're doing here is very much like MIT kerberos' ktutil addent -password, which also
+         * assumes the server uses a particular salt. And that is also broken. Given this email
+         * thread: <http://mailman.mit.edu/pipermail/krbdev/2009-July/007835.html>, I hope libkrb5
+         * will provide the proper API before MS switches to start using randomized salts in some
+         * future AD release.
          */
         std::string lower_accountname = flags->samAccountName_nodollar;
         for(std::string::iterator it = lower_accountname.begin();
