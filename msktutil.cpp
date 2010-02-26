@@ -53,6 +53,7 @@ void remove_files_at_exit() {
     remove_fake_krb5_conf();
     remove_ccache();
 }
+
 void catch_int(int)
 {
     remove_files_at_exit();
@@ -642,7 +643,7 @@ error:
 
 msktutil_flags::msktutil_flags() :
     password(), ldap(), set_description(false), set_userPrincipalName(false),
-    no_pac(VALUE_IGNORE), delegate(VALUE_IGNORE),
+    dont_expire_password(VALUE_IGNORE), no_pac(VALUE_IGNORE), delegate(VALUE_IGNORE),
     ad_userAccountControl(0), ad_enctypes(VALUE_IGNORE), ad_supportedEncryptionTypes(0),
     enctypes(VALUE_IGNORE),
     /* default values we *want* to support */

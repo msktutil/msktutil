@@ -33,13 +33,13 @@ std::string complete_hostname(const std::string &hostname)
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), hostname.c_str(), "host",
                                 KRB5_NT_SRV_HST, &temp_princ_raw);
-    KRB5Principal temp_princ(temp_princ_raw);
-
     if (ret != 0) {
         fprintf(stderr, "Warning: hostname canonicalization for %s failed (%s)\n",
                 hostname.c_str(), error_message(ret));
         return hostname;
     }
+
+    KRB5Principal temp_princ(temp_princ_raw);
 
 #ifdef HEIMDAL
     const char *comp = krb5_principal_get_comp_string(g_context.get(), temp_princ.get(), 1);
@@ -65,11 +65,10 @@ std::string get_default_hostname()
     krb5_principal temp_princ_raw;
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), NULL, "host", KRB5_NT_SRV_HST, &temp_princ_raw);
-
-    KRB5Principal temp_princ(temp_princ_raw);
-
     if (ret != 0)
         throw KRB5Exception("krb5_sname_to_principal (get_default_hostname)", ret);
+
+    KRB5Principal temp_princ(temp_princ_raw);
 
 #ifdef HEIMDAL
     const char *comp = krb5_principal_get_comp_string(g_context.get(), temp_princ.get(), 1);

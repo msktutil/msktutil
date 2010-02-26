@@ -34,11 +34,16 @@ Changes since msktutil_0.3.16-7 downloaded from:
    around in the keytab for a week, instead of just keeping the
    immediately-prior kvno.
 
+- Disabled use of DES keys by default. You will have to explicitly
+  request them with --enctypes if you want them.
+
+- Removed --des-only option, you can use --enctypes if you really want
+  to use single DES. (which, of course, you shouldn't, given that it's
+  now 2010 and Single DES was known to be utterly broken for over 10
+  years by now!)
+
+- Fixed salting to lowercase the account name, as the AD server does.
+
 - Switched languages from C to C++.
 
 - Lots of other cleanup and various bugfixes.
-
-- Removed --des-only option, you can use --supportedEncryptionTypes if
-  you really want to use single DES. (which, of course, you shouldn't,
-  given that it's now 2010 and Single DES was known to be utterly
-  broken for over 10 years by now!)

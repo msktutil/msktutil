@@ -168,6 +168,9 @@ int set_password(msktutil_flags *flags, int time)
         }
 
     }
+
+    VERBOSE("Successfully set password, waiting for it to be reflected in LDAP.");
+
     /* Loop and wait for the account and password set to replicate */
     for (int this_time = 0; ; this_time += 5) {
         current_pwdLastSet = ldap_get_pwdLastSet(flags);
