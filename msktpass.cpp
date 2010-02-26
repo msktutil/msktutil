@@ -92,6 +92,15 @@ int set_password(msktutil_flags *flags, int time)
     std::string old_pwdLastSet;
     std::string current_pwdLastSet;
 
+
+    // Zero out these data structures, because we attempt to free them below, and sometimes, upon
+    // error conditions, the called API hasn't set them itself.
+    resp_string.data = NULL;
+    resp_string.length = 0;
+    resp_code_string.data = NULL;
+    resp_code_string.length = 0;
+
+
     VERBOSE("Attempting to reset computer's password");
     if (flags->auth_type == AUTH_FROM_USER_CREDS) {
         VERBOSE("Try change password using user's ticket cache\n");
