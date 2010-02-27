@@ -134,13 +134,13 @@ int set_password(msktutil_flags *flags, int time)
             flags->auth_type == AUTH_FROM_HOSTNAME_KEYTAB) {
             std::string princ_name;
             if (flags->auth_type == AUTH_FROM_SAM_KEYTAB)
-                princ_name = "host/" + flags->hostname;
-            else
                 princ_name = flags->samAccountName;
+            else
+                princ_name = "host/" + flags->hostname;
             VERBOSE("Try using keytab for %s to change password\n", princ_name.c_str());
 
             KRB5Keytab keytab(flags->keytab_readname);
-            KRB5Principal principal(flags->samAccountName);
+            KRB5Principal principal(princ_name);
             KRB5Creds local_creds(principal, keytab, "kadmin/changepw");
             creds.move_from(local_creds);
         } else if (flags->auth_type == AUTH_FROM_PASSWORD) {
