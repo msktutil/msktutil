@@ -320,7 +320,7 @@ int execute(msktutil_exec *exec)
                 std::string pwdLastSet = ldap_get_pwdLastSet(exec->flags);
                 // Windows timestamp is in 100-nanoseconds-since-1601. (or, tenths of microseconds)
                 long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);
-                long long epoch_bias_1601_to_1970 = 116444736000000000;
+                long long epoch_bias_1601_to_1970 = 116444736000000000LL;
                 // Unix timestamp is seconds since 1970.
                 long long unix_timestamp;
                 if (windows_timestamp < epoch_bias_1601_to_1970)

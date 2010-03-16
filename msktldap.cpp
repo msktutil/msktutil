@@ -141,12 +141,12 @@ void get_default_ou(msktutil_flags *flags)
         ldap_msgfree(mesg);
         if (dn.empty()) {
             fprintf(stderr, "Warning: could not get default computer OU from AD.\n");
-            flags->ldap_ou = "CN=Computers" + flags->base_dn;
+            flags->ldap_ou = "CN=Computers," + flags->base_dn;
         } else
             flags->ldap_ou = dn;
         VERBOSE("Determining default OU: %s", flags->ldap_ou.c_str());
     } else
-        flags->ldap_ou = flags->ldap_ou + flags->base_dn;
+        flags->ldap_ou = flags->ldap_ou + "," + flags->base_dn;
 }
 
 
