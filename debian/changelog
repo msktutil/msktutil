@@ -1,6 +1,8 @@
-msktutil (0.4-1) unstable; urgency=low
+msktutil (0.4-2) unstable; urgency=low
 
-  * New release
+  * New upstream release.
+  * Include cron.daily script to rotate keytab
+    (disabled by default; enable with /etc/default/msktutil)
 
  -- James Y. Knight <foom@fuhm.net>  Tue, 16 Feb 2010 18:22:53 -0500
 
