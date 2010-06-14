@@ -27,6 +27,8 @@
 
 #include "msktutil.h"
 #include <algorithm>
+#include <sstream>
+#include <iostream>
 
 LDAPConnection::LDAPConnection(const std::string &server) : m_ldap() {
 #ifndef SOLARIS_LDAP_KERBEROS
@@ -46,20 +48,18 @@ LDAPConnection::LDAPConnection(const std::string &server) : m_ldap() {
 void LDAPConnection::set_option(int option, const void *invalue) {
     int ret = ldap_set_option(m_ldap, option, invalue);
     if (ret) {
-        std::string s = "ldap_set_option (option=";
-        s += option;
-        s += ") ";
-        throw LDAPException(s, ret);
+        std::stringstream ss;
+        ss << "ldap_set_option (option=" << option << ") ";
+        throw LDAPException(ss.str(), ret);
     }
 }
 
 void LDAPConnection::get_option(int option, void *outvalue) {
     int ret = ldap_get_option(m_ldap, option, outvalue);
     if (ret) {
-        std::string s = "ldap_set_option (option=";
-        s += option;
-        s += ") ";
-        throw LDAPException(s, ret);
+        std::stringstream ss;
+        ss << "ldap_get_option (option=" << option << ") ";
+        throw LDAPException(ss.str(), ret);
     }
 }
 
@@ -254,10 +254,15 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server, int try_tl
         return std::auto_ptr<LDAPConnection>(NULL);
     }
 
-    sasl_ssf_t ssf = -1; /* indicates we dont know what it is */
-    ldap->get_option(LDAP_OPT_X_SASL_SSF,&ssf);
-    VERBOSE("LDAP_OPT_X_SASL_SSF=%d\n",ssf)
-
+    if (g_verbose) {
+        try {
+            sasl_ssf_t ssf = -1; /* indicates we dont know what it is */
+            ldap->get_option(LDAP_OPT_X_SASL_SSF,&ssf);
+            VERBOSE("LDAP_OPT_X_SASL_SSF=%d\n",ssf);
+        } catch (LDAPException &e) {
+            std::cerr << e.what() << std::endl;
+        }
+    }
     return ldap;
 }
 
