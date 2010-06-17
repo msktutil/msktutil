@@ -71,7 +71,7 @@ class KRB5Keytab : noncopyable{
     krb5_keytab m_keytab;
 
 public:
-    KRB5Keytab(std::string &keytab_name) : m_keytab() {
+    KRB5Keytab(const std::string &keytab_name) : m_keytab() {
         krb5_error_code ret = krb5_kt_resolve(g_context.get(), keytab_name.c_str(), &m_keytab);
         if (ret)
             throw KRB5Exception("krb5_kt_resolve", ret);
