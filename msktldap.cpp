@@ -621,6 +621,16 @@ void ldap_check_account_strings(msktutil_flags *flags)
         des_only = VALUE_OFF;
 
     ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, des_only, flags);
+    // If msDS-supportedEncryptionTypes isn't set, ad_enctypes will be VALUE_OFF. In that case,
+    // reset ad_supportedEncryptionTypes according to the DES flag, in case we changed it.
+    if (flags->ad_enctypes == VALUE_OFF) {
+        flags->ad_supportedEncryptionTypes =
+            MS_KERB_ENCTYPE_DES_CBC_CRC|MS_KERB_ENCTYPE_DES_CBC_MD5;
+        if (! (flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
+            flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
+        }
+    }
+
     ldap_set_userAccountControl_flag(dn, UF_NO_AUTH_DATA_REQUIRED, flags->no_pac, flags);
     ldap_set_userAccountControl_flag(dn, UF_TRUSTED_FOR_DELEGATION, flags->delegate, flags);
     ldap_set_userAccountControl_flag(dn, UF_DONT_EXPIRE_PASSWORD, flags->dont_expire_password, flags);
