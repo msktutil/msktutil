@@ -25,11 +25,11 @@ all: $(PROG)
 
 $(PROG) : $(objects)
 	@$(ECHO) "Assembling $(PROG)"
-	@$(CXX) $(LDFLAGS) $(LIBS) $(objects) -o $(PROG)
+	$(CXX) $(LDFLAGS) $(LIBS) $(objects) -o $(PROG)
 
 %.o : %.cpp msktutil.h krb5wrap.h config.h
 	@$(ECHO) "Compiling $<"
-	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 
 clean :
