@@ -91,7 +91,6 @@ AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
 if test "$ac_cv_header_com_err_h"; then
 AC_MSG_CHECKING([whether com_err.h needs extern "C"]);
 
-LIBS=-lkrb5
 AC_LINK_IFELSE([[
 #include <com_err.h>
 
