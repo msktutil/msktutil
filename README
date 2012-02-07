@@ -42,3 +42,5 @@ Then, Doug Engbert made a number of changes to it during 2009.
 Then, in Feb 2010, James Knight then downloaded the debian package with
 changes from <http://download.systemimager.org/~finley/msktutil/>, and
 made even more changes. That's what you have now. :)
+
+In Feb 2012, Ken Dreyer provided some build fixes.

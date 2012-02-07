@@ -1,3 +1,9 @@
+Release 0.4.1:
+
+- Ken Dreyer took over maintainance, based upon master at
+  http://repo.or.cz/w/msktutil.git
+- Build fixes for Red Hat
+
 Release 0.4:
 
 - James Y Knight took over maintainance, based upon msktutil_0.3.16-7
