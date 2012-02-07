@@ -7,3 +7,4 @@ config.h
 config.status
 config.log
 autom4te.cache
+configure
