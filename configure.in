@@ -29,6 +29,10 @@ AC_ARG_WITH(krb5dir,
 [  --with-krb5dir=DIR      Where to find the Kerberos 5 includes and libraries],
 [ krb5dir="$withval" ])
 
+AC_ARG_WITH(krb5-config,
+[  --with-krb5-config=DIR  Where to find the Kerberos 5 configuration script],
+[ krb5config="$withval" ])
+
 AC_ARG_WITH(ldapdir,
 [  --with-ldapdir=DIR      Where to find the LDAP includes and libraries],
 [ ldapdir="$withval" ])
@@ -41,9 +45,22 @@ AC_ARG_WITH(tmpdir,
 [  --with-tmpdir=DIR       What temporary directory to use],
 [ tmpdir="$withval" ])
 
+if test -x "$krb5config"; then
+  KRB5_CPPFLAGS=`$krb5config --cflags 2>/dev/null`
+  KRB5_LIBS=`$krb5config --libs 2>/dev/null`
+  CPPFLAGS="$CPPFLAGS $KRB5_CPPFLAGS"
+  # We check for -lkrb5 later with AC_CHECK_LIB, so remove that one here.
+  KRB5_LIBS=`echo "$KRB5_LIBS" | sed 's%-lkrb5 %%'`
+  LIBS="$LIBS $KRB5_LIBS"
+fi
+
 if test "$krb5dir" != ""; then
-  CPPFLAGS="-I$krb5dir/include $CPPFLAGS"
-  LDFLAGS="-L$krb5dir/lib $LDFLAGS"
+  if test -d "$krb5dir/include"; then
+     CPPFLAGS="$CPPFLAGS -I$krb5dir/include"
+  fi  
+  if test -d "$krb5dir/lib"; then
+     LDFLAGS="$LIBDIRS -L$krb5dir/lib"
+  fi
 fi
 if test "$ldapdir" != ""; then
   if test "$ldapdir" != "$krb5dir"; then
