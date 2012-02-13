@@ -241,7 +241,6 @@ REPLACE_PROGNAME --host afs --service afs --enctypes 0x03
 .fi
 .PP
 This will create an afs/cell.name@REALM principal, and associate that principal with a computer
-account called 'afs'.  The principal will be marked as DES-only, which at least was required for
-AFS in the past (is this really *still* true in 2010?).
+account called 'afs'.  The principal will be marked as DES-only, which is required for AFS.
 .SH AUTHOR
 REPLACE_AUTHOR
