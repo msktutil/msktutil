@@ -108,15 +108,15 @@ AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
 if test "$ac_cv_header_com_err_h"; then
 AC_MSG_CHECKING([whether com_err.h needs extern "C"]);
 
-AC_LINK_IFELSE([[
+AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <com_err.h>
 
 int main(void) {
     error_message(0);
 }
-]], [AC_MSG_RESULT(no); com_err_needs_extern_c=no], [
+])], [AC_MSG_RESULT(no); com_err_needs_extern_c=no], [
 
-AC_LINK_IFELSE([[
+AC_LINK_IFELSE([AC_LANG_SOURCE([
 extern "C" {
 #include <com_err.h>
 }
@@ -124,7 +124,7 @@ extern "C" {
 int main(void) {
     error_message(0);
 }
-]], [AC_MSG_RESULT(yes); com_err_needs_extern_c=yes], [AC_MSG_ERROR([Couldn't get error_message to work.])])])
+])], [AC_MSG_RESULT(yes); com_err_needs_extern_c=yes], [AC_MSG_ERROR([Couldn't get error_message to work.])])])
 
 if test "$com_err_needs_extern_c=yes"; then
   AC_DEFINE(COM_ERR_NEEDS_EXTERN_C, 1, [Does com_err.h need extern "C" around it?])
