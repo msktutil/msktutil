@@ -49,11 +49,7 @@
 # ifdef COM_ERR_NEEDS_EXTERN_C
   extern "C" {
 # endif
-#  if defined(HAVE_ET_COM_ERR_H)
-#   include <et/com_err.h>
-#  else
-#   include <com_err.h>
-#  endif
+#include <com_err.h>
 # ifdef COM_ERR_NEEDS_EXTERN_C
  }
 # endif

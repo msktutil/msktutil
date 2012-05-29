@@ -88,7 +88,7 @@ if test "$tmpdir" != ""; then
   CPPFLAGS="$CPPFLAGS -DTMP_DIR=\\\"$tmpdir\\\""
 fi
 
-AC_CHECK_HEADERS([krb5.h heim_err.h])
+AC_CHECK_HEADERS([krb5.h com_err.h heim_err.h])
 if test "$ac_cv_header_krb5_h" = "no"; then
   AC_MSG_ERROR([This program cannot be built without krb5.h])
 fi
@@ -100,9 +100,6 @@ if test "$ac_cv_header_heim_err_h" = "no"; then
 else
   AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])
 fi
-
-# Red Hat EL 5 com_err path
-AC_CHECK_HEADERS([et/com_err.h])
 
 AC_CHECK_HEADERS([sasl.h])
 if test "$ac_cv_header_sasl_h" = "no"; then
