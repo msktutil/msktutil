@@ -94,6 +94,14 @@ AC_CHECK_HEADERS([krb5.h com_err.h heim_err.h])
 if test "$ac_cv_header_krb5_h" = "no"; then
   AC_MSG_ERROR([This program cannot be built without krb5.h])
 fi
+
+# Fedora, RHEL, Centos has com_err.h in /usr/include/et
+AC_CHECK_HEADERS([et/com_err.h])
+if test "$ac_cv_header_et_com_err_h" = "yes"; then
+   CPPFLAGS="-I/usr/include/et $CPPFLAGS"
+   AC_DEFINE(HAVE_COM_ERR_H, 1)
+fi
+
 if test "$ac_cv_header_heim_err_h" = "no"; then
   AC_CHECK_HEADERS([heimdal/heim_err.h])
   if test "$ac_cv_header_heimdal_heim_err_h" = "yes"; then
