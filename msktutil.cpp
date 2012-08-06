@@ -40,7 +40,13 @@ std::string sform(const char* format, ...)
     va_start(args, format);
 
     char *buf;
+#ifdef _AIX
+    buf = (char *) malloc(10000);
+    memset( buf, 0, 10000);
+    int result =  vsnprintf( buf, 10000-1, format, args);
+#else
     int result = vasprintf(&buf, format, args);
+#endif
     if(result < 0) {
         throw Exception("vasprintf error");
     }
