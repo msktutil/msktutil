@@ -169,6 +169,7 @@ struct msktutil_flags {
 
     bool set_description;
     bool set_userPrincipalName;
+    bool no_reverse_lookups;
 
     msktutil_val dont_expire_password;
     msktutil_val no_pac;
@@ -202,6 +203,7 @@ extern std::string get_default_hostname();
 extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
 extern std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
+                                                  bool no_reverse_lookups = false,
                                                   int try_tls=ATTEMPT_SASL_PARAMS_TLS);
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string complete_hostname(const std::string &);

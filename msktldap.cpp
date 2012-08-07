@@ -188,7 +188,9 @@ void ldap_get_base_dn(msktutil_flags *flags)
     }
 }
 
-std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server, int try_tls)
+std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
+                                           bool no_reverse_lookups,
+                                           int try_tls)
 {
 #ifndef SOLARIS_LDAP_KERBEROS
     int debug = 0xffffff;
@@ -209,6 +211,9 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server, int try_tl
 
     ldap->set_option(LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
+    if (no_reverse_lookups)
+        ldap->set_option(LDAP_OPT_X_SASL_NOCANON, LDAP_OPT_ON);
+
 #ifdef LDAP_OPT_X_TLS
     switch (try_tls) {
         case ATTEMPT_SASL_PARAMS_TLS: {
@@ -225,7 +230,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server, int try_tl
                 ldap->start_tls();
             } catch (LDAPException &e) {
                 // If it fails, then...
-                return ldap_connect(server, ATTEMPT_SASL_NO_TLS);
+                return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
             }
             is_tls = true;
             break;
@@ -250,7 +255,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server, int try_tl
     if (ret) {
         fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed (%s)\n", ldap_err2string(ret));
         if (is_tls)
-            return ldap_connect(server, ATTEMPT_SASL_NO_TLS);
+            return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
         return std::auto_ptr<LDAPConnection>(NULL);
     }
 

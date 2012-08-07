@@ -179,7 +179,7 @@ int finalize_exec(msktutil_exec *exec)
     }
     VERBOSE("Authenticated using method %d\n", flags->auth_type);
 
-    flags->ldap = ldap_connect(flags->server);
+    flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
     if (!flags->ldap.get()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         // Print a hint as to the likely cause:
@@ -584,6 +584,12 @@ int main(int argc, char *argv [])
                 fprintf(stderr, "Error: No server given after '%s'\n", argv[i - 1]);
                 goto error;
             }
+            continue;
+        }
+
+        /* do not reverse lookup server names */
+        if (!strcmp(argv[i], "--no-reverse-lookups") || !strcmp(argv[i], "-N")) {
+            exec->flags->no_reverse_lookups = true;
             continue;
         }
 

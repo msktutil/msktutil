@@ -56,8 +56,12 @@ void create_fake_krb5_conf(msktutil_flags *flags)
     file << "[libdefaults]\n"
          << " default_realm = " << flags->realm_name << "\n"
          << " dns_lookup_kdc = false\n"
-         << " udp_preference_limit = 1\n"
-         << "[realms]\n"
+         << " udp_preference_limit = 1\n";
+
+    if (flags->no_reverse_lookups)
+        file << " rdns = false\n";
+
+    file << "[realms]\n"
          << " " << flags->realm_name << " = {\n"
          << "  kdc = " << flags->server << "\n"
          << "  admin_server = " << flags->server << "\n"
