@@ -161,7 +161,7 @@ int set_password(msktutil_flags *flags, int time)
         if (response) {
             VERBOSE("krb5_change_password failed using keytab: (%d) %s", response, (char *) resp_code_string.data);
             krb5_free_data_contents(g_context.get(), &resp_code_string);
-            return ret;
+            return response;
         }
         krb5_free_data_contents(g_context.get(), &resp_code_string);
         if (ret) {
