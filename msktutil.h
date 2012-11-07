@@ -72,7 +72,7 @@
 #define PASSWORD_LEN                    63
 #define MAX_HOSTNAME_LEN                255
 #define MAX_TRIES                       10
-#define MAX_SAM_ACCOUNT_LEN             19
+#define MAX_SAM_ACCOUNT_LEN             20
 
 #ifndef TMP_DIR
 #define TMP_DIR                         "/tmp"
