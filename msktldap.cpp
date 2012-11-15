@@ -211,8 +211,17 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
 
     ldap->set_option(LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-    if (no_reverse_lookups)
-        ldap->set_option(LDAP_OPT_X_SASL_NOCANON, LDAP_OPT_ON);
+#ifdef LDAP_OPT_X_SASL_NOCANON
+    if (no_reverse_lookups) {
+            try {
+                ldap->set_option(LDAP_OPT_X_SASL_NOCANON, LDAP_OPT_ON);
+            } catch (LDAPException &e) {
+                VERBOSE("Could not disable reverse lookups in LDAP");
+            }
+    }
+#else
+    VERBOSE("Your LDAP version does not support the option to disable reverse lookups");
+#endif
 
 #ifdef LDAP_OPT_X_TLS
     switch (try_tls) {
