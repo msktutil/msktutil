@@ -49,9 +49,9 @@ AC_ARG_WITH(tmpdir,
 # If krb5-config was not specified, try to find it ourselves.
 AS_IF([test -z "$krb5config"],
 	[AC_PATH_PROG([PATH_KRB5_CONFIG], [krb5-config] [],
-		[${PATH}:/usr/kerberos/bin])],
+		[${PATH}:/usr/kerberos/bin])
 	[ krb5config="$PATH_KRB5_CONFIG"]
-)
+])
 
 if test -x "$krb5config"; then
   KRB5_CPPFLAGS=`$krb5config --cflags 2>/dev/null`
@@ -60,6 +60,8 @@ if test -x "$krb5config"; then
   # We check for -lkrb5 later with AC_CHECK_LIB, so remove that one here.
   KRB5_LIBS=`echo "$KRB5_LIBS" | sed 's%-lkrb5 %%'`
   LIBS="$LIBS $KRB5_LIBS"
+else
+  AC_MSG_WARN([Could not find a krb5-config program.])
 fi
 
 if test "$krb5dir" != ""; then
