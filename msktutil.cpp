@@ -261,6 +261,8 @@ void do_help() {
     fprintf(stdout, "  -b, --base <base ou>   Sets the LDAP base OU to use when creating an account.\n");
     fprintf(stdout, "                         The default is read from AD (often CN=computers)\n");
     fprintf(stdout, "  --computer-name <name> Sets the computer account name to <name>\n");
+    fprintf(stdout, "  --old-account-password <password>\n");
+    fprintf(stdout, "                         Use supplied computer account password for authentication\n");
     fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write)\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
@@ -475,6 +477,17 @@ int main(int argc, char *argv [])
                 exec->flags->hostname = argv[i];
             } else {
                 fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+
+        /* computer password */
+        if (!strcmp(argv[i], "--old-account-password")) {
+            if (++i < argc) {
+                exec->flags->old_account_password = argv[i];
+            } else {
+                fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
                 goto error;
             }
             continue;

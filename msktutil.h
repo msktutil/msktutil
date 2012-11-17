@@ -125,6 +125,7 @@ enum auth_types {
     AUTH_FROM_HOSTNAME_KEYTAB,
     AUTH_FROM_PASSWORD,
     AUTH_FROM_USER_CREDS,
+    AUTH_FROM_SUPPLIED_PASSWORD,
 };
 
 class LDAPConnection;
@@ -160,6 +161,7 @@ struct msktutil_flags {
     std::string samAccountName_nodollar;
     std::string password;
     std::string userPrincipalName;
+    std::string old_account_password;
     std::auto_ptr<LDAPConnection> ldap;
 
     std::string ad_computerDn;

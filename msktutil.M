@@ -112,6 +112,11 @@ machine's hostname, excluding the realm, with dots replaced with dashes.
 That is: if the realm is EXAMPLE.COM, and the hostname is FOO.EXAMPLE.COM, the default computer name
 is FOO. If the hostname is FOO.BAR.EXAMPLE.COM, the default computer name is FOO-BAR.
 .TP
+--old-account-password <password>
+Use supplied account password for authentication. This is useful if the keytab does not yet exist 
+but the password of the computer account is known. This password will be changed by msktutil in order 
+to create or update the keytab
+.TP
 -h, --hostname <name>
 Overrides the current hostname to be used to be <name>.  If this is not specified, the local host
 name will be used.  Note that the local name lookup service will be to qualify and resolve names

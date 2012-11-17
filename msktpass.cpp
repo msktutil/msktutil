@@ -149,6 +149,12 @@ int set_password(msktutil_flags *flags, int time)
             KRB5Principal principal(flags->samAccountName);
             KRB5Creds local_creds(principal, flags->samAccountName_nodollar, "kadmin/changepw");
             creds.move_from(local_creds);
+        } else if (flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) {
+            VERBOSE("Try using supplied password for %s to change password\n", flags->samAccountName.c_str());
+
+            KRB5Principal principal(flags->samAccountName);
+            KRB5Creds local_creds(principal, flags->old_account_password, "kadmin/changepw");
+            creds.move_from(local_creds);
         } else // shouldn't happen
             throw Exception("Error: unknown auth_type.");
 

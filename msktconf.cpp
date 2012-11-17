@@ -140,6 +140,24 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name) {
     }
 }
 
+bool try_machine_supplied_password(msktutil_flags *flags, const char *ccache_name) {
+    try {
+        VERBOSE("Trying to authenticate for %s with supplied password.", flags->samAccountName.c_str());
+        KRB5Principal principal(flags->samAccountName);
+        KRB5Creds creds(principal, /*password:*/ flags->old_account_password);
+        KRB5CCache ccache(ccache_name);
+        ccache.initialize(principal);
+        ccache.store(creds);
+        switch_default_ccache(ccache_name);
+        return true;
+    } catch (KRB5Exception &e) {
+        VERBOSE(e.what());
+        VERBOSE("Authentication with supplied password failed");
+        return false;
+    }
+
+}
+
 bool try_user_creds() {
     try {
         VERBOSE("Checking if default ticket cache has tickets...");
@@ -174,6 +192,8 @@ int find_working_creds(msktutil_flags *flags) {
             return AUTH_FROM_HOSTNAME_KEYTAB;
         if (try_machine_password(flags, ccache_name.c_str()))
             return AUTH_FROM_PASSWORD;
+        if (strlen(flags->old_account_password.c_str()) && try_machine_supplied_password(flags, ccache_name.c_str()))
+            return AUTH_FROM_SUPPLIED_PASSWORD;
     }
     if (try_user_creds())
         return AUTH_FROM_USER_CREDS;
