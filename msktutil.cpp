@@ -267,8 +267,8 @@ void do_help() {
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write)\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
     fprintf(stdout, "                         up in DNS based upon realm.\n");
-    fprintf(stdout, "  --no-reverse-lookups   Don't reverse-lookup the domain controller\n");
-    fprintf(stdout, "                         (abbreviated as '-N')\n");
+    fprintf(stdout, "  -N, --no-reverse-lookups\n");
+    fprintf(stdout, "                         Don't reverse-lookup the domain controller\n");
     fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
     fprintf(stdout, "                         only use user's credentials (from e.g. kinit)\n");
     fprintf(stdout, "  --verbose              Enable verbose messages\n");
