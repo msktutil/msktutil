@@ -136,7 +136,10 @@ The server can also be specified by setting the MSKTUTIL_SERVER environment vari
 looked up in DNS from the realm name.
 .TP
 --no-reverse-lookup
-Don't attempt to reverse-resolve a domain controller in DNS. You may need to do this if you use MIT Kerberos and your client cannot resolve the PTR records for a domain controller. Default: follow your underlying Kerberos library defaults. Heimdal never really supported rdns. MIT currently defaults to doing the reverse resolution, but the MIT Kerberos developers may consider changing their default in a future release.
+-N, --no-reverse-lookup
+Do not attempt to canonicalize the name of the domain controller via DNS reverse lookups. You may
+need to do this if your client cannot resolve the PTR records for a domain controller or your DNS
+servers store incorrect PTR records. Default: Use DNS reverse lookups to canonicalize DC names
 .TP
 --user-creds-only
 Don't attempt to authenticate with machine keytab: only use user's credentials (from
