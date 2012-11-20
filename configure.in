@@ -122,6 +122,9 @@ fi
 # Checks for libraries.
 AC_CHECK_LIB([krb5], [krb5_init_context], , [AC_MSG_ERROR([libkrb5 not found])])
 AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
+# OpenLDAP's LDAP_OPT_ON macro uses ber_pvt_opt_on. In newer OpenLDAP
+# versions, we have to explicitly link with lber.
+AC_CHECK_LIB([lber], [ber_pvt_opt_on], , [AC_MSG_ERROR([liblber not found])])
 
 if test "$ac_cv_header_com_err_h"; then
 AC_MSG_CHECKING([whether com_err.h needs extern "C"]);
