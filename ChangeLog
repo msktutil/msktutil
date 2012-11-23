@@ -1,3 +1,17 @@
+Release 0.4.2:
+
+- New co-maintainer, Mark Pröhl
+- Increase computer name character limit from 18 to 19 characters,
+  matching AD's own limits.
+- Add option ("-N") to disable reverse lookups on DCs
+- Add option ("--old-account-password") to use the old computer account
+  password to create a new keytab on a host.
+- Return the proper error code when krb5_change_password fails.
+- Better autodetection for krb5-config location.
+- Compatibility with autoconf >= 2.68.
+- Build fixes for Red Hat and Ubuntu.
+- Update documentation for single-DES and AFS.
+
 Release 0.4.1:
 
 - Ken Dreyer took over maintainance, based upon master at
