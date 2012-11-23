@@ -288,7 +288,7 @@ void ldap_cleanup(msktutil_flags *flags)
 
 void ldap_get_account_attrs(msktutil_flags *flags, char **attrs, LDAPMessage **mesg_p) {
     std::string filter;
-    filter = sform("(&(objectClass=computer)(sAMAccountName=%s))", flags->samAccountName.c_str());
+    filter = sform("(&(|(objectCategory=Computer)(objectCategory=User))(sAMAccountName=%s))", flags->samAccountName.c_str());
     flags->ldap->search(mesg_p, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
 }
 
@@ -570,6 +570,7 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
     return ret;
 }
 
+/* this function is never called 
 std::string get_user_dn(msktutil_flags *flags)
 {
     std::string dn;
@@ -596,7 +597,7 @@ std::string get_user_dn(msktutil_flags *flags)
     ldap_msgfree(mesg);
     return dn;
 }
-
+*/
 
 void ldap_check_account_strings(msktutil_flags *flags)
 {
