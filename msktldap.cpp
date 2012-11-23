@@ -286,7 +286,7 @@ void ldap_cleanup(msktutil_flags *flags)
     flags->ldap.reset();
 }
 
-void ldap_get_computer_attrs(msktutil_flags *flags, char **attrs, LDAPMessage **mesg_p) {
+void ldap_get_account_attrs(msktutil_flags *flags, char **attrs, LDAPMessage **mesg_p) {
     std::string filter;
     filter = sform("(&(objectClass=computer)(sAMAccountName=%s))", flags->samAccountName.c_str());
     flags->ldap->search(mesg_p, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
@@ -304,7 +304,7 @@ int ldap_flush_principals(msktutil_flags *flags)
 
 
     VERBOSE("Flushing principals from LDAP entry");
-    ldap_get_computer_attrs(flags, attrs, &mesg);
+    ldap_get_account_attrs(flags, attrs, &mesg);
 
     if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
         mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
@@ -342,7 +342,7 @@ krb5_kvno ldap_get_kvno(msktutil_flags *flags)
     LDAPMessage *mesg;
     char *attrs[] = {"msDS-KeyVersionNumber", NULL};
 
-    ldap_get_computer_attrs(flags, attrs, &mesg);
+    ldap_get_account_attrs(flags, attrs, &mesg);
     if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
         mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
         std::string kvno_str = flags->ldap->get_one_val(mesg, "msDS-KeyVersionNumber");
@@ -367,7 +367,7 @@ std::string ldap_get_pwdLastSet(msktutil_flags *flags)
     LDAPMessage *mesg;
     char *attrs[] = {"pwdLastSet", NULL};
 
-    ldap_get_computer_attrs(flags, attrs, &mesg);
+    ldap_get_account_attrs(flags, attrs, &mesg);
 
     if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
         mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
@@ -671,7 +671,7 @@ void ldap_check_account(msktutil_flags *flags)
 
 
     VERBOSE("Checking that a computer account for %s exists", flags->samAccountName.c_str());
-    ldap_get_computer_attrs(flags, attrs, &mesg);
+    ldap_get_account_attrs(flags, attrs, &mesg);
 
     if (ldap_count_entries(flags->ldap->m_ldap, mesg) > 0) {
         /* Account already exists */
