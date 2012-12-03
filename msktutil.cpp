@@ -66,7 +66,11 @@ void catch_int(int)
 void set_samAccountName(msktutil_exec *exec, const std::string &samAccountName)
 {
     exec->flags->samAccountName_nodollar = samAccountName;
-    exec->flags->samAccountName = samAccountName + "$";
+    if (exec->flags->use_service_account) {
+        exec->flags->samAccountName = samAccountName;
+    } else {
+        exec->flags->samAccountName = samAccountName + "$";
+    }
 }
 
 void set_supportedEncryptionTypes(msktutil_exec *exec, char * value)
@@ -238,15 +242,15 @@ void do_help() {
     fprintf(stdout, "  --help                   Displays this message\n");
     fprintf(stdout, "  -v, --version            Display the current version\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -c, --create   Creates a keytab for the current host.\n");
+    fprintf(stdout, "  -c, --create   Creates a keytab for the current host or a given service account.\n");
     fprintf(stdout, "                 (same as -u -s host).\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -f, --flush    Flushes all principals for the current host from the keytab,\n");
-    fprintf(stdout, "                 and deletes servicePrincipalName from AD.\n");
+    fprintf(stdout, "  -f, --flush    Flushes all principals for the current host or service account\n");
+    fprintf(stdout, "                 from the keytab, and deletes servicePrincipalName from AD.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -u, --update   Updates the keytab for the current host. This changes the host\n");
-    fprintf(stdout, "                 account's password and updates the keytab with entries for all\n");
-    fprintf(stdout, "                 principals in servicePrincipalName and userPrincipalName.\n");
+    fprintf(stdout, "  -u, --update   Updates the keytab for the current host or service account. This\n");
+    fprintf(stdout, "                 changes the account's password and updates the keytab with entries\n");
+    fprintf(stdout, "                 for all principals in servicePrincipalName and userPrincipalName.\n");
     fprintf(stdout, "                 It also updates LDAP attributes for supportedEncryptionTypes,\n");
     fprintf(stdout, "                 dNSDomainName, and applies other options you specify.\n");
     fprintf(stdout, "\n");
@@ -261,28 +265,33 @@ void do_help() {
     fprintf(stdout, "\n");
     fprintf(stdout, "Connection/setup options: \n");
     fprintf(stdout, "  -b, --base <base ou>   Sets the LDAP base OU to use when creating an account.\n");
-    fprintf(stdout, "                         The default is read from AD (often CN=computers)\n");
-    fprintf(stdout, "  --computer-name <name> Sets the computer account name to <name>\n");
+    fprintf(stdout, "                         The default is read from AD (often CN=computers).\n");
+    fprintf(stdout, "  --computer-name <name>, --account-name <name>\n");
+    fprintf(stdout, "                         Sets the computer account name or service account name\n");
+    fprintf(stdout, "                         to <name>.\n");
     fprintf(stdout, "  --old-account-password <password>\n");
-    fprintf(stdout, "                         Use supplied computer account password for authentication\n");
+    fprintf(stdout, "                         Use supplied computer account password or service\n");
+    fprintf(stdout, "                         account password for authentication.\n");
     fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
-    fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write)\n");
+    fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
     fprintf(stdout, "                         up in DNS based upon realm.\n");
     fprintf(stdout, "  --realm <realm>        Use a specific kerberos realm instead of using\n");
     fprintf(stdout, "                         default_realm from krb5.conf.\n");
     fprintf(stdout, "  -N, --no-reverse-lookups\n");
-    fprintf(stdout, "                         Don't reverse-lookup the domain controller\n");
+    fprintf(stdout, "                         Don't reverse-lookup the domain controller.\n");
     fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
-    fprintf(stdout, "                         only use user's credentials (from e.g. kinit)\n");
-    fprintf(stdout, "  --verbose              Enable verbose messages\n");
-    fprintf(stdout, "                         More then once to get LDAP debugging\n");
+    fprintf(stdout, "                         only use user's credentials (from e.g. kinit).\n");
+    fprintf(stdout, "  --verbose              Enable verbose messages.\n");
+    fprintf(stdout, "                         More then once to get LDAP debugging.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "Attribute-setting options:\n");
-    fprintf(stdout, "  --delegation           Set the computer account to be trusted for delegation\n");
+    fprintf(stdout, "Object type/attribute-setting options:\n");
+    fprintf(stdout, "  --use-service-account  Create and maintain service account instead of\n");
+    fprintf(stdout, "                         machine account. (EXPERIMENTAL, NOT YET IMPLEMENTED).\n");
+    fprintf(stdout, "  --delegation           Set the computer account to be trusted for delegation.\n");
     fprintf(stdout, "  --disable-delegation   Set the computer account to not be trusted for\n");
     fprintf(stdout, "                         delegation.\n");
-    fprintf(stdout, "  --description <text>   Sets the description field on the computer account\n");
+    fprintf(stdout, "  --description <text>   Sets the description field on the computer account.\n");
     fprintf(stdout, "  --dont-expire-password Disables password expiration for the computer account.\n");
     fprintf(stdout, "  --do-expire-password   Undisables (puts back to default) password expiration.\n");
     fprintf(stdout, "  --enctypes <int>       Sets msDs-supportedEncryptionTypes\n");
@@ -290,14 +299,16 @@ void do_help() {
     fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-ctc-hmac-sha1\n");
     fprintf(stdout, "                                 0x10=aes256-cts-hmac-sha1)\n");
     fprintf(stdout, "                         Sets des-only in userAccountControl if set to 0x3.\n");
-    fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC\n");
-    fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC\n");
-    fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host.\n");
-    fprintf(stdout, "                         The service is of the form <service>/<hostname>.\n");
+    fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC.\n");
+    fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC.\n");
+    fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host or the\n");
+    fprintf(stdout, "                         given service account. The service is of the form\n");
+    fprintf(stdout, "                         <service>/<hostname>.\n");
     fprintf(stdout, "                         If the hostname is omitted, assumes current hostname.\n");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
-    fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>\n");
-    fprintf(stdout, "                         The realm name will be appended to this principal\n");
+    fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>.\n");
+    fprintf(stdout, "                         The realm name will be appended to this principal.\n");
+
 
 }
 
@@ -518,6 +529,13 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* Use service account */
+        if (!strcmp(argv[i], "--use-service-account")) {
+            exec->flags->use_service_account = true;
+            exec->flags->set_userPrincipalName = true;
+            continue;
+        }
+
         /* Trust for delegation ? */
         if (!strcmp(argv[i], "--delegation")) {
             exec->flags->delegate = VALUE_ON;
@@ -540,7 +558,7 @@ int main(int argc, char *argv [])
         }
 
         /* Use a certain sam account name */
-        if (!strcmp(argv[i], "--computer-name")) {
+        if (!strcmp(argv[i], "--computer-name") || !strcmp(argv[i], "--account-name")) {
             if (++i < argc) {
                 set_samAccountName(exec.get(), argv[i]);
             } else {

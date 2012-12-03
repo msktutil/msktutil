@@ -86,6 +86,7 @@
 
 /* From SAM.H */
 #define UF_WORKSTATION_TRUST_ACCOUNT    0x00001000
+#define UF_NORMAL_ACCOUNT               0x00000200
 #define UF_DONT_EXPIRE_PASSWORD         0x00010000
 #define UF_TRUSTED_FOR_DELEGATION       0x00080000
 #define UF_USE_DES_KEY_ONLY             0x00200000
@@ -161,6 +162,7 @@ struct msktutil_flags {
     std::string samAccountName_nodollar;
     std::string password;
     std::string userPrincipalName;
+    std::string unicodePwd;
     std::string old_account_password;
     std::auto_ptr<LDAPConnection> ldap;
 
@@ -184,6 +186,7 @@ struct msktutil_flags {
 
     int auth_type;
     bool user_creds_only;
+    bool use_service_account;
     msktutil_flags();
     ~msktutil_flags();
 };
