@@ -135,6 +135,10 @@ Specifies to use <server> as the domain controller. This affects both kerberos a
 The server can also be specified by setting the MSKTUTIL_SERVER environment variable. Default:
 looked up in DNS from the realm name.
 .TP
+--realm <realm>
+Specifies to use <realm> as kerberos realm. Default: use the default_realm from [libdefaults] 
+section of krb5.conf.
+.TP
 -N, --no-reverse-lookup
 Do not attempt to canonicalize the name of the domain controller via DNS reverse lookups. You may
 need to do this if your client cannot resolve the PTR records for a domain controller or your DNS

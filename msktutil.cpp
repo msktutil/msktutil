@@ -100,16 +100,18 @@ int finalize_exec(msktutil_exec *exec)
 
     init_password(flags);
     char *temp_realm;
-    if (krb5_get_default_realm(g_context.get(), &temp_realm)) {
-        fprintf(stderr, "Error: krb5_get_default_realm failed\n");
-        exit(1);
-    }
-    flags->realm_name = std::string(temp_realm);
+    if (flags->realm_name.empty()) {
+        if (krb5_get_default_realm(g_context.get(), &temp_realm)) {
+            fprintf(stderr, "Error: krb5_get_default_realm failed\n");
+            exit(1);
+        }
+        flags->realm_name = std::string(temp_realm);
 #ifdef HEIMDAL
-    krb5_xfree(temp_realm);
+        krb5_xfree(temp_realm);
 #else
-    krb5_free_default_realm(g_context.get(), temp_realm);
+        krb5_free_default_realm(g_context.get(), temp_realm);
 #endif
+    }
 
     flags->lower_realm_name = flags->realm_name;
     for(std::string::iterator it = flags->lower_realm_name.begin();
@@ -267,6 +269,8 @@ void do_help() {
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write)\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
     fprintf(stdout, "                         up in DNS based upon realm.\n");
+    fprintf(stdout, "  --realm <realm>        Use a specific kerberos realm instead of using\n");
+    fprintf(stdout, "                         default_realm from krb5.conf.\n");
     fprintf(stdout, "  -N, --no-reverse-lookups\n");
     fprintf(stdout, "                         Don't reverse-lookup the domain controller\n");
     fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
@@ -597,6 +601,17 @@ int main(int argc, char *argv [])
                 exec->flags->server = argv[i];
             } else {
                 fprintf(stderr, "Error: No server given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+
+        /* Use a certain realm */
+        if (!strcmp(argv[i], "--realm")) {
+            if (++i < argc) {
+                exec->flags->realm_name = argv[i];
+            } else {
+                fprintf(stderr, "Error: No realm given after '%s'\n", argv[i - 1]);
                 goto error;
             }
             continue;
