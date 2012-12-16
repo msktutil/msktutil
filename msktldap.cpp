@@ -613,8 +613,11 @@ void ldap_check_account_strings(msktutil_flags *flags)
 
     // NOTE: failures to set all the attributes in this function are ignored, for better or worse..
 
-    if (!flags->hostname.empty() && flags->hostname != flags->ad_dnsHostName)
-        ldap_simple_set_attr(flags->ldap.get(), dn, "dNSHostName", flags->hostname);
+    // don't set dnsHostname on service accounts
+    if (!flags->use_service_account) {
+        if (!flags->hostname.empty() && flags->hostname != flags->ad_dnsHostName)
+            ldap_simple_set_attr(flags->ldap.get(), dn, "dNSHostName", flags->hostname);
+    }
 
     if (flags->set_description)
         ldap_simple_set_attr(flags->ldap.get(), dn, "description", flags->description);
@@ -630,9 +633,10 @@ void ldap_check_account_strings(msktutil_flags *flags)
         ldap_simple_set_attr(flags->ldap, dn, "operatingSystem", system_name);
 */
 
-    if (flags->set_userPrincipalName)
+    if (flags->set_userPrincipalName) {
+      fprintf(stderr,"xxxxxxxx\n");
         ldap_simple_set_attr(flags->ldap.get(), dn, "userPrincipalName", flags->userPrincipalName + '@' + flags->realm_name);
-
+    }
     ldap_set_supportedEncryptionTypes(dn, flags);
 
     msktutil_val des_only;
@@ -661,8 +665,10 @@ void ldap_check_account_strings(msktutil_flags *flags)
 void ldap_check_account(msktutil_flags *flags)
 {
     LDAPMessage *mesg;
-    char *attrs[] = {"distinguishedName", "dNSHostName", "msDs-supportedEncryptionTypes",
-                     "userAccountControl", "servicePrincipalName", "userPrincipalName", NULL};
+    char *machine_attrs[] = {"distinguishedName", "dNSHostName", "msDs-supportedEncryptionTypes",
+                      "userAccountControl", "servicePrincipalName", "userPrincipalName", NULL};
+    char *user_attrs[] = {"distinguishedName", "msDs-supportedEncryptionTypes",
+                      "userAccountControl", "servicePrincipalName", "userPrincipalName", "unicodePwd", NULL};
     int userAcctFlags;
     std::string dn;
     LDAPMod *mod_attrs[6];
@@ -670,15 +676,22 @@ void ldap_check_account(msktutil_flags *flags)
     LDAPMod attrCN;
     LDAPMod attrUserAccountControl;
     LDAPMod attrSamAccountName;
-    char *vals_objectClass[] = {"top", "person", "organizationalPerson", "user", "computer", NULL};
+    LDAPMod attrunicodePwd;
+    char *vals_machine_objectClass[] = {"top", "person", "organizationalPerson", "user", "computer", NULL};
+    char *vals_user_objectClass[] = {"top", "person", "organizationalPerson", "user", NULL};
     char *vals_cn[] = {NULL, NULL};
     char *vals_useraccountcontrol[] = {NULL, NULL};
     char *vals_samaccountname[] = {NULL, NULL};
+    BerValue *bvals_unicodepwd[] = {NULL, NULL};
     int attr_count = 0;
 
-
-    VERBOSE("Checking that a computer account for %s exists", flags->samAccountName.c_str());
-    ldap_get_account_attrs(flags, attrs, &mesg);
+    if (flags->use_service_account) {
+        VERBOSE("Checking that a service account for %s exists", flags->samAccountName.c_str());
+        ldap_get_account_attrs(flags, user_attrs, &mesg);
+    } else {
+        VERBOSE("Checking that a computer account for %s exists", flags->samAccountName.c_str());
+        ldap_get_account_attrs(flags, machine_attrs, &mesg);
+    }
 
     if (ldap_count_entries(flags->ldap->m_ldap, mesg) > 0) {
         /* Account already exists */
@@ -711,9 +724,11 @@ void ldap_check_account(msktutil_flags *flags)
                     flags->ad_supportedEncryptionTypes);
         }
 
-        // Save current dNSHostName
-        flags->ad_dnsHostName = flags->ldap->get_one_val(mesg, "dNSHostName");
-        VERBOSE("Found dNSHostName = %s\n", flags->ad_dnsHostName.c_str());
+        if (!flags->use_service_account) {
+            // Save current dNSHostName
+            flags->ad_dnsHostName = flags->ldap->get_one_val(mesg, "dNSHostName");
+            VERBOSE("Found dNSHostName = %s\n", flags->ad_dnsHostName.c_str());
+        }
 
         // Save current servicePrincipalName and userPrincipalName attrs
         if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
@@ -731,6 +746,8 @@ void ldap_check_account(msktutil_flags *flags)
                     upn.erase(pos);
                 flags->ad_userPrincipal = upn;
                 VERBOSE("  Found User Principal: %s", upn.c_str());
+		//update userPrincipalName for salt generation
+                flags->userPrincipalName = upn.c_str();
             }
         }
 
@@ -739,16 +756,23 @@ void ldap_check_account(msktutil_flags *flags)
         ldap_msgfree(mesg);
 
         /* No computer account found, so let's add one in the OU specified */
-
-        VERBOSE("Computer account not found, create the account\n");
-        fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
-
+        if (flags->use_service_account) {
+            VERBOSE("Service account not found, create the account\n");
+            fprintf(stdout, "No service account for %s found, creating a new one.\n", flags->samAccountName.c_str());
+	} else {
+            VERBOSE("Computer account not found, create the account\n");
+            fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
+        }
         flags->ad_computerDn = sform("cn=%s,%s", flags->samAccountName_nodollar.c_str(), flags->ldap_ou.c_str());
         fprintf(stderr, "dn: %s\n", flags->ad_computerDn.c_str());
         mod_attrs[attr_count++] = &attrObjectClass;
         attrObjectClass.mod_op = LDAP_MOD_ADD;
         attrObjectClass.mod_type = "objectClass";
-        attrObjectClass.mod_values = vals_objectClass;
+        if (flags->use_service_account) {
+            attrObjectClass.mod_values = vals_user_objectClass;
+        } else {
+            attrObjectClass.mod_values = vals_machine_objectClass;
+        }
 
         mod_attrs[attr_count++] = &attrCN;
         attrCN.mod_op = LDAP_MOD_ADD;
@@ -760,7 +784,11 @@ void ldap_check_account(msktutil_flags *flags)
         attrUserAccountControl.mod_op = LDAP_MOD_ADD;
         attrUserAccountControl.mod_type = "userAccountControl";
         attrUserAccountControl.mod_values = vals_useraccountcontrol;
-        userAcctFlags = UF_WORKSTATION_TRUST_ACCOUNT;
+        if (flags->use_service_account) {
+            userAcctFlags = UF_NORMAL_ACCOUNT;
+        } else {
+            userAcctFlags = UF_WORKSTATION_TRUST_ACCOUNT;
+        }
         std::string userAcctFlags_string = sform("%d", userAcctFlags);
         vals_useraccountcontrol[0] = const_cast<char*>(userAcctFlags_string.c_str());
 
@@ -769,6 +797,18 @@ void ldap_check_account(msktutil_flags *flags)
         attrSamAccountName.mod_type = "sAMAccountName";
         attrSamAccountName.mod_values = vals_samaccountname;
         vals_samaccountname[0] = const_cast<char*>(flags->samAccountName.c_str());
+        mod_attrs[attr_count++] = &attrunicodePwd;
+        attrunicodePwd.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
+        attrunicodePwd.mod_type = "unicodePwd";
+        attrunicodePwd.mod_bvalues = bvals_unicodepwd;	
+        std::string passwd = "\"" + flags->password  + "\"";
+        bvals_unicodepwd[0] = new BerValue;
+        bvals_unicodepwd[0]->bv_val = new char[ (passwd.length())  * 2 ];
+        memset( bvals_unicodepwd[0]->bv_val , 0, passwd.length()   * 2);
+        for (unsigned int i = 0; i < passwd.length(); i++) {
+            bvals_unicodepwd[0]->bv_val[i*2] = passwd[i];
+        }
+        bvals_unicodepwd[0]->bv_len = (passwd.length()) *2;
 
         mod_attrs[attr_count++] = NULL;
 
@@ -780,6 +820,8 @@ void ldap_check_account(msktutil_flags *flags)
         int ret = ldap_add_ext_s(flags->ldap->m_ldap, flags->ad_computerDn.c_str(), mod_attrs, NULL, NULL);
         if (ret)
             throw LDAPException("ldap_add_ext_s", ret);
+        delete bvals_unicodepwd[0]->bv_val;
+        delete bvals_unicodepwd[0];
 
         flags->ad_userAccountControl = userAcctFlags;
     }

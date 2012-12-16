@@ -209,6 +209,11 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
          * Windows uses realm_name+"host"+samAccountName_nodollar+"."+lower_realm_name
          * for the salt. (note: only for DES/AES; arcfour-hmac-md5 doesn't use salts at all)
          *
+         *     Note (Mark Pr"ohl, 2012-12-11): salt for service accounts is created in a different 
+         *     way: 
+         *     - if userPrincpalName is not set: realm_name+samAccountName
+         *     - if userPrincpalName is set: realm_name + first component from userPrincpalName
+         *
          * Windows 2000 may have used something different, but who cares.
          *
          * FIXME: this is stupid, and not future proof. The salt is supposed to be an implementation
@@ -227,6 +232,10 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
          * salt that should be used with a given principal, even though it's clearly available in
          * the network protocol.
          *
+         *     Note (Mark Pr"ohl, 2012-12-11): even if the salting string could be fetched from the 
+         *     network protocol, that would only be possible after the password has been set in AD. 
+         *     But the keytab entry should be created before that.
+         *
          * What we're doing here is very much like MIT kerberos' ktutil addent -password, which also
          * assumes the server uses a particular salt. And that is also broken. Given this email
          * thread: <http://mailman.mit.edu/pipermail/krbdev/2009-July/007835.html>, I hope libkrb5
@@ -238,7 +247,19 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
             it != lower_accountname.end(); ++it)
             *it = std::tolower(*it);
 
-        salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(), flags->lower_realm_name.c_str());
+        if (flags->use_service_account) {
+
+            if (flags->userPrincipalName.empty()) {
+                salt = sform("%s%s", flags->realm_name.c_str(), lower_accountname.c_str());
+            } else {
+                std::string upnsalt = flags->userPrincipalName;
+                upnsalt.erase(std::remove(upnsalt.begin(), upnsalt.end(), '/'),upnsalt.end());
+                salt = sform("%s%s", flags->realm_name.c_str(), upnsalt.c_str());
+            }
+        } else {
+	    salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(), 
+                                        flags->lower_realm_name.c_str());
+        }
 
         VERBOSE("    Using salt of %s", salt.c_str());
         KRB5Keyblock keyblock;

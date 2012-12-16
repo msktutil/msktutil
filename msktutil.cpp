@@ -287,7 +287,7 @@ void do_help() {
     fprintf(stdout, "\n");
     fprintf(stdout, "Object type/attribute-setting options:\n");
     fprintf(stdout, "  --use-service-account  Create and maintain service account instead of\n");
-    fprintf(stdout, "                         machine account. (EXPERIMENTAL, NOT YET IMPLEMENTED).\n");
+    fprintf(stdout, "                         machine account. (EXPERIMENTAL)\n");
     fprintf(stdout, "  --delegation           Set the computer account to be trusted for delegation.\n");
     fprintf(stdout, "  --disable-delegation   Set the computer account to not be trusted for\n");
     fprintf(stdout, "                         delegation.\n");
@@ -332,7 +332,7 @@ int execute(msktutil_exec *exec)
                 flags->keytab_writename.c_str());
         ret = flush_keytab(flags);
         return ret;
-    } else if (exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
+    } else if (exec->mode == MODE_CREATE || exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
         if (exec->mode == MODE_AUTO_UPDATE) {
             // Don't bother doing anything if the auth was from the keytab (and not e.g. default password), and the
             if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB) {
@@ -531,7 +531,7 @@ int main(int argc, char *argv [])
         /* Use service account */
         if (!strcmp(argv[i], "--use-service-account")) {
             exec->flags->use_service_account = true;
-            exec->flags->set_userPrincipalName = true;
+	    //MP            exec->flags->set_userPrincipalName = true;
             continue;
         }
 
@@ -675,12 +675,8 @@ int main(int argc, char *argv [])
     }
 
 
-    if (exec->mode == MODE_CREATE) {
-      if (!exec->flags->use_service_account) {
+    if (exec->mode == MODE_CREATE && !exec->flags->use_service_account)
         exec->add_principals.push_back("host");
-      }
-      set_mode(exec.get(), MODE_UPDATE);
-    }
 
     if (exec->mode == MODE_NONE && !exec->add_principals.empty())
         set_mode(exec.get(), MODE_UPDATE);
