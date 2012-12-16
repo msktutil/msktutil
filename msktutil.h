@@ -141,6 +141,7 @@ extern int g_verbose;
 
 enum msktutil_mode {
     MODE_NONE = 0,
+    MODE_CREATE,
     MODE_UPDATE,
     MODE_AUTO_UPDATE,
     MODE_FLUSH,

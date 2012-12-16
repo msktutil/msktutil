@@ -452,8 +452,7 @@ int main(int argc, char *argv [])
 
         /* Create 'Default' Keytab */
         if (!strcmp(argv[i], "--create") || !strcmp(argv[i], "-c")) {
-            set_mode(exec.get(), MODE_UPDATE);
-            exec->add_principals.push_back("host");
+            set_mode(exec.get(), MODE_CREATE);
             continue;
         }
 
@@ -673,6 +672,14 @@ int main(int argc, char *argv [])
             fprintf(stderr, " --enctypes must not be zero\n");
             goto error;
         }
+    }
+
+
+    if (exec->mode == MODE_CREATE) {
+      if (!exec->flags->use_service_account) {
+        exec->add_principals.push_back("host");
+      }
+      set_mode(exec.get(), MODE_UPDATE);
     }
 
     if (exec->mode == MODE_NONE && !exec->add_principals.empty())

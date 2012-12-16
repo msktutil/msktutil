@@ -131,8 +131,14 @@ void get_default_ou(msktutil_flags *flags)
         std::string dn;
         LDAPMessage *mesg;
         char *attrs[] = {"distinguishedName", NULL};
-        std::string wkguid = sform("<WKGUID=aa312825768811d1aded00c04fd8d5cd,%s>", flags->base_dn.c_str());
-        flags->ldap->search(&mesg, wkguid, LDAP_SCOPE_BASE, "objectClass=*", attrs);
+
+	if (flags->use_service_account) {
+            std::string wkguid = sform("<WKGUID=a9d1ca15768811d1aded00c04fd8d5cd,%s>", flags->base_dn.c_str());
+            flags->ldap->search(&mesg, wkguid, LDAP_SCOPE_BASE, "objectClass=*", attrs);
+        } else {
+            std::string wkguid = sform("<WKGUID=aa312825768811d1aded00c04fd8d5cd,%s>", flags->base_dn.c_str());
+            flags->ldap->search(&mesg, wkguid, LDAP_SCOPE_BASE, "objectClass=*", attrs);
+        }
 
         if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
             mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
