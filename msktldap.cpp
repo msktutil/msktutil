@@ -1,7 +1,7 @@
 /*
  *----------------------------------------------------------------------------
  *
- * msktldap.c
+ * msktldap.cpp
  *
  * (C) 2004-2006 Dan Perry (dperry@pppl.gov)
  * (C) 2006 Brian Elliott Finley (finley@anl.gov)
