@@ -30,7 +30,11 @@
 
 void init_password(msktutil_flags *flags)
 {
-    VERBOSE("Wiping the computer password structure");
+    if (flags->use_service_account) {
+        VERBOSE("Wiping the password structure");
+    } else {
+        VERBOSE("Wiping the computer password structure");
+    }
     std::fill(flags->password.begin(), flags->password.end(), '\0');
 }
 
@@ -56,7 +60,11 @@ int generate_new_password(msktutil_flags *flags)
         return -1;
     }
 
-    VERBOSE("Generating a new, random password for the computer account");
+    if (flags->use_service_account) {
+        VERBOSE("Generating a new, random password for the service account");
+    } else {
+        VERBOSE("Generating a new, random password for the computer account");
+    }
     while (!(have_symbol && have_number && have_lower && have_upper)) {
         have_symbol = 0;
         have_number = 0;
@@ -102,8 +110,11 @@ int set_password(msktutil_flags *flags, int time)
     resp_code_string.data = NULL;
     resp_code_string.length = 0;
 
-
-    VERBOSE("Attempting to reset computer's password");
+    if (flags->use_service_account) {
+        VERBOSE("Attempting to reset service account's password");
+    } else {
+        VERBOSE("Attempting to reset computer's password");
+    }
     if (flags->auth_type == AUTH_FROM_USER_CREDS) {
         VERBOSE("Try change password using user's ticket cache\n");
 

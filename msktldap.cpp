@@ -634,7 +634,6 @@ void ldap_check_account_strings(msktutil_flags *flags)
 */
 
     if (flags->set_userPrincipalName) {
-      fprintf(stderr,"xxxxxxxx\n");
         ldap_simple_set_attr(flags->ldap.get(), dn, "userPrincipalName", flags->userPrincipalName + '@' + flags->realm_name);
     }
     ldap_set_supportedEncryptionTypes(dn, flags);
@@ -695,7 +694,11 @@ void ldap_check_account(msktutil_flags *flags)
 
     if (ldap_count_entries(flags->ldap->m_ldap, mesg) > 0) {
         /* Account already exists */
-        VERBOSE("Checking computer account - found");
+        if (flags->use_service_account) {
+            VERBOSE("Checking service account - found");
+        } else {
+            VERBOSE("Checking computer account - found");
+        }
         mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
         flags->ad_computerDn = flags->ldap->get_one_val(mesg, "distinguishedName");
 
