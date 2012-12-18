@@ -63,16 +63,6 @@ void catch_int(int)
 }
 
 
-void set_samAccountName(msktutil_exec *exec, const std::string &samAccountName)
-{
-    exec->flags->samAccountName_nodollar = samAccountName;
-    if (exec->flags->use_service_account) {
-        exec->flags->samAccountName = samAccountName;
-    } else {
-        exec->flags->samAccountName = samAccountName + "$";
-    }
-}
-
 void set_supportedEncryptionTypes(msktutil_exec *exec, char * value)
 {
     exec->flags->enctypes = VALUE_ON;
@@ -135,22 +125,36 @@ int finalize_exec(msktutil_exec *exec)
     atexit(remove_files_at_exit);
     create_fake_krb5_conf(flags);
 
-    if (exec->mode == MODE_PRECREATE && exec->flags->hostname.empty()) {
+    if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
         /* Don't set a default hostname if none provided in precreate mode. */
-        if (exec->flags->samAccountName.empty()) {
+        if (flags->samAccountName.empty()) {
             fprintf(stderr, "You must supply either --computer-name or --hostname when using --precreate.\n");
             exit(1);
         }
-    } else if (exec->flags->hostname.empty())
+    } else if (flags->hostname.empty())
         /* Canonicalize the hostname if need be */
-        exec->flags->hostname = get_default_hostname();
+        flags->hostname = get_default_hostname();
     else
-        exec->flags->hostname = complete_hostname(flags->hostname);
+        flags->hostname = complete_hostname(flags->hostname);
 
     /* Determine the samAccountName, if not set */
     if (flags->samAccountName.empty()) {
-        set_samAccountName(exec, get_short_hostname(flags));
+        if (flags->use_service_account) {
+            fprintf(stderr, "You must supply --account-name when using --use-service-account.\n");
+            exit(1);
+	} else {
+            flags->samAccountName = get_short_hostname(flags)  + "$";
+        }
     }
+
+    /* Determine samAccountName_nodollar */
+    flags->samAccountName_nodollar = flags->samAccountName;
+    if (flags->samAccountName_nodollar[flags->samAccountName_nodollar.size()-1] == '$')
+        flags->samAccountName_nodollar.erase(flags->samAccountName_nodollar.size()-1);
+
+    /* Add a "$" to machine accounts */
+    if ((!flags->use_service_account) && (flags->samAccountName[flags->samAccountName.size()-1] != '$'))
+      flags->samAccountName += "$";
 
     /* The samAccountName will cause win 9x, NT problems if longer than MAX_SAM_ACCOUNT_LEN characters */
     if (flags->samAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
@@ -531,7 +535,6 @@ int main(int argc, char *argv [])
         /* Use service account */
         if (!strcmp(argv[i], "--use-service-account")) {
             exec->flags->use_service_account = true;
-	    //MP            exec->flags->set_userPrincipalName = true;
             continue;
         }
 
@@ -559,7 +562,7 @@ int main(int argc, char *argv [])
         /* Use a certain sam account name */
         if (!strcmp(argv[i], "--computer-name") || !strcmp(argv[i], "--account-name")) {
             if (++i < argc) {
-                set_samAccountName(exec.get(), argv[i]);
+                exec->flags->samAccountName = argv[i];
             } else {
                 fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
                 goto error;
