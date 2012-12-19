@@ -374,6 +374,12 @@ int execute(msktutil_exec *exec)
         ret = set_password(flags);
         if (ret) {
             fprintf(stderr, "Error: set_password failed\n");
+            if (flags->use_service_account) {
+	      fprintf(stderr, "  Hints:\n");
+	      fprintf(stderr, "  - Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
+	      fprintf(stderr, "  - For example, there could be a \"Minimum password age\" policy to prevent\n");
+	      fprintf(stderr, "    passwords from being changed to frequently.\n");
+            }
             return ret;
         }
 
