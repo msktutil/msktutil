@@ -113,7 +113,7 @@ int finalize_exec(msktutil_exec *exec)
         *it = std::tolower(*it);
 
     if (flags->server.empty()) {
-        flags->server = get_dc_host(flags->realm_name);
+        flags->server = get_dc_host(flags->realm_name,flags->site);
         if (flags->server.empty()) {
             fprintf(stderr, "Error: get_dc_host failed\n");
             exit(1);
@@ -282,6 +282,8 @@ void do_help() {
     fprintf(stdout, "                         up in DNS based upon realm.\n");
     fprintf(stdout, "  --realm <realm>        Use a specific kerberos realm instead of using\n");
     fprintf(stdout, "                         default_realm from krb5.conf.\n");
+    fprintf(stdout, "  --site <site>          Find and use domain controller in specific AD site.\n");
+    fprintf(stdout, "                         This option is ignored if option --server is used.\n");
     fprintf(stdout, "  -N, --no-reverse-lookups\n");
     fprintf(stdout, "                         Don't reverse-lookup the domain controller.\n");
     fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
@@ -512,6 +514,17 @@ int main(int argc, char *argv [])
                 exec->flags->old_account_password = argv[i];
             } else {
                 fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+
+	/* site */
+	if (!strcmp(argv[i], "--site")) {
+            if (++i < argc) {
+                exec->flags->site = argv[i];
+            } else {
+                fprintf(stderr, "Error: No site given after '%s'\n", argv[i - 1]);
                 goto error;
             }
             continue;

@@ -44,6 +44,9 @@
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <ldap.h>
+#include <arpa/inet.h>
+#include <resolv.h>
+
 
 #ifdef HAVE_COM_ERR_H
 # ifdef COM_ERR_NEEDS_EXTERN_C
@@ -73,6 +76,8 @@
 #define MAX_HOSTNAME_LEN                255
 #define MAX_TRIES                       10
 #define MAX_SAM_ACCOUNT_LEN             20
+#define MAX_DOMAIN_CONTROLLERS		20
+
 
 #ifndef TMP_DIR
 #define TMP_DIR                         "/tmp"
@@ -165,6 +170,7 @@ struct msktutil_flags {
     std::string userPrincipalName;
     std::string unicodePwd;
     std::string old_account_password;
+    std::string site;
     std::auto_ptr<LDAPConnection> ldap;
 
     std::string ad_computerDn;
@@ -202,6 +208,13 @@ struct msktutil_exec {
     ~msktutil_exec();
 };
 
+struct msktutil_dcdata {
+    char srvname[NS_MAXDNAME];
+    unsigned int priority;
+    unsigned int weight;
+    unsigned int port; 
+};
+
 /* Prototypes */
 extern void ldap_cleanup(msktutil_flags *);
 extern void init_password(msktutil_flags *);
@@ -224,7 +237,7 @@ extern std::string ldap_get_pwdLastSet(msktutil_flags *);
 extern std::vector<std::string> ldap_list_principals(msktutil_flags *);
 extern int ldap_add_principal(const std::string &, msktutil_flags *);
 int ldap_remove_principal(const std::string &principal, msktutil_flags *flags);
-extern std::string get_dc_host(const std::string &realm_name);
+extern std::string get_dc_host(const std::string &realm_name, const std::string &site_name);
 extern std::string get_user_principal();
 extern std::string get_host_os();
 extern void ldap_check_account(msktutil_flags *);

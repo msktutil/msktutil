@@ -27,7 +27,6 @@
 
 #include "msktutil.h"
 
-
 std::string complete_hostname(const std::string &hostname)
 {
     // Ask the kerberos lib to canonicalize the hostname, and then pull it out of the principal.
@@ -87,8 +86,64 @@ std::string get_default_hostname()
 #endif
 }
 
+int compare_priority_weight(const void *a, const void *b) {
+   struct msktutil_dcdata *ia = (struct msktutil_dcdata *)a;
+   struct msktutil_dcdata *ib = (struct msktutil_dcdata *)b;
+ 
+   if (ia->priority > ib->priority) return 1;
+   if (ia->priority < ib->priority) return -1;
+  
+   if (ia->weight > ib->weight) return -1;
+   if (ia->weight < ib->weight) return 1;
+ 
+  return 0;
+}
 
-std::string get_dc_host(const std::string &realm_name)
+
+std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
+{
+    unsigned char response[NS_MAXMSG]; 
+    int len;
+    int i;
+    int j=0; // my not so smart compiler warns me about: 'j' may be used uninitialized in this function ...
+    ns_msg reshandle;
+    ns_rr rr;
+    struct msktutil_dcdata alldcs[MAX_DOMAIN_CONTROLLERS];    
+
+    if ((len=res_search(krbdnsquery.c_str(), C_IN, T_SRV, response, sizeof(response))) > 0) {
+       if (ns_initparse(response,len,&reshandle) >= 0) {
+          if ((len=ns_msg_count(reshandle,ns_s_an)) > 0) {
+             for (i=0,j=0;i<len && j<MAX_DOMAIN_CONTROLLERS; i++) {
+                 if (ns_parserr(&reshandle,ns_s_an,i,&rr)) {
+                    // Ignore records we cannot parse, this is non fatal. 
+                    continue;
+                 }
+                if (ns_rr_class(rr) == ns_c_in && ns_rr_type(rr) == ns_t_srv) {
+                   // Process DNS SRV RR
+                   //                          TTL Class Type Priority Weight Port Target 
+                   // _kerberos._tcp.my.realm. 600 IN    SRV  0        10000  88   dcserverXX.my.realm.
+                  alldcs[j].priority = ns_get16(ns_rr_rdata(rr));  
+	          alldcs[j].weight   = ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
+                  alldcs[j].port     = ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it... 
+                  dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle), 
+                                                ns_rr_rdata(rr) + 3*NS_INT16SZ, 
+                                                alldcs[j].srvname, sizeof(char)*NS_MAXDNAME);
+                  j++;         
+                }
+             } 
+          }
+       }
+    }
+
+    if (j) {
+       // and get the 'top' one from the list.
+       qsort(&alldcs,j,sizeof(struct msktutil_dcdata),compare_priority_weight);
+       return std::string(alldcs[0].srvname,strlen(alldcs[0].srvname));
+    }
+   return std::string(); 
+}
+
+std::string get_dc_host(const std::string &realm_name, const std::string &site_name)
 {
     std::string dc;
     struct hostent *host;
@@ -96,10 +151,35 @@ std::string get_dc_host(const std::string &realm_name)
     struct hostent *hp;
     int sock;
     int i;
+    std::string dcsrv;
 
+    if (!site_name.empty()) {
+       VERBOSE("Attempting to find site-specific Domain Controller to use (DNS SRV RR TCP)");
+       dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._tcp.") + site_name + std::string("._sites.") + realm_name);
+    }
 
-    VERBOSE("Attempting to find a Domain Controller to use");
-    host = gethostbyname(realm_name.c_str());
+    if (!site_name.empty() && dcsrv.empty()) {
+       VERBOSE("Attempting to find site-specific Domain Controller to use (DNS SRV RR UDP)");
+       dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._udp.") + site_name + std::string("._sites.") + realm_name);
+    }
+    
+    if (dcsrv.empty()) {
+       VERBOSE("Attempting to find a Domain Controller to use (DNS SRV RR TCP)");
+       dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._tcp.") + realm_name);
+    }
+
+    if (dcsrv.empty()) {
+        VERBOSE("Attempting to find a Domain Controller to use (DNS SRV RR UDP)");
+        dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._udp.") + realm_name); 
+    } 
+         
+    if (!dcsrv.empty()) {
+	host = gethostbyname(dcsrv.c_str());
+    } else {
+        VERBOSE("Attempting to find a Domain Controller to use (DNS domain)");
+        host = gethostbyname(realm_name.c_str());
+    }
+
     if (!host) {
         fprintf(stderr, "Error: gethostbyname failed \n");
         return "";
