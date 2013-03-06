@@ -151,7 +151,7 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], , [
 			# libresolve but do not export it. Try to circumvent
 			# this restriction by linking it statically.
 			AC_MSG_RESULT([no])
-			LIBS="$saved_LIBS -Wl,-Bstatic -lresolv -Wl,-Bdynamic"
+			LDFLAGS="-static"
 			AC_MSG_CHECKING([for ns_initparse in statically linked -lresolv])
 			AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <netinet/in.h>
@@ -160,7 +160,9 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], , [
 				]],[[
 	ns_initparse(0, 0, 0);
 				]])],
-				AC_MSG_RESULT([yes]),
+				AC_MSG_ERROR([[you have ns_initparse in -lresolv but need to link it statically.
+This can not be done safely for a single library.
+Try linking the whole program statically by giving -static in LDFLAGS.]]),
 				AC_MSG_ERROR([ns_initparse not found]))])])])
 
 # finally check if res_search is present as well just as a sanity check
