@@ -1,11 +1,12 @@
 PROG=@PACKAGE_NAME@
 SHELL=/bin/sh
+srcdir = @srcdir@
 VPATH=@srcdir@
 prefix=@prefix@
 sbindir=$(prefix)/sbin
 mandir=@mandir@
 CXX=@CXX@
-CPPFLAGS=@CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@ -I.
 CXXFLAGS=@CXXFLAGS@ $(WARNFLAGS)
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
