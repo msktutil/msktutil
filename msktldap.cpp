@@ -162,7 +162,7 @@ static int sasl_interact(ATTRUNUSED LDAP *ld, ATTRUNUSED unsigned flags, ATTRUNU
     sasl_interact_t *interact = (sasl_interact_t *)in;
     while (interact->id != SASL_CB_LIST_END) {
         dflt = (char *) interact->defresult;
-        interact->result = (dflt && *dflt) ? dflt : "";
+        interact->result = (dflt && *dflt) ? dflt : (void *)"";
         interact->len = (dflt && *dflt) ? strlen(dflt) : 0;
         interact++;
     }
