@@ -143,7 +143,8 @@ std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
    return std::string(); 
 }
 
-std::string get_dc_host(const std::string &realm_name, const std::string &site_name)
+std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
+                        const bool no_reverse_lookups)
 {
     std::string dc;
     struct hostent *host;
@@ -162,7 +163,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
        VERBOSE("Attempting to find site-specific Domain Controller to use (DNS SRV RR UDP)");
        dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._udp.") + site_name + std::string("._sites.") + realm_name);
     }
-    
+
     if (dcsrv.empty()) {
        VERBOSE("Attempting to find a Domain Controller to use (DNS SRV RR TCP)");
        dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._tcp.") + realm_name);
@@ -172,7 +173,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
         VERBOSE("Attempting to find a Domain Controller to use (DNS SRV RR UDP)");
         dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._udp.") + realm_name); 
     } 
-         
+
     if (!dcsrv.empty()) {
 	host = gethostbyname(dcsrv.c_str());
     } else {
@@ -185,6 +186,11 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
         return "";
     }
 
+    VERBOSE("Found DC: %s", dcsrv.c_str());
+    if (no_reverse_lookups)
+        return dcsrv;
+
+    VERBOSE("Canonicalizing DC through forward/reverse lookup...");
     for (i = 0; host->h_addr_list[i]; i++) {
         memcpy(&(addr.sin_addr.s_addr), host->h_addr_list[i], sizeof(host->h_addr_list[i]));
         hp = gethostbyaddr((char *) &addr.sin_addr.s_addr, sizeof(addr.sin_addr.s_addr), AF_INET);

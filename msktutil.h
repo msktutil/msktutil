@@ -237,7 +237,8 @@ extern std::string ldap_get_pwdLastSet(msktutil_flags *);
 extern std::vector<std::string> ldap_list_principals(msktutil_flags *);
 extern int ldap_add_principal(const std::string &, msktutil_flags *);
 int ldap_remove_principal(const std::string &principal, msktutil_flags *flags);
-extern std::string get_dc_host(const std::string &realm_name, const std::string &site_name);
+extern std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
+                               const bool);
 extern std::string get_user_principal();
 extern std::string get_host_os();
 extern void ldap_check_account(msktutil_flags *);

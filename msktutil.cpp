@@ -113,7 +113,8 @@ int finalize_exec(msktutil_exec *exec)
         *it = std::tolower(*it);
 
     if (flags->server.empty()) {
-        flags->server = get_dc_host(flags->realm_name,flags->site);
+        flags->server = get_dc_host(flags->realm_name,flags->site,
+                                    flags->no_reverse_lookups);
         if (flags->server.empty()) {
             fprintf(stderr, "Error: get_dc_host failed\n");
             exit(1);
