@@ -119,6 +119,62 @@ if test "$ac_cv_header_sasl_h" = "no"; then
   fi
 fi
 
+# look for resolver functions
+# see if ns_initparse is simply in libc or libresolv
+AC_SEARCH_LIBS([ns_initparse], [resolv], , [
+	# On Linux it actually is in libresolv but prefixed with __ when
+	# linking dynamically. This is taken care of by actually including the
+	# right headers and trying again.
+	AC_MSG_CHECKING([for ns_initparse])
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+		]],[[
+	ns_initparse(0, 0, 0);
+		]])],
+		AC_MSG_RESULT([yes]), [
+		# now try libresolv again
+		AC_MSG_RESULT([no])
+		saved_LIBS="$LIBS"
+		LIBS="$LIBS -lresolv"
+		AC_MSG_CHECKING([for ns_initparse in -lresolv])
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+			]],[[
+	ns_initparse(0, 0, 0);
+			]])],
+			AC_MSG_RESULT([yes]), [
+			# glibc versions prior to 2.9 include ns_initparse in
+			# libresolve but do not export it. Try to circumvent
+			# this restriction by linking it statically.
+			AC_MSG_RESULT([no])
+			LIBS="$saved_LIBS -Wl,-Bstatic -lresolv -Wl,-Bdynamic"
+			AC_MSG_CHECKING([for ns_initparse in statically linked -lresolv])
+			AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+				]],[[
+	ns_initparse(0, 0, 0);
+				]])],
+				AC_MSG_RESULT([yes]),
+				AC_MSG_ERROR([ns_initparse not found]))])])])
+
+# finally check if res_search is present as well just as a sanity check
+AC_MSG_CHECKING([for res_search])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+	]],[[
+	res_search(0, 0, 0, 0, 0);
+	]])],
+	AC_MSG_RESULT([yes]),
+	AC_MSG_ERROR([res_search not found]))
+
 # Checks for libraries.
 AC_CHECK_LIB([krb5], [krb5_init_context], , [AC_MSG_ERROR([libkrb5 not found])])
 AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
