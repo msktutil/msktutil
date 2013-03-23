@@ -27,6 +27,10 @@
 
 #include "msktutil.h"
 
+#if !defined(NS_MAXMSG)
+#define NS_MAXMSG 65535
+#endif
+
 std::string complete_hostname(const std::string &hostname)
 {
     // Ask the kerberos lib to canonicalize the hostname, and then pull it out of the principal.
