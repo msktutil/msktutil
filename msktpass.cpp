@@ -211,10 +211,36 @@ int set_password(msktutil_flags *flags, int time)
             if (current_pwdLastSet != old_pwdLastSet) {
                 /* Password set has replicated successfully */
                 VERBOSE("Successfully reset computer's password");
-                return 0;
+                break;
             }
             fprintf(stdout, "Waiting for password replication (%d seconds past)\n", time + this_time);
             sleep(5);
         }
     }
+
+    if (flags->set_samba_secret) {
+        VERBOSE("Setting samba machine trust account password");
+
+        FILE *pipe = popen("net changesecretpw -f -i", "w");
+        if (pipe == NULL) {
+            fprintf(stdout, "Error executing samba net command\n");
+            return 1;
+        }
+
+        size_t len = flags->password.length();
+        if (fwrite(flags->password.c_str(), sizeof(char), len, pipe) != len) {
+            fprintf(stdout, "Write error putting password to samba net command\n");
+            return 1;
+        }
+
+        int rc = pclose(pipe);
+        if (rc != 0) {
+            fprintf(stdout, "Setting samba secret failed with error code %d\n", rc);
+            return 1;
+        }
+
+        VERBOSE("Successfully set samba machine trust account password");
+    }
+
+    return 0;
 }

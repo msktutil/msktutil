@@ -315,6 +315,9 @@ void do_help() {
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
     fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>.\n");
     fprintf(stdout, "                         The realm name will be appended to this principal.\n");
+    fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
+    fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
+    fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
 
 
 }
@@ -660,6 +663,12 @@ int main(int argc, char *argv [])
         /* do not reverse lookup server names */
         if (!strcmp(argv[i], "--no-reverse-lookups") || !strcmp(argv[i], "-N")) {
             exec->flags->no_reverse_lookups = true;
+            continue;
+        }
+
+        /* synchronize machine password with samba */
+        if (!strcmp(argv[i], "--set-samba-secret")) {
+            exec->flags->set_samba_secret = true;
             continue;
         }
 
