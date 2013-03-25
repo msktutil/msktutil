@@ -42,7 +42,7 @@ install: all
 	@$(MKDIR) -p $(DESTDIR)$(sbindir)
 	@$(MKDIR) -p $(DESTDIR)$(mandir)/man1
 	@$(INSTALL) $(PROG) $(DESTDIR)$(sbindir)
-	@$(CAT) msktutil.M | $(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" | $(SED) -e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" | $(SED) -e "s/REPLACE_AUTHOR/@PACKAGE_AUTHOR@/g" > $(DESTDIR)$(mandir)/man1/@PACKAGE_NAME@.1
+	@$(CAT) $(srcdir)/msktutil.M | $(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" | $(SED) -e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" | $(SED) -e "s/REPLACE_AUTHOR/@PACKAGE_AUTHOR@/g" > $(DESTDIR)$(mandir)/man1/@PACKAGE_NAME@.1
 
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
