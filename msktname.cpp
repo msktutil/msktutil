@@ -114,7 +114,7 @@ std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
     ns_rr rr;
     struct msktutil_dcdata alldcs[MAX_DOMAIN_CONTROLLERS];    
 
-    if ((len=res_search(krbdnsquery.c_str(), C_IN, T_SRV, response, sizeof(response))) > 0) {
+    if ((len=res_search(krbdnsquery.c_str(), ns_c_in, ns_t_srv, response, sizeof(response))) > 0) {
        if (ns_initparse(response,len,&reshandle) >= 0) {
           if ((len=ns_msg_count(reshandle,ns_s_an)) > 0) {
              for (i=0,j=0;i<len && j<MAX_DOMAIN_CONTROLLERS; i++) {
