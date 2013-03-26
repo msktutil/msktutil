@@ -381,10 +381,12 @@ int execute(msktutil_exec *exec)
         if (ret) {
             fprintf(stderr, "Error: set_password failed\n");
             if (flags->use_service_account) {
-	      fprintf(stderr, "  Hints:\n");
-	      fprintf(stderr, "  - Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
-	      fprintf(stderr, "  - For example, there could be a \"Minimum password age\" policy to prevent\n");
-	      fprintf(stderr, "    passwords from being changed to frequently.\n");
+	      fprintf(stderr, "Hint: Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
+	      fprintf(stderr, "      For example, there could be a \"Minimum password age\" policy preventing\n");
+	      fprintf(stderr, "      passwords from being changed too frequently. If so, you can reset the\n");
+	      fprintf(stderr, "      password instead of changing it using the --user-creds-only option.\n");
+	      fprintf(stderr, "      Be aware that you need a ticket of a user with administrative privileges\n");
+	      fprintf(stderr, "      for that.\n");
             }
             return ret;
         }
