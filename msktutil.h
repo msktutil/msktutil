@@ -274,7 +274,7 @@ class Exception : public std::exception
     Exception() : m_message("Exception") { }
     explicit Exception(char const * simple_string) : m_message(simple_string) {}
     explicit Exception(const std::string &str) : m_message(str) {}
-    Exception(const Exception& src) : m_message(src.m_message) {}
+    Exception(const Exception& src) : exception(), m_message(src.m_message)  {}
 
     virtual ~Exception() throw() {};
     char const * what() const throw() { return m_message.c_str(); }
