@@ -196,6 +196,7 @@ struct msktutil_flags {
     int auth_type;
     bool user_creds_only;
     bool use_service_account;
+    bool password_expired;
     msktutil_flags();
     ~msktutil_flags();
 };
@@ -248,6 +249,7 @@ extern void create_fake_krb5_conf(msktutil_flags *);
 extern void remove_fake_krb5_conf();
 extern void remove_ccache();
 int find_working_creds(msktutil_flags *flags);
+bool get_creds(msktutil_flags *flags);
 int generate_new_password(msktutil_flags *flags);
 
 /* Verbose messages */

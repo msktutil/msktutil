@@ -152,10 +152,33 @@ bool try_machine_supplied_password(msktutil_flags *flags, const char *ccache_nam
         return true;
     } catch (KRB5Exception &e) {
         VERBOSE(e.what());
-        VERBOSE("Authentication with supplied password failed");
+        if (e.err() == KRB5KDC_ERR_KEY_EXP) {
+            VERBOSE("Password needs to be changed");
+            flags->password_expired = true;
+            return false;
+        } else {
+            VERBOSE("Authentication with supplied password failed");
+            return false;
+        }
+    }
+}
+
+bool get_creds(msktutil_flags *flags) {
+    g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
+    std::string ccache_name = "FILE:" + g_ccache_filename;
+    try {
+        KRB5Principal principal(flags->samAccountName);
+        KRB5Creds creds(principal, /*password:*/ flags->password);
+        KRB5CCache ccache(ccache_name.c_str());
+        ccache.initialize(principal);
+        ccache.store(creds);
+	switch_default_ccache(ccache_name.c_str());
+        return true;
+    } catch (KRB5Exception &e) {
+        VERBOSE(e.what());
+        VERBOSE("Authentication with password failed");
         return false;
     }
-
 }
 
 bool try_user_creds() {
@@ -173,8 +196,21 @@ bool try_user_creds() {
     }
 }
 
-
 int find_working_creds(msktutil_flags *flags) {
+
+    /* We try some different ways, in order:
+       1) Use principal from keytab. Try both:
+         a) samAccountName
+         b) host/full-hostname (for compat with older msktutil which didn't write the first).
+       2) Use principal samAccountName with default password (samAccountName_nodollar)
+       3) Use supplied credentials (--old-account-password)
+          When the supplied password has expired (e.g. because the service account 
+          has been newly created) we cannot find any working credentials here 
+          and have to return AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD.
+          In this case working credentials need to be obtained after changing password
+       4) Calling user's existing credentials from their credential cache.
+    */
+
     if (!flags->user_creds_only) {
         std::string host_princ = "host/" + flags->hostname;
 
@@ -192,8 +228,14 @@ int find_working_creds(msktutil_flags *flags) {
             return AUTH_FROM_HOSTNAME_KEYTAB;
         if (try_machine_password(flags, ccache_name.c_str()))
             return AUTH_FROM_PASSWORD;
-        if (strlen(flags->old_account_password.c_str()) && try_machine_supplied_password(flags, ccache_name.c_str()))
-            return AUTH_FROM_SUPPLIED_PASSWORD;
+        if (strlen(flags->old_account_password.c_str())) {
+	    if (try_machine_supplied_password(flags, ccache_name.c_str())) {
+                return AUTH_FROM_SUPPLIED_PASSWORD;
+            }
+            if (flags->password_expired) {
+                return AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD;
+            }
+        }
     }
     if (try_user_creds())
         return AUTH_FROM_USER_CREDS;

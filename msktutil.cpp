@@ -90,6 +90,7 @@ void qualify_principal_vec(std::vector<std::string> &principals, const std::stri
 int finalize_exec(msktutil_exec *exec)
 {
     msktutil_flags *flags = exec->flags;
+    int ret;
 
     char *temp_realm;
     if (flags->realm_name.empty()) {
@@ -169,14 +170,6 @@ int finalize_exec(msktutil_exec *exec)
     qualify_principal_vec(exec->remove_principals, flags->hostname);
 
     // Now, try to get kerberos credentials in order to connect to LDAP.
-    /* We try 3 ways, in order:
-       1) Use principal from keytab. Try both:
-         a) samAccountName
-         b) host/full-hostname (for compat with older msktutil which didn't write the first).
-       2) Use principal samAccountName with default password (samAccountName_nodollar)
-       3) Calling user's existing credentials from their credential cache.
-    */
-
     flags->auth_type = find_working_creds(flags);
     if (flags->auth_type == AUTH_NONE) {
         fprintf(stderr, "Error: could not find any credentials to authenticate with. Neither keytab,\n\
@@ -186,6 +179,24 @@ int finalize_exec(msktutil_exec *exec)
      'reset account'.\n");
         exit(1);
     }
+
+    // If we didn't get kerberos credentials because the old passord has expired
+    // we need to change it now
+    if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+        VERBOSE("Account password expired, changing it now...");
+        ret = set_password(flags);
+	if (ret) {
+            fprintf(stderr, "Error: failed to change password\n");
+            exit(1);
+        }
+        VERBOSE("Waiting 3 seconds before trying to get kerberos credentials...");
+	sleep(3);
+	if (!get_creds(flags)) {
+            fprintf(stderr, "Error: failed to get kerberos credentials\n");
+            exit(1);
+        }
+    }
+
     VERBOSE("Authenticated using method %d\n", flags->auth_type);
 
     flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
@@ -375,21 +386,22 @@ int execute(msktutil_exec *exec)
         // Check if computer account exists, update if so, create if not.
         ldap_check_account(flags);
 
-        // Set the password.
-        ret = set_password(flags);
-        if (ret) {
-            fprintf(stderr, "Error: set_password failed\n");
-            if (flags->use_service_account) {
-	      fprintf(stderr, "Hint: Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
-	      fprintf(stderr, "      For example, there could be a \"Minimum password age\" policy preventing\n");
-	      fprintf(stderr, "      passwords from being changed too frequently. If so, you can reset the\n");
-	      fprintf(stderr, "      password instead of changing it using the --user-creds-only option.\n");
-	      fprintf(stderr, "      Be aware that you need a ticket of a user with administrative privileges\n");
-	      fprintf(stderr, "      for that.\n");
+        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+            // Set the password.
+            ret = set_password(flags);
+            if (ret) {
+                fprintf(stderr, "Error: set_password failed\n");
+                if (flags->use_service_account) {
+                    fprintf(stderr, "Hint: Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
+                    fprintf(stderr, "      For example, there could be a \"Minimum password age\" policy preventing\n");
+                    fprintf(stderr, "      passwords from being changed too frequently. If so, you can reset the\n");
+                    fprintf(stderr, "      password instead of changing it using the --user-creds-only option.\n");
+                    fprintf(stderr, "      Be aware that you need a ticket of a user with administrative privileges\n");
+                    fprintf(stderr, "      for that.\n");
+                }
+                return ret;
             }
-            return ret;
         }
-
         // And add and remove principals to servicePrincipalName in LDAP.
         add_and_remove_principals(exec);
 
@@ -748,7 +760,7 @@ msktutil_flags::msktutil_flags() :
     supportedEncryptionTypes(MS_KERB_ENCTYPE_RC4_HMAC_MD5 |
                              MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 |
                              MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96),
-    auth_type(0), user_creds_only(false)
+    auth_type(0), user_creds_only(false), password_expired(false)
 {}
 
 msktutil_flags::~msktutil_flags() {

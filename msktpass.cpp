@@ -160,17 +160,19 @@ int set_password(msktutil_flags *flags, int time)
             KRB5Principal principal(flags->samAccountName);
             KRB5Creds local_creds(principal, flags->samAccountName_nodollar, "kadmin/changepw");
             creds.move_from(local_creds);
-        } else if (flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) {
+        } else if ((flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) ||
+                   (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD)) {
             VERBOSE("Try using supplied password for %s to change password\n", flags->samAccountName.c_str());
-
             KRB5Principal principal(flags->samAccountName);
             KRB5Creds local_creds(principal, flags->old_account_password, "kadmin/changepw");
             creds.move_from(local_creds);
         } else // shouldn't happen
             throw Exception("Error: unknown auth_type.");
 
+        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD ) {
+            old_pwdLastSet = ldap_get_pwdLastSet(flags);
+        }
 
-        old_pwdLastSet = ldap_get_pwdLastSet(flags);
         ret = krb5_change_password(g_context.get(), creds.get(), const_cast<char*>(flags->password.c_str()),
                                    &response, &resp_code_string, &resp_string);
         krb5_free_data_contents(g_context.get(), &resp_string);
@@ -189,32 +191,38 @@ int set_password(msktutil_flags *flags, int time)
     }
 
     VERBOSE("Successfully set password, waiting for it to be reflected in LDAP.");
+    if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
 
-    /* Loop and wait for the account and password set to replicate */
-    for (int this_time = 0; ; this_time += 5) {
-        current_pwdLastSet = ldap_get_pwdLastSet(flags);
-        if (time + this_time >= 60) {
-            fprintf(stdout, "Password reset failed.\n");
-            return 1;
-        }
-        if (this_time >= 30) {
-            fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
-            return set_password(flags);
-        }
-        if (current_pwdLastSet.empty()) {
-            /* Account hasn't replicated yet */
-            fprintf(stdout, "Waiting for account replication (%d seconds past)\n", time + this_time);
-            sleep(5);
-        } else {
-            /* The account exists: we're waiting for the value to
-             * change, indicating the password set worked */
-            if (current_pwdLastSet != old_pwdLastSet) {
-                /* Password set has replicated successfully */
-                VERBOSE("Successfully reset computer's password");
-                break;
+        VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
+
+    }  else {
+
+        /* Loop and wait for the account and password set to replicate */
+        for (int this_time = 0; ; this_time += 5) {
+            current_pwdLastSet = ldap_get_pwdLastSet(flags);
+            if (time + this_time >= 60) {
+                fprintf(stdout, "Password reset failed.\n");
+                return 1;
             }
-            fprintf(stdout, "Waiting for password replication (%d seconds past)\n", time + this_time);
-            sleep(5);
+            if (this_time >= 30) {
+                fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
+                return set_password(flags);
+            }
+            if (current_pwdLastSet.empty()) {
+                /* Account hasn't replicated yet */
+                fprintf(stdout, "Waiting for account replication (%d seconds past)\n", time + this_time);
+                sleep(5);
+            } else {
+                /* The account exists: we're waiting for the value to
+                 * change, indicating the password set worked */
+                if (current_pwdLastSet != old_pwdLastSet) {
+                    /* Password set has replicated successfully */
+                    VERBOSE("Successfully reset computer's password");
+                    break;
+                }
+                fprintf(stdout, "Waiting for password replication (%d seconds past)\n", time + this_time);
+                sleep(5);
+            }
         }
     }
 
