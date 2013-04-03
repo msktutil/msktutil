@@ -277,6 +277,7 @@ void do_help() {
     fprintf(stdout, "  --old-account-password <password>\n");
     fprintf(stdout, "                         Use supplied computer account password or service\n");
     fprintf(stdout, "                         account password for authentication.\n");
+    fprintf(stdout, "                         This option is mutually exclusive with --user-creds-only.\n");
     fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
@@ -688,6 +689,12 @@ int main(int argc, char *argv [])
 
         /* Unrecognized */
         fprintf(stderr, "Error: Unknown parameter (%s)\n", argv[i]);
+        goto error;
+    }
+
+    // make --old-account-password and --user-creds-only  mutually exclusive:
+    if (strlen(exec->flags->old_account_password.c_str()) && exec->flags->user_creds_only) {
+        fprintf(stderr, "--old-account-password and --user-creds-only are mutually exclusive\n");
         goto error;
     }
 
