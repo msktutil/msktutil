@@ -121,7 +121,7 @@ fi
 
 # look for resolver functions
 # see if ns_initparse is simply in libc or libresolv
-AC_SEARCH_LIBS([ns_initparse], [resolv], , [
+AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE,1) , [
 	# On Linux it actually is in libresolv but prefixed with __ when
 	# linking dynamically. This is taken care of by actually including the
 	# right headers and trying again.
@@ -146,7 +146,8 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], , [
 			]],[[
 	ns_initparse(0, 0, 0);
 			]])],
-			AC_MSG_RESULT([yes]), [
+			[ AC_DEFINE(HAVE_NS_INITPARSE,1)
+			AC_MSG_RESULT([yes])], [
 			# glibc versions prior to 2.9 include ns_initparse in
 			# libresolve but do not export it. Try to circumvent
 			# this restriction by linking it statically.
@@ -160,8 +161,10 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], , [
 				]],[[
 	ns_initparse(0, 0, 0);
 				]])],
-				AC_MSG_RESULT([yes]),
-				AC_MSG_ERROR([ns_initparse not found]))])])])
+				[AC_DEFINE(HAVE_NS_INITPARSE,1)
+				AC_MSG_RESULT([yes])],
+				[LIBS="$saved_LIBS"
+				AC_MSG_RESULT([no])])])])])
 
 # finally check if res_search is present as well just as a sanity check
 AC_MSG_CHECKING([for res_search])
@@ -172,15 +175,17 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 	]],[[
 	res_search(0, 0, 0, 0, 0);
 	]])],
-	AC_MSG_RESULT([yes]),
-	AC_MSG_ERROR([res_search not found]))
+	[
+	AC_DEFINE(HAVE_RES_SEARCH, 1)
+	AC_MSG_RESULT([yes])],
+	AC_MSG_RESULT([no]))
 
 # Checks for libraries.
 AC_CHECK_LIB([krb5], [krb5_init_context], , [AC_MSG_ERROR([libkrb5 not found])])
 AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
 # OpenLDAP's LDAP_OPT_ON macro uses ber_pvt_opt_on. In newer OpenLDAP
 # versions, we have to explicitly link with lber.
-AC_CHECK_LIB([lber], [ber_pvt_opt_on], , [AC_MSG_ERROR([liblber not found])])
+AC_CHECK_LIB([lber], [ber_pvt_opt_on], , [AC_MSG_WARN([Either liblber not found ot LDAP_OPT_ON not available])])
 
 if test "$ac_cv_header_com_err_h"; then
 AC_MSG_CHECKING([whether com_err.h needs extern "C"]);

@@ -106,6 +106,7 @@ int compare_priority_weight(const void *a, const void *b) {
 
 std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
 {
+#if defined( HAVE_NS_INITPARSE) && defined(HAVE_RES_SEARCH)
     unsigned char response[NS_MAXMSG]; 
     int len;
     int i;
@@ -144,6 +145,7 @@ std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
        qsort(&alldcs,j,sizeof(struct msktutil_dcdata),compare_priority_weight);
        return std::string(alldcs[0].srvname,strlen(alldcs[0].srvname));
     }
+#endif
    return std::string(); 
 }
 

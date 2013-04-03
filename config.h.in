@@ -82,3 +82,10 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Define to 1 if you have ns_initparse(). */
+#undef HAVE_NS_INITPARSE
+
+/* Define to 1 if you have res_search(). */
+#undef HAVE_RES_SEARCH
+
