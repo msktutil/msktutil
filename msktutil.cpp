@@ -91,8 +91,6 @@ int finalize_exec(msktutil_exec *exec)
 {
     msktutil_flags *flags = exec->flags;
 
-
-    init_password(flags);
     char *temp_realm;
     if (flags->realm_name.empty()) {
         if (krb5_get_default_realm(g_context.get(), &temp_realm)) {
@@ -332,6 +330,13 @@ int execute(msktutil_exec *exec)
     int ret = 0;
     msktutil_flags *flags = exec->flags;
 
+    // Generate a random password and store it.
+    ret = generate_new_password(flags);
+    if (ret) {
+        fprintf(stderr, "Error: generate_new_password failed\n");
+        return ret;
+    }
+
     ret = finalize_exec(exec);
     if (ret) {
         fprintf(stderr, "Error: finalize_exec failed\n");
@@ -365,13 +370,6 @@ int execute(msktutil_exec *exec)
                     return 0;
                 }
             }
-        }
-
-        // Generate a random password and store it.
-        ret = generate_new_password(flags);
-        if (ret) {
-            fprintf(stderr, "Error: generate_new_password failed\n");
-            return ret;
         }
 
         // Check if computer account exists, update if so, create if not.
