@@ -45,6 +45,7 @@
 #include <sys/utsname.h>
 #include <ldap.h>
 #include <arpa/inet.h>
+#include <arpa/nameser.h>
 #include <resolv.h>
 
 
