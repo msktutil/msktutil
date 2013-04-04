@@ -150,9 +150,9 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE,1) , [
 			AC_MSG_RESULT([yes])], [
 			# glibc versions prior to 2.9 include ns_initparse in
 			# libresolve but do not export it. Try to circumvent
-			# this restriction by linking it statically.
+			# this restriction by linking the missing bits statically.
 			AC_MSG_RESULT([no])
-			LIBS="$saved_LIBS -Wl,-Bstatic -lresolv -Wl,-Bdynamic"
+			LIBS="$saved_LIBS -lresolv -Wl,-Bstatic -lresolv -Wl,-Bdynamic"
 			AC_MSG_CHECKING([for ns_initparse in statically linked -lresolv])
 			AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <netinet/in.h>
