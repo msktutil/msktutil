@@ -95,3 +95,5 @@
 /* Define to 1 if you have vsnprintf(). */
 #undef HAVE_VSNPRINTF
 
+/* Define to 1 if you have setenv(). */
+#undef HAVE_SETENV

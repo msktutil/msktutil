@@ -68,10 +68,17 @@ void create_fake_krb5_conf(msktutil_flags *flags)
          << " }\n";
     file.close();
 
+#ifdef HAVE_SETENV
     int ret = setenv("KRB5_CONFIG", g_config_filename.c_str(), 1);
-    VERBOSE("Created a fake krb5.conf file: %s", g_config_filename.c_str());
     if (ret)
         throw Exception("setenv failed");
+#else
+    int ret = putenv( strdup((std::string("KRB5_CONFIG=") +  g_config_filename).c_str()));
+    if (ret)
+        throw Exception("putenv failed");
+#endif
+
+    VERBOSE("Created a fake krb5.conf file: %s", g_config_filename.c_str());
 
     g_context.reload();
 }
@@ -98,9 +105,13 @@ void switch_default_ccache(const char *ccache_name)
     // Is this setenv really necessary given krb5_cc_set_default_name?
     // ...answer: YES, because ldap's sasl won't be using our context object,
     // and may in fact be using a different implementation of kerberos entirely!
+#ifdef HAVE_SETENV
     if (setenv("KRB5CCNAME", ccache_name, 1))
         throw Exception("Error: setenv failed");
-
+#else
+    if (!putenv( strdup((std::string("KRB5CCNAME=")+ ccache_name).c_str())))
+        throw Exception("Error: putenv failed");
+#endif
     krb5_cc_set_default_name(g_context.get(), ccache_name);
 }
 
