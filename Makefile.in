@@ -20,7 +20,7 @@ MKDIR=@MKDIR@
 WARNFLAGS=-Wall -Wextra -Wno-write-strings
 
 
-objects = krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o
+objects = krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o strtoll.o
 
 all: $(PROG)
 

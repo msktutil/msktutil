@@ -26,6 +26,9 @@
  */
 
 #include "msktutil.h"
+#ifndef HAVE_STRTOLL
+#include "strtoll.h"
+#endif
 #include <cctype>
 #include <memory>
 #include <algorithm>
