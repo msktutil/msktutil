@@ -89,3 +89,9 @@
 /* Define to 1 if you have res_search(). */
 #undef HAVE_RES_SEARCH
 
+/* Define to 1 if you have vasprintf(). */
+#undef HAVE_VASPRINTF
+
+/* Define to 1 if you have vsnprintf(). */
+#undef HAVE_VSNPRINTF
+
