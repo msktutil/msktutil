@@ -97,3 +97,6 @@
 
 /* Define to 1 if you have setenv(). */
 #undef HAVE_SETENV
+
+/* Define to 1 if you have strtoll() */
+#undef HAVE_STRTOLL
