@@ -21,9 +21,11 @@
 
 Msktutil is a program for interoperability with Active Directory that can:
  - Create a computer account in Active Directory
+ - Create a service account in Active Directory
  - Create a system Kerberos keytab
- - Add and remove principals to and from that keytab
- - Change the computer account's password
+ - Create a Kerberos keytab for a dedicated service
+ - Add and remove principals to and from keytabs
+ - Change the account's password
 
 See the man page for more information on how to use it.
 
@@ -44,3 +46,7 @@ changes from <http://download.systemimager.org/~finley/msktutil/>, and
 made even more changes. That's what you have now. :)
 
 In Feb 2012, Ken Dreyer provided some build fixes.
+
+In 2012 and 2013, Mark Proehl, Michael Weiser and Olaf Flebbe provided
+enhancements and build fixes
+
