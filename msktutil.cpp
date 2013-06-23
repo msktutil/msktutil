@@ -278,7 +278,7 @@ void do_help() {
     fprintf(stdout, "  -u, --update   Updates the keytab for the current host or service account. This\n");
     fprintf(stdout, "                 changes the account's password and updates the keytab with entries\n");
     fprintf(stdout, "                 for all principals in servicePrincipalName and userPrincipalName.\n");
-    fprintf(stdout, "                 It also updates LDAP attributes for supportedEncryptionTypes,\n");
+    fprintf(stdout, "                 It also updates LDAP attributes for msDS-supportedEncryptionTypes,\n");
     fprintf(stdout, "                 dNSDomainName, and applies other options you specify.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "  --auto-update  Same as --update, but only if keytab fails to authenticate, or\n");
@@ -317,12 +317,12 @@ void do_help() {
     fprintf(stdout, "\n");
     fprintf(stdout, "Object type/attribute-setting options:\n");
     fprintf(stdout, "  --use-service-account  Create and maintain service account instead of\n");
-    fprintf(stdout, "                         machine account. (EXPERIMENTAL)\n");
-    fprintf(stdout, "  --delegation           Set the computer account to be trusted for delegation.\n");
-    fprintf(stdout, "  --disable-delegation   Set the computer account to not be trusted for\n");
+    fprintf(stdout, "                         machine account.\n");
+    fprintf(stdout, "  --delegation           Set the account to be trusted for delegation.\n");
+    fprintf(stdout, "  --disable-delegation   Set the account to not be trusted for\n");
     fprintf(stdout, "                         delegation.\n");
-    fprintf(stdout, "  --description <text>   Sets the description field on the computer account.\n");
-    fprintf(stdout, "  --dont-expire-password Disables password expiration for the computer account.\n");
+    fprintf(stdout, "  --description <text>   Sets the description field on the account.\n");
+    fprintf(stdout, "  --dont-expire-password Disables password expiration for the account.\n");
     fprintf(stdout, "  --do-expire-password   Undisables (puts back to default) password expiration.\n");
     fprintf(stdout, "  --enctypes <int>       Sets msDs-supportedEncryptionTypes\n");
     fprintf(stdout, "                         (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5\n");
