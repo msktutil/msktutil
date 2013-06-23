@@ -183,6 +183,7 @@ struct msktutil_flags {
     bool set_description;
     bool set_userPrincipalName;
     bool no_reverse_lookups;
+    bool server_behind_nat;
     bool set_samba_secret;
 
     msktutil_val dont_expire_password;

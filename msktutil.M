@@ -174,6 +174,13 @@ Specifies to use <server> as the domain controller.  This affects both kerberos 
 The server can also be specified by setting the MSKTUTIL_SERVER environment variable.  Default:
 looked up in DNS from the realm name.
 .TP
+--server-behind-nat
+When the server is behind a firewall that performs Network Address Translation, KRB-PRIV messages
+fail validation.  This is because the IP adddress in the encrypted part of the message cannot be
+rewritten in the NAT process.  This option ignores the resulting error for the password change
+process, allowing systems outside the NAT firewall to join the domain managed by servers inside
+the NAT firewall.
+.TP
 --realm <realm>
 Specifies to use <realm> as kerberos realm.  Default: use the default_realm from [libdefaults] 
 section of krb5.conf.

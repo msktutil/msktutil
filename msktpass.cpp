@@ -135,8 +135,16 @@ int set_password(msktutil_flags *flags, int time)
         }
         krb5_free_data_contents(g_context.get(), &resp_code_string);
         if (ret) {
-            fprintf(stderr, "Error: krb5_set_password_using_ccache failed (%s)\n", error_message(ret));
-            return ret;
+            if (!response && ret == KRB5KRB_AP_ERR_BADADDR) {
+                VERBOSE("krb5_set_password_using_ccache: password changed successfully, but sender IP in KRB-PRIV failed validation");
+                if (!flags->server_behind_nat) {
+                    fprintf(stderr, "Error: krb5_set_password_using_ccache failed (%s)\n", error_message(ret));
+                    return ret;
+                }
+            } else {
+                fprintf(stderr, "Error: krb5_set_password_using_ccache failed (%s)\n", error_message(ret));
+                return ret;
+            }
         }
     } else {
         KRB5Creds creds;
@@ -184,8 +192,16 @@ int set_password(msktutil_flags *flags, int time)
         }
         krb5_free_data_contents(g_context.get(), &resp_code_string);
         if (ret) {
-            fprintf(stderr, "Error: krb5_change_password failed (%s)\n", error_message(ret));
-            return ret;
+            if (!response && ret == KRB5KRB_AP_ERR_BADADDR) {
+                VERBOSE("krb5_change_password: password changed successfully, but sender IP in KRB-PRIV failed validation");
+                if (!flags->server_behind_nat) {
+                    fprintf(stderr, "Error: krb5_change_password failed (%s)\n", error_message(ret));
+                    return ret;
+                }
+            } else {
+                fprintf(stderr, "Error: krb5_change_password failed (%s)\n", error_message(ret));
+                return ret;
+            }
         }
 
     }

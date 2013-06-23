@@ -304,6 +304,7 @@ void do_help() {
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
     fprintf(stdout, "                         up in DNS based upon realm.\n");
+    fprintf(stdout, "  --server-behind-nat    Ignore server IP validation error caused by NAT.\n");
     fprintf(stdout, "  --realm <realm>        Use a specific kerberos realm instead of using\n");
     fprintf(stdout, "                         default_realm from krb5.conf.\n");
     fprintf(stdout, "  --site <site>          Find and use domain controller in specific AD site.\n");
@@ -675,6 +676,10 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* ignore server IP validation error caused by NAT */
+        if (!strcmp(argv[i], "--server-behind-nat") || !strcmp(argv[i], "-N")) {
+            exec->flags->server_behind_nat = true;
+	}
         /* Use a certain realm */
         if (!strcmp(argv[i], "--realm")) {
             if (++i < argc) {
