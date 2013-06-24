@@ -1,3 +1,12 @@
+Release 0.5:
+
+- New co-maintainer, Olaf Flebbe
+- Support service accounts in addition to computer accounts
+- Add option to set the samba secret password
+- Add option ("--realm") to specify a custom realm
+- Various build fixes
+- Add support for clients behind a NAT firewall
+
 Release 0.4.2:
 
 - New co-maintainer, Mark Pröhl
