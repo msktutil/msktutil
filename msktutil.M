@@ -168,6 +168,14 @@ Specifies to use <file> for the keytab.  This option can also be specified by se
 MSKTUTIL_KEYTAB environment variable to the name of the desired keytab file.  This keytab is both
 read from, in order to authenticate as the given account, and written to, after updating the
 account password.  Default: /etc/krb5.keytab
+--keytab-auth-as <name>
+Specifies which principal name we should try to use, when we authenticate from a keytab. Normally,
+REPLACE_PROGNAME will try to use the account name or the host principal for the current host. If
+this option is specified, instead REPLACE_PROGNAME will try to use the given principal name first,
+and only fall back to the default behavior if we fail to authenticate with the given name. This
+option can be useful if you do not know the current password for the relevant account, do not have
+a keytab with the account principal, but you do have a keytab with a service principal associated
+with that account.
 .TP
 --server <server>
 Specifies to use <server> as the domain controller.  This affects both kerberos and ldap operations.

@@ -233,6 +233,8 @@ int find_working_creds(msktutil_flags *flags) {
         g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
         std::string ccache_name = "FILE:" + g_ccache_filename;
 
+        if (!flags->keytab_auth_princ.empty() && try_machine_keytab_princ(flags, flags->keytab_auth_princ, ccache_name.c_str()))
+            return AUTH_FROM_EXPLICIT_KEYTAB;
         if (try_machine_keytab_princ(flags, flags->samAccountName, ccache_name.c_str()))
             return AUTH_FROM_SAM_KEYTAB;
         if (try_machine_keytab_princ(flags, host_princ, ccache_name.c_str()))

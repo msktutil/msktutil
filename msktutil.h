@@ -134,6 +134,7 @@ enum auth_types {
     AUTH_FROM_USER_CREDS,
     AUTH_FROM_SUPPLIED_PASSWORD,
     AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD,
+    AUTH_FROM_EXPLICIT_KEYTAB,
 };
 
 class LDAPConnection;
@@ -159,6 +160,7 @@ struct msktutil_flags {
     std::string keytab_file;
     std::string keytab_writename;
     std::string keytab_readname;
+    std::string keytab_auth_princ;
     std::string ldap_ou;
     std::string hostname;
     std::string description;

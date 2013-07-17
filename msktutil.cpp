@@ -302,6 +302,10 @@ void do_help() {
     fprintf(stdout, "                         This option is mutually exclusive with --user-creds-only.\n");
     fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
+    fprintf(stdout, "  --keytab-auth-as <name>\n");
+    fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");
+    fprintf(stdout, "                         creds from the keytab, instead of using the account name\n");
+    fprintf(stdout, "                         principal or the host principal, etc.\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
     fprintf(stdout, "                         up in DNS based upon realm.\n");
     fprintf(stdout, "  --server-behind-nat    Ignore server IP validation error caused by NAT.\n");
@@ -376,7 +380,7 @@ int execute(msktutil_exec *exec)
     } else if (exec->mode == MODE_CREATE || exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
         if (exec->mode == MODE_AUTO_UPDATE) {
             // Don't bother doing anything if the auth was from the keytab (and not e.g. default password), and the
-            if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB) {
+            if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB || exec->flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
                 std::string pwdLastSet = ldap_get_pwdLastSet(exec->flags);
                 // Windows timestamp is in 100-nanoseconds-since-1601. (or, tenths of microseconds)
                 long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);
@@ -707,6 +711,16 @@ int main(int argc, char *argv [])
         if (!strcmp(argv[i], "--user-creds-only")) {
             exec->flags->user_creds_only = true;
             continue;
+        }
+
+        if (!strcmp(argv[i], "--keytab-auth-as")) {
+            if (++i < argc) {
+                exec->flags->keytab_auth_princ = argv[i];
+            } else {
+                fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+	    continue;
         }
 
         /* Display Verbose Messages */
