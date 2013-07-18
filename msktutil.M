@@ -80,7 +80,7 @@ argument to set the userPrincipalName attribute (generally requires administrato
 computer account credentials).  Both 'computername$' and the value of userPrincipalName are treated
 as valid account names to kinit as.
 .PP
-msktutil will use kerberized LDAP operations to talk to domain controllers.  To obtain a LDAP service
+REPLACE_PROGNAME will use kerberized LDAP operations to talk to domain controllers.  To obtain a LDAP service
 ticket, the DNS service will be used to construct the domain controllers LDAP principal name.  If DNS is
 mis-configured, this construction may fail.  To work around this issue,  you may specify the fully
 qualified DNS name of your domain controller with the --server option and additionally use the
@@ -153,7 +153,7 @@ will not be automatically appended to the SAM Account Name when using service ac
 .TP
 --old-account-password <password>
 Use supplied account password for authentication.  This is useful if the keytab does not yet exist 
-but the password of the computer account is known.  This password will be changed by msktutil in order 
+but the password of the computer account is known.  This password will be changed by REPLACE_PROGNAME in order 
 to create or update the keytab
 .TP
 -h, --hostname <name>
