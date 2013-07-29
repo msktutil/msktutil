@@ -104,6 +104,16 @@ int finalize_exec(msktutil_exec *exec)
 {
     msktutil_flags *flags = exec->flags;
     int ret;
+    
+    //initialize booleans:
+    flags->set_description = false;
+    flags->set_userPrincipalName = false;
+    flags->no_reverse_lookups = false;
+    flags->server_behind_nat = false;
+    flags->set_samba_secret = false;
+    flags->user_creds_only = false;
+    flags->use_service_account = false;
+    flags->password_expired = false;
 
     char *temp_realm;
     if (flags->realm_name.empty()) {
