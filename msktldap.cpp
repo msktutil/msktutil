@@ -738,6 +738,10 @@ void ldap_check_account(msktutil_flags *flags)
             mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
             std::vector<std::string> vals = flags->ldap->get_all_vals(mesg, "servicePrincipalName");
             for (size_t i = 0; i < vals.size(); ++i) {
+	        // translate HOST/ to host/
+		if (vals[i].compare(0, 5, "HOST/") == 0) {
+		  vals[i].replace(0, 5, "host/");
+                }
                 flags->ad_principals.push_back(vals[i]);
                 VERBOSE("  Found Principal: %s", vals[i].c_str());
             }
