@@ -105,16 +105,6 @@ int finalize_exec(msktutil_exec *exec)
     msktutil_flags *flags = exec->flags;
     int ret;
     
-    //initialize booleans:
-    flags->set_description = false;
-    flags->set_userPrincipalName = false;
-    flags->no_reverse_lookups = false;
-    flags->server_behind_nat = false;
-    flags->set_samba_secret = false;
-    flags->user_creds_only = false;
-    flags->use_service_account = false;
-    flags->password_expired = false;
-
     char *temp_realm;
     if (flags->realm_name.empty()) {
         if (krb5_get_default_realm(g_context.get(), &temp_realm)) {
@@ -794,15 +784,28 @@ error:
 
 
 msktutil_flags::msktutil_flags() :
-    password(), ldap(), set_description(false), set_userPrincipalName(false),
-    dont_expire_password(VALUE_IGNORE), no_pac(VALUE_IGNORE), delegate(VALUE_IGNORE),
-    ad_userAccountControl(0), ad_enctypes(VALUE_IGNORE), ad_supportedEncryptionTypes(0),
+    password(),
+    ldap(),
+    set_description(false),
+    set_userPrincipalName(false),
+    no_reverse_lookups(false),
+    server_behind_nat(false),
+    set_samba_secret(false),
+    dont_expire_password(VALUE_IGNORE),
+    no_pac(VALUE_IGNORE),
+    delegate(VALUE_IGNORE),
+    ad_userAccountControl(0),
+    ad_enctypes(VALUE_IGNORE),
+    ad_supportedEncryptionTypes(0),
     enctypes(VALUE_IGNORE),
     /* default values we *want* to support */
     supportedEncryptionTypes(MS_KERB_ENCTYPE_RC4_HMAC_MD5 |
                              MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 |
                              MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96),
-    auth_type(0), user_creds_only(false), password_expired(false)
+    auth_type(0),
+    user_creds_only(false),
+    use_service_account(false),
+    password_expired(false)
 {}
 
 msktutil_flags::~msktutil_flags() {
