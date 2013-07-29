@@ -193,6 +193,9 @@ the NAT firewall.
 Specifies to use <realm> as kerberos realm.  Default: use the default_realm from [libdefaults] 
 section of krb5.conf.
 .TP
+--site <site>
+Find and use domain controller in specific AD site. This option is ignored if option --server is used.
+.TP
 -N, --no-reverse-lookup
 Do not attempt to canonicalize the name of the domain controller via DNS reverse lookups.  You may
 need to do this if your client cannot resolve the PTR records for a domain controller or your DNS
