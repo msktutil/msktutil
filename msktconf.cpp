@@ -56,9 +56,24 @@ void create_fake_krb5_conf(msktutil_flags *flags)
     file << "[libdefaults]\n"
          << " default_realm = " << flags->realm_name << "\n"
          << " dns_lookup_kdc = false\n"
-         << " udp_preference_limit = 1\n"
-         << " allow_weak_crypto = true\n";
+         << " udp_preference_limit = 1\n";
 
+    if (flags->enctypes == VALUE_ON) {
+        if (flags->supportedEncryptionTypes & 0x3)
+            file << " allow_weak_crypto = true\n";
+        file << " default_tkt_enctypes =";
+        if (flags->supportedEncryptionTypes & 0x1)
+            file << " des-cbc-crc";
+        if (flags->supportedEncryptionTypes & 0x2)
+            file << " des-cbc-md5";
+        if (flags->supportedEncryptionTypes & 0x4)
+            file << " arcfour-hmac-md5";
+        if (flags->supportedEncryptionTypes & 0x8)
+            file << " aes128-cts";
+        if (flags->supportedEncryptionTypes & 0x10)
+            file << " aes256-cts";
+        file << "\n";
+    }
     if (flags->no_reverse_lookups)
         file << " rdns = false\n";
 
