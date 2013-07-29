@@ -331,7 +331,7 @@ void do_help() {
     fprintf(stdout, "  --do-expire-password   Undisables (puts back to default) password expiration.\n");
     fprintf(stdout, "  --enctypes <int>       Sets msDs-supportedEncryptionTypes\n");
     fprintf(stdout, "                         (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5\n");
-    fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-ctc-hmac-sha1\n");
+    fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-cts-hmac-sha1\n");
     fprintf(stdout, "                                 0x10=aes256-cts-hmac-sha1)\n");
     fprintf(stdout, "                         Sets des-only in userAccountControl if set to 0x3.\n");
     fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC.\n");

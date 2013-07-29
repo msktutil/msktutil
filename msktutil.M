@@ -244,7 +244,7 @@ You may OR together the following values:
   0x1=des-cbc-crc
   0x2=des-cbc-md5
   0x4=rc4-hmac-md5
-  0x8=aes128-ctc-hmac-sha1
+  0x8=aes128-cts-hmac-sha1
   0x10=aes256-cts-hmac-sha1
 
 This value is used to determine which encryption types AD will offer to use, and which encryption
