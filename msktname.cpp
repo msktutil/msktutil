@@ -31,6 +31,16 @@
 #define NS_MAXMSG 65535
 #endif
 
+/* A quirk in glibc < 2.9 makes us pick up a symbol marked GLIBC_PRIVATE
+ * if we use ns_get16 from libresolv, leading to a broken RPM
+ * that can only be installed with --nodeps. As a workaround,
+ * use a private version of ns_get16--it's simple enough.
+ */
+static unsigned int msktutil_ns_get16(const unsigned char *src)
+{
+    return (unsigned int) (((u_int16_t)src[0] << 8) | ((u_int16_t)src[1]));
+}
+
 std::string complete_hostname(const std::string &hostname)
 {
     // Ask the kerberos lib to canonicalize the hostname, and then pull it out of the principal.
@@ -127,9 +137,9 @@ std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
                    // Process DNS SRV RR
                    //                          TTL Class Type Priority Weight Port Target 
                    // _kerberos._tcp.my.realm. 600 IN    SRV  0        10000  88   dcserverXX.my.realm.
-                  alldcs[j].priority = ns_get16(ns_rr_rdata(rr));  
-	          alldcs[j].weight   = ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
-                  alldcs[j].port     = ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it... 
+                  alldcs[j].priority = msktutil_ns_get16(ns_rr_rdata(rr));  
+	          alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
+                  alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it... 
                   dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle), 
                                                 ns_rr_rdata(rr) + 3*NS_INT16SZ, 
                                                 alldcs[j].srvname, sizeof(char)*NS_MAXDNAME);
