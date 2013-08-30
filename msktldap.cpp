@@ -31,10 +31,11 @@
 #include <iostream>
 
 LDAPConnection::LDAPConnection(const std::string &server) : m_ldap() {
+    int ret = 0;
 #ifndef SOLARIS_LDAP_KERBEROS
     std::string ldap_url = "ldap://" + server;
     VERBOSEldap("calling ldap_initialize");
-    int ret = ldap_initialize(&m_ldap, ldap_url.c_str());
+    ret = ldap_initialize(&m_ldap, ldap_url.c_str());
 #else
     VERBOSEldap("calling ldap_init");
     m_ldap = ldap_init(flags->server.c_str(), LDAP_PORT);
