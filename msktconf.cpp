@@ -144,7 +144,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 void remove_fake_krb5_conf()
 {
     if (!g_config_filename.empty()) {
-      //        unlink(g_config_filename.c_str());
+        unlink(g_config_filename.c_str());
         g_config_filename.clear();
     }
 }
