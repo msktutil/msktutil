@@ -263,7 +263,7 @@ similarly refuse to use DES by default.
 Default: sets the value to 0x1C: that is, use anything but DES.
 .TP
 --allow-weak-crypto
-Enables the usage of DES keys for authentication. This is equivalent to MIT's krb5.conf parameter allow_weak_crypto
+Enables the usage of DES keys for authentication. This is equivalent to MIT's krb5.conf parameter allow_weak_crypto.
 .TP
 --no-pac
 Specifies that service tickets for this account should not contain a PAC.  This modifies
