@@ -95,9 +95,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
          << " dns_lookup_kdc = false\n"
          << " udp_preference_limit = 1\n";
     
-    if ((flags->allow_weak_crypto) || 
-	((flags->enctypes == VALUE_ON) && (flags->supportedEncryptionTypes & 0x3))
-	) {
+    if (flags->allow_weak_crypto) {
         file << " allow_weak_crypto = true\n";
     }
 
