@@ -430,7 +430,7 @@ int execute(msktutil_exec *exec)
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
         // Change account password to default value:
-        flags->password = flags->samAccountName_nodollar;
+        flags->password = create_default_machine_password(flags->samAccountName);
         // Check if computer account exists, update if so, create if not.
         ldap_check_account(flags);
 

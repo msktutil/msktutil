@@ -30,6 +30,43 @@
 #include <fstream>
 
 
+std::string create_default_machine_password(const std::string &samaccountname)
+{
+    std::string machine_password(samaccountname);
+
+    /* Default machine password after 'reset account' is created with the 
+     * following algorithm:
+     *
+     * 1) Remove trailing $ from sAMAcountName
+     * 2) Truncate to first 14 characters
+     * 3) Convert all characters to lowercase
+     *
+     */
+
+    // Remove trailing '$' 
+    if ( machine_password[machine_password.size() - 1] == '$' )
+    {
+        machine_password.resize(machine_password.size() - 1);
+    }
+
+    // Truncate to first 14 characters
+    if ( machine_password.size() > MAX_DEF_MACH_PASS_LEN )
+    {
+        machine_password.resize(MAX_DEF_MACH_PASS_LEN);
+    }
+
+    // Convert all characters to lowercase
+    for ( size_t i = 0; i < machine_password.size(); i++ )
+    {
+        machine_password[i] = std::tolower(machine_password[i]);
+    }
+    
+    VERBOSE("Default machine password for %s is %s", samaccountname.c_str(), machine_password.c_str());
+
+    return machine_password;
+}
+
+
 /* Filenames to delete on exit (temporary config / ccaches) */
 static std::string g_config_filename;
 static std::string g_ccache_filename;
@@ -154,7 +191,7 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name) {
     try {
         VERBOSE("Trying to authenticate for %s with password.", flags->samAccountName.c_str());
         KRB5Principal principal(flags->samAccountName);
-        KRB5Creds creds(principal, /*password:*/ flags->samAccountName_nodollar);
+        KRB5Creds creds(principal, /*password:*/ create_default_machine_password(flags->samAccountName));
         KRB5CCache ccache(ccache_name);
         ccache.initialize(principal);
         ccache.store(creds);

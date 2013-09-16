@@ -77,6 +77,7 @@
 #define MAX_HOSTNAME_LEN                255
 #define MAX_TRIES                       10
 #define MAX_SAM_ACCOUNT_LEN             20
+#define MAX_DEF_MACH_PASS_LEN		14
 #define MAX_DOMAIN_CONTROLLERS		20
 
 
@@ -223,6 +224,7 @@ struct msktutil_dcdata {
 };
 
 /* Prototypes */
+extern std::string create_default_machine_password(const std::string &samaccountname);
 extern void ldap_cleanup(msktutil_flags *);
 extern void init_password(msktutil_flags *);
 extern std::string get_default_hostname();

@@ -169,7 +169,7 @@ int set_password(msktutil_flags *flags, int time)
             VERBOSE("Try using default password for %s to change password\n", flags->samAccountName.c_str());
 
             KRB5Principal principal(flags->samAccountName);
-            KRB5Creds local_creds(principal, flags->samAccountName_nodollar, "kadmin/changepw");
+            KRB5Creds local_creds(principal, create_default_machine_password(flags->samAccountName), "kadmin/changepw");
             creds.move_from(local_creds);
         } else if ((flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) ||
                    (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD)) {
