@@ -334,6 +334,7 @@ void do_help() {
     fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-cts-hmac-sha1\n");
     fprintf(stdout, "                                 0x10=aes256-cts-hmac-sha1)\n");
     fprintf(stdout, "                         Sets des-only in userAccountControl if set to 0x3.\n");
+    fprintf(stdout, "  --allow-weak-crypto    Enables the usage of DES keys for authentication\n");
     fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC.\n");
     fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC.\n");
     fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host or the\n");
@@ -576,6 +577,12 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* Re-activate DES encryption in fake krb5.conf */
+        if (!strcmp(argv[i], "--allow-weak-crypto")) {
+            exec->flags->allow_weak_crypto = true;
+            continue;
+        }
+
         /* Disable the PAC ? */
         if (!strcmp(argv[i], "--no-pac")) {
             exec->flags->no_pac = VALUE_ON;
@@ -805,6 +812,7 @@ msktutil_flags::msktutil_flags() :
     auth_type(0),
     user_creds_only(false),
     use_service_account(false),
+    allow_weak_crypto(false),
     password_expired(false)
 {}
 

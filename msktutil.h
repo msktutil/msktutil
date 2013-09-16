@@ -201,6 +201,7 @@ struct msktutil_flags {
     int auth_type;
     bool user_creds_only;
     bool use_service_account;
+    bool allow_weak_crypto;
     bool password_expired;
     msktutil_flags();
     ~msktutil_flags();

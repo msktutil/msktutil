@@ -94,10 +94,14 @@ void create_fake_krb5_conf(msktutil_flags *flags)
          << " default_realm = " << flags->realm_name << "\n"
          << " dns_lookup_kdc = false\n"
          << " udp_preference_limit = 1\n";
+    
+    if ((flags->allow_weak_crypto) || 
+	((flags->enctypes == VALUE_ON) && (flags->supportedEncryptionTypes & 0x3))
+	) {
+        file << " allow_weak_crypto = true\n";
+    }
 
     if (flags->enctypes == VALUE_ON) {
-        if (flags->supportedEncryptionTypes & 0x3)
-            file << " allow_weak_crypto = true\n";
         file << " default_tkt_enctypes =";
         if (flags->supportedEncryptionTypes & 0x1)
             file << " des-cbc-crc";
@@ -140,7 +144,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 void remove_fake_krb5_conf()
 {
     if (!g_config_filename.empty()) {
-        unlink(g_config_filename.c_str());
+      //        unlink(g_config_filename.c_str());
         g_config_filename.clear();
     }
 }
