@@ -38,7 +38,7 @@
  */
 static unsigned int msktutil_ns_get16(const unsigned char *src)
 {
-    return (unsigned int) (((u_int16_t)src[0] << 8) | ((u_int16_t)src[1]));
+    return (unsigned int) (((uint16_t)src[0] << 8) | ((uint16_t)src[1]));
 }
 
 std::string complete_hostname(const std::string &hostname)
