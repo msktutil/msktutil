@@ -192,11 +192,11 @@ AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
 #
 AC_CHECK_LIB([lber], [ber_alloc], , [AC_MSG_WARN([liblber not found])])
 
-
 if test "$ac_cv_header_com_err_h"; then
 AC_MSG_CHECKING([whether com_err.h needs extern "C"]);
 
 AC_LINK_IFELSE([AC_LANG_SOURCE([
+#include <stdlib.h>
 #include <com_err.h>
 
 int main(void) {
@@ -205,6 +205,7 @@ int main(void) {
 ])], [AC_MSG_RESULT(no); com_err_needs_extern_c=no], [
 
 AC_LINK_IFELSE([AC_LANG_SOURCE([
+#include <stdlib.h>
 extern "C" {
 #include <com_err.h>
 }
