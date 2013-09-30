@@ -183,7 +183,7 @@ bool try_machine_keytab_princ(msktutil_flags *flags, const std::string &principa
         switch_default_ccache(ccache_name);
         return true;
     } catch (KRB5Exception &e) {
-        VERBOSE(e.what());
+        VERBOSE("%s", e.what());
         VERBOSE("Authentication with keytab failed");
         return false;
     }
@@ -200,7 +200,7 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name) {
         switch_default_ccache(ccache_name);
         return true;
     } catch (KRB5Exception &e) {
-        VERBOSE(e.what());
+        VERBOSE("%s", e.what());
         VERBOSE("Authentication with password failed");
         return false;
     }
@@ -256,7 +256,7 @@ bool try_user_creds() {
 
         return true;
     } catch(KRB5Exception &e) {
-        VERBOSE(e.what());
+        VERBOSE("%s", e.what());
         VERBOSE("User ticket cache was not valid.");
         return false;
     }
