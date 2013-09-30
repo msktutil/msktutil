@@ -217,7 +217,7 @@ bool try_machine_supplied_password(msktutil_flags *flags, const char *ccache_nam
         switch_default_ccache(ccache_name);
         return true;
     } catch (KRB5Exception &e) {
-        VERBOSE(e.what());
+        VERBOSE("%s", e.what());
         if (e.err() == KRB5KDC_ERR_KEY_EXP) {
             VERBOSE("Password needs to be changed");
             flags->password_expired = true;
@@ -241,7 +241,7 @@ bool get_creds(msktutil_flags *flags) {
 	switch_default_ccache(ccache_name.c_str());
         return true;
     } catch (KRB5Exception &e) {
-        VERBOSE(e.what());
+        VERBOSE("%s", e.what());
         VERBOSE("Authentication with password failed");
         return false;
     }
