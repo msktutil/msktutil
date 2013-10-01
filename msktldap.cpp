@@ -418,7 +418,7 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *fla
         VERBOSE("DEE dn=%s old=%d new=%d\n",
                 dn.c_str(), flags->ad_supportedEncryptionTypes, flags->supportedEncryptionTypes);
 
-        int ret = ldap_simple_set_attr(flags->ldap.get(), dn, "msDs-supportedEncryptionTypes",
+        ret = ldap_simple_set_attr(flags->ldap.get(), dn, "msDs-supportedEncryptionTypes",
                                        supportedEncryptionTypes);
 
         if (ret == LDAP_SUCCESS) {
