@@ -208,7 +208,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
 
     VERBOSE("Canonicalizing DC through forward/reverse lookup...");
     for (i = 0; host->h_addr_list[i]; i++) {
-        memcpy(&(addr.sin_addr.s_addr), host->h_addr_list[i], sizeof(host->h_addr_list[i]));
+        memcpy(&(addr.sin_addr.s_addr), host->h_addr_list[i], host->h_length);
         hp = gethostbyaddr((char *) &addr.sin_addr.s_addr, sizeof(addr.sin_addr.s_addr), AF_INET);
         if (!hp) {
             fprintf(stderr, "Error: gethostbyaddr failed \n");
