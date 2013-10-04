@@ -1,3 +1,20 @@
+Release 0.5.1:
+
+- Add --keytab-auth-as option (thanks Andrew Deason)
+- Add --allow-weak-crypto switch, to support single DES (thanks Andrew
+  Deason and Mark Pröhl)
+- If servicePrincipalName begins with "HOST/", rewrite to "host/"
+  (thanks Boleslaw Tokarski for the report)
+- msktutil manual page fixes (thanks Andrew Deason and Mark Pröhl)
+- Fix possible samAccountName corruption bug with uniniatialized
+  variables (thanks Jaroslaw Polok for the report)
+- Adjust --precreate to match ADUC's behavior with long account names
+  (thanks Erik de Vries)
+- Build fixes for HPUX and NetBSD
+- Fix issue with private glibc function on RHEL5 (thanks Daniel Kobras)
+- Incorporate hardening patches from Debian (thanks Tony Mancill)
+- Delete "debian" directory (this will be maintained downstream)
+
 Release 0.5:
 
 - New co-maintainer, Olaf Flebbe
