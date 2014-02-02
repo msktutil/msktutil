@@ -283,7 +283,7 @@ Specifies a service principal to remove from the account (and keytab if appropri
 Sets the userPrincipalName on the computer account or service account to be <principal>.  Note that
 the realm will automatically be appended to the value given.  The userPrincipalName is an additional
 name which can be used to kinit.  This is generally unnecessary, since you can
-always authenticate as the name given by --accountname (i.e. computername$ for computer accounts) whether
+always authenticate as the name given by --account-name (i.e. computername$ for computer accounts) whether
 or not userPrincipalName is set.  Generally requires administrator credentials.
 .TP
 --set-samba-secret
@@ -333,7 +333,7 @@ This will create an afs/cell.name@REALM principal, and associate that principal 
 account called 'afs'.  The principal will be marked as DES-only, which is required for AFS.
 .PP
 .nf
-REPLACE_PROGNAME --create --use-service-account --service HTTP/hostname.example.com --keytab /etc/apache/krb5.keytab --accountname srv-http --no-pac
+REPLACE_PROGNAME --create --use-service-account --service HTTP/hostname.example.com --keytab /etc/apache/krb5.keytab --account-name srv-http --no-pac
 .fi
 .PP
 This will create an HTTP/hostname.example.com@REALM principal, and associate that principal with a service
