@@ -138,7 +138,7 @@ std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
                    //                          TTL Class Type Priority Weight Port Target 
                    // _kerberos._tcp.my.realm. 600 IN    SRV  0        10000  88   dcserverXX.my.realm.
                   alldcs[j].priority = msktutil_ns_get16(ns_rr_rdata(rr));  
-	          alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
+                  alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
                   alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it... 
                   dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle), 
                                                 ns_rr_rdata(rr) + 3*NS_INT16SZ, 
@@ -191,7 +191,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     } 
 
     if (!dcsrv.empty()) {
-	host = gethostbyname(dcsrv.c_str());
+        host = gethostbyname(dcsrv.c_str());
     } else {
         VERBOSE("Attempting to find a Domain Controller to use (DNS domain)");
         host = gethostbyname(realm_name.c_str());

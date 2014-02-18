@@ -238,7 +238,7 @@ bool get_creds(msktutil_flags *flags) {
         KRB5CCache ccache(ccache_name.c_str());
         ccache.initialize(principal);
         ccache.store(creds);
-	switch_default_ccache(ccache_name.c_str());
+        switch_default_ccache(ccache_name.c_str());
         return true;
     } catch (KRB5Exception &e) {
         VERBOSE("%s", e.what());
@@ -297,7 +297,7 @@ int find_working_creds(msktutil_flags *flags) {
         if (try_machine_password(flags, ccache_name.c_str()))
             return AUTH_FROM_PASSWORD;
         if (strlen(flags->old_account_password.c_str())) {
-	    if (try_machine_supplied_password(flags, ccache_name.c_str())) {
+            if (try_machine_supplied_password(flags, ccache_name.c_str())) {
                 return AUTH_FROM_SUPPLIED_PASSWORD;
             }
             if (flags->password_expired) {

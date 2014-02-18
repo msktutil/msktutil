@@ -267,7 +267,7 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
                 salt = sform("%s%s", flags->realm_name.c_str(), upnsalt.c_str());
             }
         } else {
-	    salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(), 
+            salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(), 
                                         flags->lower_realm_name.c_str());
         }
 

@@ -133,7 +133,7 @@ void get_default_ou(msktutil_flags *flags)
         LDAPMessage *mesg;
         char *attrs[] = {"distinguishedName", NULL};
 
-	if (flags->use_service_account) {
+        if (flags->use_service_account) {
             std::string wkguid = sform("<WKGUID=a9d1ca15768811d1aded00c04fd8d5cd,%s>", flags->base_dn.c_str());
             flags->ldap->search(&mesg, wkguid, LDAP_SCOPE_BASE, "objectClass=*", attrs);
         } else {
@@ -746,9 +746,9 @@ void ldap_check_account(msktutil_flags *flags)
             mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
             std::vector<std::string> vals = flags->ldap->get_all_vals(mesg, "servicePrincipalName");
             for (size_t i = 0; i < vals.size(); ++i) {
-	        // translate HOST/ to host/
-		if (vals[i].compare(0, 5, "HOST/") == 0) {
-		  vals[i].replace(0, 5, "host/");
+                // translate HOST/ to host/
+                if (vals[i].compare(0, 5, "HOST/") == 0) {
+                    vals[i].replace(0, 5, "host/");
                 }
                 flags->ad_principals.push_back(vals[i]);
                 VERBOSE("  Found Principal: %s", vals[i].c_str());
@@ -761,7 +761,7 @@ void ldap_check_account(msktutil_flags *flags)
                     upn.erase(pos);
                 flags->ad_userPrincipal = upn;
                 VERBOSE("  Found User Principal: %s", upn.c_str());
-		//update userPrincipalName for salt generation
+                //update userPrincipalName for salt generation
                 flags->userPrincipalName = upn.c_str();
             }
         }
@@ -774,7 +774,7 @@ void ldap_check_account(msktutil_flags *flags)
         if (flags->use_service_account) {
             VERBOSE("Service account not found, create the account\n");
             fprintf(stdout, "No service account for %s found, creating a new one.\n", flags->samAccountName.c_str());
-	} else {
+        } else {
             VERBOSE("Computer account not found, create the account\n");
             fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
         }
@@ -815,7 +815,7 @@ void ldap_check_account(msktutil_flags *flags)
         mod_attrs[attr_count++] = &attrunicodePwd;
         attrunicodePwd.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
         attrunicodePwd.mod_type = "unicodePwd";
-        attrunicodePwd.mod_bvalues = bvals_unicodepwd;	
+        attrunicodePwd.mod_bvalues = bvals_unicodepwd;
         std::string passwd = "\"" + flags->password  + "\"";
         bvals_unicodepwd[0] = new BerValue;
         bvals_unicodepwd[0]->bv_val = new char[ (passwd.length())  * 2 ];

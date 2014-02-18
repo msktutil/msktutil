@@ -155,7 +155,7 @@ int finalize_exec(msktutil_exec *exec)
         if (flags->use_service_account) {
             fprintf(stderr, "You must supply --account-name when using --use-service-account.\n");
             exit(1);
-	} else {
+        } else {
             flags->samAccountName = get_short_hostname(flags)  + "$";
         }
     }
@@ -198,13 +198,13 @@ int finalize_exec(msktutil_exec *exec)
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Account password expired, changing it now...");
         ret = set_password(flags);
-	if (ret) {
+        if (ret) {
             fprintf(stderr, "Error: failed to change password\n");
             exit(1);
         }
         VERBOSE("Waiting 3 seconds before trying to get kerberos credentials...");
-	sleep(3);
-	if (!get_creds(flags)) {
+        sleep(3);
+        if (!get_creds(flags)) {
             fprintf(stderr, "Error: failed to get kerberos credentials\n");
             exit(1);
         }
@@ -555,8 +555,8 @@ int main(int argc, char *argv [])
             continue;
         }
 
-	/* site */
-	if (!strcmp(argv[i], "--site")) {
+        /* site */
+        if (!strcmp(argv[i], "--site")) {
             if (++i < argc) {
                 exec->flags->site = argv[i];
             } else {
@@ -690,7 +690,7 @@ int main(int argc, char *argv [])
         /* ignore server IP validation error caused by NAT */
         if (!strcmp(argv[i], "--server-behind-nat") || !strcmp(argv[i], "-N")) {
             exec->flags->server_behind_nat = true;
-	}
+        }
         /* Use a certain realm */
         if (!strcmp(argv[i], "--realm")) {
             if (++i < argc) {
@@ -727,7 +727,7 @@ int main(int argc, char *argv [])
                 fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
                 goto error;
             }
-	    continue;
+            continue;
         }
 
         /* Display Verbose Messages */
