@@ -280,11 +280,15 @@ multiple times.
 Specifies a service principal to remove from the account (and keytab if appropriate).
 .TP
 --upn <principal>
-Sets the userPrincipalName on the computer account or service account to be <principal>.  Note that
-the realm will automatically be appended to the value given.  The userPrincipalName is an additional
-name which can be used to kinit.  This is generally unnecessary, since you can
-always authenticate as the name given by --account-name (i.e. computername$ for computer accounts) whether
-or not userPrincipalName is set.  Generally requires administrator credentials.
+Sets the userPrincipalName attribute of the computer account or service account to be <principal>.  
+
+The userPrincipalName can be used in addition to the sAMAccountName (e.g. computername$ for computer accounts) for kinit.
+
+<principal> can be provided in short form (e.g. host/hostname.example.com) or in long form
+(e.g. host/hostname.example.com@EXAMPLE.COM). In short form the default realm will automatically
+be appended.
+
+This operation requires administrator privileges.
 .TP
 --set-samba-secret
 Use Samba's net changesecretpw command to locally set the machine account password in Samba's secrets.tdb.

@@ -121,6 +121,10 @@ void update_keytab(msktutil_flags *flags)
 
     add_principal_keytab(flags->samAccountName, kvno, flags);
 
+    //add upn to keytab support
+    if (!flags->userPrincipalName.empty()) {
+        add_principal_keytab(flags->userPrincipalName, kvno, flags);
+    }
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
         add_principal_keytab(flags->ad_principals[i], kvno, flags);
     }
@@ -132,7 +136,13 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
     KRB5Keytab keytab(flags->keytab_writename);
 
-    std::string principal_string = sform("%s@%s", principal.c_str(), flags->realm_name.c_str());
+    std::string principal_string = "";
+
+    if (principal.find("@") != std::string::npos) {
+        principal_string = sform("%s", principal.c_str());
+    } else {
+        principal_string = sform("%s@%s", principal.c_str(), flags->realm_name.c_str());
+    }
     KRB5Principal princ(principal_string);
 
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;

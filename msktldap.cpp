@@ -634,8 +634,15 @@ void ldap_check_account_strings(msktutil_flags *flags)
         ldap_simple_set_attr(flags->ldap, dn, "operatingSystem", system_name);
 */
 
+    
     if (flags->set_userPrincipalName) {
-        ldap_simple_set_attr(flags->ldap.get(), dn, "userPrincipalName", flags->userPrincipalName + '@' + flags->realm_name);
+        std::string userPrincipalName_string = "";
+        if (flags->userPrincipalName.find("@") != std::string::npos) {
+            userPrincipalName_string = sform("%s", flags->userPrincipalName.c_str());
+        } else {
+            userPrincipalName_string = sform("%s@%s", flags->userPrincipalName.c_str(), flags->realm_name.c_str());
+        }
+        ldap_simple_set_attr(flags->ldap.get(), dn, "userPrincipalName", userPrincipalName_string);
     }
     ldap_set_supportedEncryptionTypes(dn, flags);
 
