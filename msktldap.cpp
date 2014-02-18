@@ -577,35 +577,6 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
     return ret;
 }
 
-/* this function is never called 
-std::string get_user_dn(msktutil_flags *flags)
-{
-    std::string dn;
-    std::string user;
-    char *attrs[] = {"distinguishedName", NULL};
-    LDAPMessage *mesg;
-
-    try {
-        user = get_user_principal();
-    } catch (KRB5Exception &e) {
-        VERBOSE("No user principal available.");
-        return "";
-    }
-    std::string filter = sform("(&(objectClass=user)(userPrincipalName=%s))", user.c_str());
-    flags->ldap->search(&mesg, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
-
-    if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
-        mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
-        dn = flags->ldap->get_one_val(mesg, "distinguishedName");
-        VERBOSE("Determined executing user's DN to be %s", dn.c_str());
-
-    }
-
-    ldap_msgfree(mesg);
-    return dn;
-}
-*/
-
 void ldap_check_account_strings(msktutil_flags *flags)
 {
     const std::string &dn = flags->ad_computerDn;
