@@ -95,9 +95,15 @@ void LDAPConnection::search(LDAPMessage **mesg_p,
                             int attrsonly, LDAPControl **serverctrls, LDAPControl **clientctrls,
                             struct timeval *timeout, int sizelimit) {
     VERBOSEldap("calling ldap_search_ext_s");
+    VERBOSEldap("ldap_search_ext_s base context: %s", base_dn.c_str());
+    VERBOSEldap("ldap_search_ext_s filter: %s", filter.c_str());
     int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(), attrs, attrsonly, serverctrls, clientctrls, timeout, sizelimit, mesg_p);
-    if (ret)
+    if (ret) {
+        char *msg=NULL;
+        ldap_get_option(m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
+        fprintf(stderr, "Error: ldap_search_ext_s - additional info: %s\n", msg );
         throw LDAPException("ldap_search_ext_s", ret);
+    }
 }
 
 std::string LDAPConnection::get_one_val(LDAPMessage *mesg, char *name) {
@@ -149,11 +155,13 @@ void get_default_ou(msktutil_flags *flags)
         if (dn.empty()) {
             fprintf(stderr, "Warning: could not get default computer OU from AD.\n");
             flags->ldap_ou = "CN=Computers," + flags->base_dn;
-        } else
+        } else {
             flags->ldap_ou = dn;
+        }
         VERBOSE("Determining default OU: %s", flags->ldap_ou.c_str());
-    } else
+    } else {
         flags->ldap_ou = flags->ldap_ou + "," + flags->base_dn;
+    }
 }
 
 
@@ -201,8 +209,8 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
 {
 #ifndef SOLARIS_LDAP_KERBEROS
     int debug = 0xffffff;
-    if( g_verbose > 1)
-        ldap_set_option( NULL, LDAP_OPT_DEBUG_LEVEL, &debug);
+    if(g_verbose > 1)
+        ldap_set_option(NULL, LDAP_OPT_DEBUG_LEVEL, &debug);
 #endif
 
     std::auto_ptr<LDAPConnection> ldap;
@@ -270,6 +278,9 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
 
     if (ret) {
         fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed (%s)\n", ldap_err2string(ret));
+        char *msg=NULL;
+	ldap_get_option(ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
+        fprintf(stderr, "\tadditional info: %s\n", msg );
         if (is_tls)
             return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
         return std::auto_ptr<LDAPConnection>(NULL);
@@ -334,6 +345,9 @@ int ldap_flush_principals(msktutil_flags *flags)
     /* Ignore if the attribute doesn't exist, that just means that it's already empty */
     if (ret != LDAP_SUCCESS && ret != LDAP_NO_SUCH_ATTRIBUTE) {
         fprintf(stderr, "Error: ldap_modify_ext_s failed (%s)\n", ldap_err2string(ret));
+        char *msg=NULL;
+        ldap_get_option(flags->ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
+        fprintf(stderr, "\tadditional info: %s\n", msg );
         return -1;
     }
 
@@ -790,7 +804,7 @@ void ldap_check_account(msktutil_flags *flags)
         std::string passwd = "\"" + flags->password  + "\"";
         bvals_unicodepwd[0] = new BerValue;
         bvals_unicodepwd[0]->bv_val = new char[ (passwd.length())  * 2 ];
-        memset( bvals_unicodepwd[0]->bv_val , 0, passwd.length()   * 2);
+        memset(bvals_unicodepwd[0]->bv_val , 0, passwd.length()   * 2);
         for (unsigned int i = 0; i < passwd.length(); i++) {
             bvals_unicodepwd[0]->bv_val[i*2] = passwd[i];
         }
@@ -804,8 +818,12 @@ void ldap_check_account(msktutil_flags *flags)
         flags->ad_enctypes = VALUE_OFF;
 
         int ret = ldap_add_ext_s(flags->ldap->m_ldap, flags->ad_computerDn.c_str(), mod_attrs, NULL, NULL);
-        if (ret)
+        if (ret) {
+            char *msg=NULL;
+            ldap_get_option(flags->ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
+            fprintf(stderr, "\tadditional info: %s\n", msg );
             throw LDAPException("ldap_add_ext_s", ret);
+        }
         delete bvals_unicodepwd[0]->bv_val;
         delete bvals_unicodepwd[0];
 
