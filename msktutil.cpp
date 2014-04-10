@@ -166,8 +166,9 @@ int finalize_exec(msktutil_exec *exec)
         flags->samAccountName_nodollar.erase(flags->samAccountName_nodollar.size()-1);
 
     /* Add a "$" to machine accounts */
-    if ((!flags->use_service_account) && (flags->samAccountName[flags->samAccountName.size()-1] != '$'))
-      flags->samAccountName += "$";
+    if ((!flags->use_service_account) && (flags->samAccountName[flags->samAccountName.size()-1] != '$')) {
+        flags->samAccountName += "$";
+    }
 
     /* The samAccountName will cause win 9x, NT problems if longer than MAX_SAM_ACCOUNT_LEN characters */
     if (flags->samAccountName.length() > MAX_SAM_ACCOUNT_LEN) {

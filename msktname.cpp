@@ -101,16 +101,16 @@ std::string get_default_hostname()
 }
 
 int compare_priority_weight(const void *a, const void *b) {
-   struct msktutil_dcdata *ia = (struct msktutil_dcdata *)a;
-   struct msktutil_dcdata *ib = (struct msktutil_dcdata *)b;
- 
-   if (ia->priority > ib->priority) return 1;
-   if (ia->priority < ib->priority) return -1;
-  
-   if (ia->weight > ib->weight) return -1;
-   if (ia->weight < ib->weight) return 1;
- 
-  return 0;
+    struct msktutil_dcdata *ia = (struct msktutil_dcdata *)a;
+    struct msktutil_dcdata *ib = (struct msktutil_dcdata *)b;
+
+    if (ia->priority > ib->priority) return 1;
+    if (ia->priority < ib->priority) return -1;
+
+    if (ia->weight > ib->weight) return -1;
+    if (ia->weight < ib->weight) return 1;
+
+    return 0;
 }
 
 
@@ -126,37 +126,37 @@ std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
     struct msktutil_dcdata alldcs[MAX_DOMAIN_CONTROLLERS];    
 
     if ((len=res_search(krbdnsquery.c_str(), ns_c_in, ns_t_srv, response, sizeof(response))) > 0) {
-       if (ns_initparse(response,len,&reshandle) >= 0) {
-          if ((len=ns_msg_count(reshandle,ns_s_an)) > 0) {
-             for (i=0,j=0;i<len && j<MAX_DOMAIN_CONTROLLERS; i++) {
-                 if (ns_parserr(&reshandle,ns_s_an,i,&rr)) {
-                    // Ignore records we cannot parse, this is non fatal. 
-                    continue;
-                 }
-                if (ns_rr_class(rr) == ns_c_in && ns_rr_type(rr) == ns_t_srv) {
-                   // Process DNS SRV RR
-                   //                          TTL Class Type Priority Weight Port Target 
-                   // _kerberos._tcp.my.realm. 600 IN    SRV  0        10000  88   dcserverXX.my.realm.
-                  alldcs[j].priority = msktutil_ns_get16(ns_rr_rdata(rr));  
-                  alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
-                  alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it... 
-                  dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle), 
-                                                ns_rr_rdata(rr) + 3*NS_INT16SZ, 
-                                                alldcs[j].srvname, sizeof(char)*NS_MAXDNAME);
-                  j++;         
+        if (ns_initparse(response,len,&reshandle) >= 0) {
+            if ((len=ns_msg_count(reshandle,ns_s_an)) > 0) {
+                for (i=0,j=0;i<len && j<MAX_DOMAIN_CONTROLLERS; i++) {
+                    if (ns_parserr(&reshandle,ns_s_an,i,&rr)) {
+                        // Ignore records we cannot parse, this is non fatal. 
+                        continue;
+                    }
+                    if (ns_rr_class(rr) == ns_c_in && ns_rr_type(rr) == ns_t_srv) {
+                        // Process DNS SRV RR
+                        // TTL Class Type Priority Weight Port Target 
+                        // _kerberos._tcp.my.realm. 600 IN    SRV  0        10000  88   dcserverXX.my.realm.
+                        alldcs[j].priority = msktutil_ns_get16(ns_rr_rdata(rr));  
+                        alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
+                        alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it... 
+                        dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle), 
+                                  ns_rr_rdata(rr) + 3*NS_INT16SZ, 
+                                  alldcs[j].srvname, sizeof(char)*NS_MAXDNAME);
+                        j++;         
+                    }
                 }
-             } 
-          }
-       }
+            }
+        }
     }
 
     if (j) {
-       // and get the 'top' one from the list.
-       qsort(&alldcs,j,sizeof(struct msktutil_dcdata),compare_priority_weight);
-       return std::string(alldcs[0].srvname,strlen(alldcs[0].srvname));
+        // and get the 'top' one from the list.
+        qsort(&alldcs,j,sizeof(struct msktutil_dcdata),compare_priority_weight);
+        return std::string(alldcs[0].srvname,strlen(alldcs[0].srvname));
     }
 #endif
-   return std::string(); 
+    return std::string(); 
 }
 
 std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
