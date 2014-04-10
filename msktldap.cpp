@@ -279,7 +279,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
     if (ret) {
         fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed (%s)\n", ldap_err2string(ret));
         char *msg=NULL;
-	ldap_get_option(ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
+        ldap_get_option(ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
         fprintf(stderr, "\tadditional info: %s\n", msg );
         if (is_tls)
             return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
@@ -417,24 +417,23 @@ int ldap_simple_set_attr(LDAPConnection *ldap, const std::string &dn,
     ret = ldap_modify_ext_s(ldap->m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
 
     if (ret != LDAP_SUCCESS) {
-      VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
+        VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
 
+        fprintf(stderr, "WARNING: ldap modification of %s\n", dn.c_str());
+        fprintf(stderr, "         failed while trying to change %s to %s.\n", attrName.c_str(), val.c_str());
+        fprintf(stderr, "         Error was: %s\n", ldap_err2string(ret));
+        fprintf(stderr, "         --> Do you have enough privileges?\n");
+        fprintf(stderr, "         --> You might try re-\"kinit\"ing.\n");
+        if (!flags->user_creds_only) { 
+            fprintf(stderr, "         --> Maybe you should try again with --user-creds-only?\n");
+        }
 
-      fprintf(stderr, "WARNING: ldap modification of %s\n", dn.c_str());
-      fprintf(stderr, "         failed while trying to change %s to %s.\n", attrName.c_str(), val.c_str());
-      fprintf(stderr, "         Error was: %s\n", ldap_err2string(ret));
-      fprintf(stderr, "         --> Do you have enough privileges?\n");
-      fprintf(stderr, "         --> You might try re-\"kinit\"ing.\n");
-      if (!flags->user_creds_only) { 
-          fprintf(stderr, "         --> Maybe you should try again with --user-creds-only?\n");
-      }
-
-      if (attrName.compare(0, 17, "userPrincipalName") == 0) {
-	fprintf(stderr, "ERROR:   Can't continue with wrong UPN\n");
-	exit(1);
-      } else {
-	fprintf(stderr, "         Continuing anyway ...\n");
-      }
+        if (attrName.compare(0, 17, "userPrincipalName") == 0) {
+            fprintf(stderr, "ERROR:   Can't continue with wrong UPN\n");
+            exit(1);
+        } else {
+            fprintf(stderr, "         Continuing anyway ...\n");
+        }
     }
 
     return ret;
@@ -450,7 +449,7 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *fla
                 dn.c_str(), flags->ad_supportedEncryptionTypes, flags->supportedEncryptionTypes);
 
         ret = ldap_simple_set_attr(flags->ldap.get(), dn, "msDs-supportedEncryptionTypes",
-				   supportedEncryptionTypes, flags);
+                                   supportedEncryptionTypes, flags);
 
         if (ret == LDAP_SUCCESS) {
             flags->ad_enctypes = VALUE_ON;
@@ -628,12 +627,14 @@ void ldap_check_account_strings(msktutil_flags *flags)
 
     // don't set dnsHostname on service accounts
     if (!flags->use_service_account) {
-        if (!flags->hostname.empty() && flags->hostname != flags->ad_dnsHostName)
-	  ldap_simple_set_attr(flags->ldap.get(), dn, "dNSHostName", flags->hostname, flags);
+        if (!flags->hostname.empty() && flags->hostname != flags->ad_dnsHostName) {
+            ldap_simple_set_attr(flags->ldap.get(), dn, "dNSHostName", flags->hostname, flags);
+        }
     }
 
-    if (flags->set_description)
-      ldap_simple_set_attr(flags->ldap.get(), dn, "description", flags->description, flags);
+    if (flags->set_description) {
+        ldap_simple_set_attr(flags->ldap.get(), dn, "description", flags->description, flags);
+    }
 
 
     if (flags->set_userPrincipalName) {
