@@ -180,7 +180,6 @@ struct msktutil_flags {
 
     std::string ad_computerDn;
     std::string ad_dnsHostName;
-    std::string ad_userPrincipal;
     std::vector<std::string> ad_principals;
 
     bool set_description;
