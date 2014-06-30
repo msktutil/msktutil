@@ -711,9 +711,11 @@ int main(int argc, char *argv [])
         }
 
         /* ignore server IP validation error caused by NAT */
-        if (!strcmp(argv[i], "--server-behind-nat") || !strcmp(argv[i], "-N")) {
+        if (!strcmp(argv[i], "--server-behind-nat")) {
             exec->flags->server_behind_nat = true;
+            continue;
         }
+
         /* Use a certain realm */
         if (!strcmp(argv[i], "--realm")) {
             if (++i < argc) {
