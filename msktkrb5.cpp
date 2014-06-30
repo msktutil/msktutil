@@ -123,9 +123,13 @@ void update_keytab(msktutil_flags *flags)
     if (!flags->use_service_account) {
         add_principal_keytab(flags->samAccountName_uppercase, kvno, flags);
     }
-    //add upn to keytab support
+    //add upn
     if (!flags->userPrincipalName.empty()) {
         add_principal_keytab(flags->userPrincipalName, kvno, flags);
+    }
+    //add host/sAMAccountNAme
+    if (!flags->use_service_account) {
+        add_principal_keytab("host/" + flags->samAccountName_nodollar, kvno, flags);
     }
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
         add_principal_keytab(flags->ad_principals[i], kvno, flags);
