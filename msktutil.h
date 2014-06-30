@@ -177,7 +177,6 @@ struct msktutil_flags {
     std::string old_account_password;
     std::string site;
     std::auto_ptr<LDAPConnection> ldap;
-
     std::string ad_computerDn;
     std::string ad_dnsHostName;
     std::vector<std::string> ad_principals;
@@ -202,6 +201,7 @@ struct msktutil_flags {
     bool use_service_account;
     bool allow_weak_crypto;
     bool password_expired;
+    int auto_update_interval;
     msktutil_flags();
     ~msktutil_flags();
 };

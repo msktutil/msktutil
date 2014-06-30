@@ -283,8 +283,8 @@ void do_help() {
     fprintf(stdout, "                 dNSDomainName, and applies other options you specify.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "  --auto-update  Same as --update, but only if keytab fails to authenticate, or\n");
-    fprintf(stdout, "                 the last password change was more than 30 days ago. Useful to run\n");
-    fprintf(stdout, "                 from a daily cron job.\n");
+    fprintf(stdout, "                 the last password change was more than 30 days ago\n");
+    fprintf(stdout, "                 (see --auto-update-interval). Useful to run from a daily cron job.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "  --precreate    Pre-create an account for the given host with default password\n");
     fprintf(stdout, "                 but do not update local keytab.\n");
@@ -318,6 +318,9 @@ void do_help() {
     fprintf(stdout, "                         Don't reverse-lookup the domain controller.\n");
     fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
     fprintf(stdout, "                         only use user's credentials (from e.g. kinit).\n");
+    fprintf(stdout, "  --auto-update-interval <days>\n");
+    fprintf(stdout, "                         Number of <days> when --auto-update will change the\n");
+    fprintf(stdout, "                         account password. Defaults to 30 days.\n");
     fprintf(stdout, "  --verbose              Enable verbose messages.\n");
     fprintf(stdout, "                         More then once to get LDAP debugging.\n");
     fprintf(stdout, "\n");
@@ -348,8 +351,6 @@ void do_help() {
     fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
     fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
     fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
-
-
 }
 
 void do_version() {
@@ -360,7 +361,6 @@ int execute(msktutil_exec *exec)
 {
     int ret = 0;
     msktutil_flags *flags = exec->flags;
-
     // Generate a random password and store it.
     ret = generate_new_password(flags);
     if (ret) {
@@ -396,7 +396,7 @@ int execute(msktutil_exec *exec)
                 time_t current_unix_time = time(NULL);
                 long long days_since_password_change = (current_unix_time - unix_timestamp) / 86400;
                 VERBOSE("Password last set %lld days ago.", days_since_password_change);
-                if (days_since_password_change < 30) {
+                if (days_since_password_change < flags->auto_update_interval) {
                     VERBOSE("Exiting because password was changed recently.");
                     return 0;
                 }
@@ -731,6 +731,17 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        if (!strcmp(argv[i], "--auto-update-interval")) {
+            if (++i < argc) {
+                exec->flags->auto_update_interval = atoi(argv[i]);
+            } else {
+                fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+
+
         /* Display Verbose Messages */
         if (!strcmp(argv[i], "--verbose")) {
             do_verbose();
@@ -814,7 +825,8 @@ msktutil_flags::msktutil_flags() :
     user_creds_only(false),
     use_service_account(false),
     allow_weak_crypto(false),
-    password_expired(false)
+    password_expired(false),
+    auto_update_interval(30)
 {}
 
 msktutil_flags::~msktutil_flags() {

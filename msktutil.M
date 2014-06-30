@@ -206,9 +206,11 @@ Don't attempt to authenticate with a keytab: only use user's credentials (from
 e.g. kinit).  You may need to do this to modify certain attributes that require Administrator
 credentials (description, userAccountControl, userPrincipalName, in a default AD setup).
 .TP
+--auto-update-interval <days>
+Number of <days> when --auto-update will change the account password. Defaults to 30 days.
+.TP
 --verbose
 Enables verbose status messages.  May be specified more then once to get LDAP debugging.
-
 .SH OBJECT TYPE/ATTRIBUTE-SETTING OPTIONS
 .TP
 --use-service-account
