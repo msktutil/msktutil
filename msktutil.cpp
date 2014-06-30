@@ -302,6 +302,10 @@ void do_help() {
     fprintf(stdout, "                         account password for authentication.\n");
     fprintf(stdout, "                         This option is mutually exclusive with --user-creds-only.\n");
     fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
+    fprintf(stdout, "  --password <new_password>\n");
+    fprintf(stdout, "                         Specify the new account password instead of generating\n");
+    fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
+    fprintf(stdout, "                         defining the string.\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");
@@ -361,19 +365,21 @@ int execute(msktutil_exec *exec)
 {
     int ret = 0;
     msktutil_flags *flags = exec->flags;
-    // Generate a random password and store it.
-    ret = generate_new_password(flags);
-    if (ret) {
-        fprintf(stderr, "Error: generate_new_password failed\n");
-        return ret;
+    if( flags->password_from_cmdline ) {
+        VERBOSE("Using password from command line");
+    } else {
+        // Generate a random password and store it.
+        ret = generate_new_password(flags);
+        if (ret) {
+            fprintf(stderr, "Error: generate_new_password failed\n");
+            return ret;
+        }
     }
-
     ret = finalize_exec(exec);
     if (ret) {
         fprintf(stderr, "Error: finalize_exec failed\n");
         exit(ret);
     }
-
     if (exec->mode == MODE_FLUSH) {
         fprintf(stdout, "Flushing all entries for %s from the keytab %s\n", flags->hostname.c_str(),
                 flags->keytab_writename.c_str());
@@ -549,6 +555,17 @@ int main(int argc, char *argv [])
         if (!strcmp(argv[i], "--old-account-password")) {
             if (++i < argc) {
                 exec->flags->old_account_password = argv[i];
+            } else {
+                fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+
+        if (!strcmp(argv[i], "--password")) {
+            if (++i < argc) {
+                                exec->flags->password_from_cmdline = true;
+                                exec->flags->password = argv[i];
             } else {
                 fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -804,6 +821,7 @@ error:
 
 msktutil_flags::msktutil_flags() :
     password(),
+    password_from_cmdline(false),
     ldap(),
     set_description(false),
     set_userPrincipalName(false),
