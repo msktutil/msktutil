@@ -170,6 +170,11 @@ int finalize_exec(msktutil_exec *exec)
         flags->samAccountName += "$";
     }
 
+    /* Determine uppercase version of sAMAccountName */
+    for (std::string::size_type i=0; i<flags->samAccountName.length(); ++i) {
+        flags->samAccountName_uppercase[i] = toupper(flags->samAccountName[i]);
+    }
+
     /* The samAccountName will cause win 9x, NT problems if longer than MAX_SAM_ACCOUNT_LEN characters */
     if (flags->samAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
         fprintf(stderr, "Error: The SAM name (%s) for this host is longer than the maximum of MAX_SAM_ACCOUNT_LEN characters\n",

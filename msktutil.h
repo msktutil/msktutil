@@ -171,6 +171,7 @@ struct msktutil_flags {
     std::string base_dn;
     std::string samAccountName;
     std::string samAccountName_nodollar;
+    std::string samAccountName_uppercase;
     std::string password;
     bool password_from_cmdline;
     std::string userPrincipalName;

@@ -120,7 +120,9 @@ void update_keytab(msktutil_flags *flags)
     krb5_kvno kvno = ldap_get_kvno(flags);
 
     add_principal_keytab(flags->samAccountName, kvno, flags);
-
+    if (!flags->use_service_account) {
+        add_principal_keytab(flags->samAccountName_uppercase, kvno, flags);
+    }
     //add upn to keytab support
     if (!flags->userPrincipalName.empty()) {
         add_principal_keytab(flags->userPrincipalName, kvno, flags);
