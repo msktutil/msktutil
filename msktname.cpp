@@ -116,34 +116,34 @@ int compare_priority_weight(const void *a, const void *b) {
 
 std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
 {
-#if defined( HAVE_NS_INITPARSE) && defined(HAVE_RES_SEARCH)
-    unsigned char response[NS_MAXMSG]; 
+#if defined(HAVE_NS_INITPARSE) && defined(HAVE_RES_SEARCH)
+    unsigned char response[NS_MAXMSG];
     int len;
     int i;
     int j=0; // my not so smart compiler warns me about: 'j' may be used uninitialized in this function ...
     ns_msg reshandle;
     ns_rr rr;
-    struct msktutil_dcdata alldcs[MAX_DOMAIN_CONTROLLERS];    
+    struct msktutil_dcdata alldcs[MAX_DOMAIN_CONTROLLERS];
 
     if ((len=res_search(krbdnsquery.c_str(), ns_c_in, ns_t_srv, response, sizeof(response))) > 0) {
         if (ns_initparse(response,len,&reshandle) >= 0) {
             if ((len=ns_msg_count(reshandle,ns_s_an)) > 0) {
                 for (i=0,j=0;i<len && j<MAX_DOMAIN_CONTROLLERS; i++) {
                     if (ns_parserr(&reshandle,ns_s_an,i,&rr)) {
-                        // Ignore records we cannot parse, this is non fatal. 
+                        // Ignore records we cannot parse, this is non fatal.
                         continue;
                     }
                     if (ns_rr_class(rr) == ns_c_in && ns_rr_type(rr) == ns_t_srv) {
                         // Process DNS SRV RR
-                        // TTL Class Type Priority Weight Port Target 
+                        // TTL Class Type Priority Weight Port Target
                         // _kerberos._tcp.my.realm. 600 IN    SRV  0        10000  88   dcserverXX.my.realm.
-                        alldcs[j].priority = msktutil_ns_get16(ns_rr_rdata(rr));  
-                        alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ); 
-                        alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it... 
-                        dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle), 
-                                  ns_rr_rdata(rr) + 3*NS_INT16SZ, 
+                        alldcs[j].priority = msktutil_ns_get16(ns_rr_rdata(rr));
+                        alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ);
+                        alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); // we do not really need it...
+                        dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle),
+                                  ns_rr_rdata(rr) + 3*NS_INT16SZ,
                                   alldcs[j].srvname, sizeof(char)*NS_MAXDNAME);
-                        j++;         
+                        j++;
                     }
                 }
             }
@@ -156,7 +156,7 @@ std::string get_dc_host_from_srv_rr(const std::string &krbdnsquery)
         return std::string(alldcs[0].srvname,strlen(alldcs[0].srvname));
     }
 #endif
-    return std::string(); 
+    return std::string();
 }
 
 std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
@@ -187,8 +187,8 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
 
     if (dcsrv.empty()) {
         VERBOSE("Attempting to find a Domain Controller to use (DNS SRV RR UDP)");
-        dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._udp.") + realm_name); 
-    } 
+        dcsrv = get_dc_host_from_srv_rr(std::string("_kerberos._udp.") + realm_name);
+    }
 
     if (!dcsrv.empty()) {
         host = gethostbyname(dcsrv.c_str());
