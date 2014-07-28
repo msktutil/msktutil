@@ -44,10 +44,6 @@
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <ldap.h>
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-
 
 #ifdef HAVE_COM_ERR_H
 # ifdef COM_ERR_NEEDS_EXTERN_C
@@ -216,13 +212,6 @@ struct msktutil_exec {
 
     msktutil_exec();
     ~msktutil_exec();
-};
-
-struct msktutil_dcdata {
-    char srvname[NS_MAXDNAME];
-    unsigned int priority;
-    unsigned int weight;
-    unsigned int port; 
 };
 
 /* Prototypes */

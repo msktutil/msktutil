@@ -45,6 +45,13 @@ AC_ARG_WITH(tmpdir,
 [  --with-tmpdir=DIR       What temporary directory to use],
 [ tmpdir="$withval" ])
 
+AC_ARG_WITH(udns,
+[  --with-udns=<yes/no/DIR> Whether to use and where to find the udns includes and libraries (default: check)],
+[ udns="$withval" ], [ udns=check ] )
+AC_ARG_WITH(static-udns,
+[  --with-static-udns      Whether to link udns statically (default: no)],
+[ udnsstatic=yes ], [ udnsstatic=no ] )
+
 # If krb5-config was not specified, try to find it ourselves.
 AS_IF([test -z "$krb5config"],
 	[AC_PATH_PROG([PATH_KRB5_CONFIG], [krb5-config] [],
@@ -89,6 +96,26 @@ if test "$tmpdir" != ""; then
   CPPFLAGS="$CPPFLAGS -DTMP_DIR=\\\"$tmpdir\\\""
 fi
 
+case "$udns" in
+  no|yes|check) ;;
+  *)
+    if test "$udns" != "$krb5dir" && test "$udns" != "$ldapdir" && test "$udns" != "$sasldir" ; then
+      if test -d "$udns/include"; then
+        CPPFLAGS="-I$udns/include $CPPFLAGS"
+      else
+        # udns source dir, put include path extension last since otherwise
+        # udns's config.h will be found first and msktutil's build will fail
+        CPPFLAGS="-I$udns $CPPFLAGS"
+      fi
+      if test -d "$udns/lib"; then
+        LDFLAGS="-L$udns/lib $LDFLAGS"
+      else
+        LDFLAGS="-L$udns $LDFLAGS"
+      fi
+    fi
+    ;;
+esac
+
 AC_CHECK_HEADERS([krb5.h com_err.h heim_err.h])
 if test "$ac_cv_header_krb5_h" = "no"; then
   AC_MSG_ERROR([This program cannot be built without krb5.h])
@@ -118,6 +145,42 @@ if test "$ac_cv_header_sasl_h" = "no"; then
   fi
 fi
 
+if test "$udns" != "no"; then
+  AC_CHECK_HEADERS([udns.h])
+  if test "$ac_cv_header_udns_h" = "no"; then
+    if test "$udns" != "check"; then
+      AC_MSG_ERROR([udns requested but udns.h not found])
+    fi
+    udns=no
+  fi
+fi
+
+if test "$udns" != "no"; then
+  if test "$udnsstatic" != "no"; then
+    # FIXME: Only works with GNU ld :-(
+    LIBS="$LIBS -Wl,-Bstatic -ludns -Wl,-Bdynamic"
+    AC_MSG_CHECKING([for dns_new in statically linked -ludns])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <udns.h>
+    ]],[[
+      dns_new(0);
+    ]])],
+    [ AC_DEFINE(HAVE_LIBUDNS, 1)
+    AC_MSG_RESULT([yes])], [
+    if test "$udns" != "check"; then
+      AC_MSG_ERROR([static link to udns requested but static libudns not found])
+    fi
+    udns=no])
+  else
+    AC_CHECK_LIB([udns], [dns_new], , [
+      if test "$udns" != "check"; then
+        AC_MSG_ERROR([udns requested but libudns not found])
+      fi
+      udns=no])
+  fi
+fi
+
+if test "$udns" = "no"; then
 # look for resolver functions
 # see if ns_initparse is simply in libc or libresolv
 AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE, 1, [defined if ns_initparse can be used]) , [
@@ -178,6 +241,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 	AC_DEFINE(HAVE_RES_SEARCH, 1, [defined if res_search can be used])
 	AC_MSG_RESULT([yes])],
 	AC_MSG_RESULT([no]))
+fi
 
 # Checks for libraries.
 AC_CHECK_LIB([krb5], [krb5_init_context], , [AC_MSG_ERROR([libkrb5 not found])])
