@@ -14,6 +14,9 @@
    `ENCTYPE_AES256_CTS_HMAC_SHA1_96', and to 0 if you don't. */
 #undef HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
 
+/* Define to 1 if you have the <et/com_err.h> header file. */
+#undef HAVE_ET_COM_ERR_H
+
 /* Define to 1 if you have the <heimdal/heim_err.h> header file. */
 #undef HAVE_HEIMDAL_HEIM_ERR_H
 
@@ -29,17 +32,29 @@
 /* Define to 1 if you have the `krb5' library (-lkrb5). */
 #undef HAVE_LIBKRB5
 
+/* Define to 1 if you have the `lber' library (-llber). */
+#undef HAVE_LIBLBER
+
 /* Define to 1 if you have the `ldap' library (-lldap). */
 #undef HAVE_LIBLDAP
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* defined if ns_initparse can be used */
+#undef HAVE_NS_INITPARSE
+
+/* defined if res_search can be used */
+#undef HAVE_RES_SEARCH
+
 /* Define to 1 if you have the <sasl.h> header file. */
 #undef HAVE_SASL_H
 
 /* Define to 1 if you have the <sasl/sasl.h> header file. */
 #undef HAVE_SASL_SASL_H
+
+/* Define to 1 if you have the `setenv' function. */
+#undef HAVE_SETENV
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -53,6 +68,9 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the `strtoll' function. */
+#undef HAVE_STRTOLL
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
@@ -61,6 +79,12 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `vasprintf' function. */
+#undef HAVE_VASPRINTF
+
+/* Define to 1 if you have the `vsnprintf' function. */
+#undef HAVE_VSNPRINTF
 
 /* defined if the kerberos is heimdal */
 #undef HEIMDAL
@@ -77,26 +101,11 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Define to 1 if you have ns_initparse(). */
-#undef HAVE_NS_INITPARSE
-
-/* Define to 1 if you have res_search(). */
-#undef HAVE_RES_SEARCH
-
-/* Define to 1 if you have vasprintf(). */
-#undef HAVE_VASPRINTF
-
-/* Define to 1 if you have vsnprintf(). */
-#undef HAVE_VSNPRINTF
-
-/* Define to 1 if you have setenv(). */
-#undef HAVE_SETENV
-
-/* Define to 1 if you have strtoll() */
-#undef HAVE_STRTOLL

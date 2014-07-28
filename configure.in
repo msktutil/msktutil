@@ -45,7 +45,6 @@ AC_ARG_WITH(tmpdir,
 [  --with-tmpdir=DIR       What temporary directory to use],
 [ tmpdir="$withval" ])
 
-
 # If krb5-config was not specified, try to find it ourselves.
 AS_IF([test -z "$krb5config"],
 	[AC_PATH_PROG([PATH_KRB5_CONFIG], [krb5-config] [],
@@ -121,7 +120,7 @@ fi
 
 # look for resolver functions
 # see if ns_initparse is simply in libc or libresolv
-AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE,1) , [
+AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE, 1, [defined if ns_initparse can be used]) , [
 	# On Linux it actually is in libresolv but prefixed with __ when
 	# linking dynamically. This is taken care of by actually including the
 	# right headers and trying again.
@@ -176,7 +175,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 	res_search(0, 0, 0, 0, 0);
 	]])],
 	[
-	AC_DEFINE(HAVE_RES_SEARCH, 1)
+	AC_DEFINE(HAVE_RES_SEARCH, 1, [defined if res_search can be used])
 	AC_MSG_RESULT([yes])],
 	AC_MSG_RESULT([no]))
 
