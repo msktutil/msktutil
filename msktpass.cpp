@@ -225,7 +225,7 @@ int set_password(msktutil_flags *flags, int time)
             }
             if (this_time >= 30) {
                 fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
-                return set_password(flags);
+                return set_password(flags, time + this_time);
             }
             if (current_pwdLastSet.empty()) {
                 /* Account hasn't replicated yet */
