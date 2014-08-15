@@ -92,6 +92,65 @@ int generate_new_password(msktutil_flags *flags)
     return 0;
 }
 
+/* Wait a maximum of <max_wait> seconds for replication of password change,
+ * indicated by a change of the account's LDAP attribute pwdLastSet.
+ * Argument <old_pwdLastSet> needs to indicate the attribute value prior to
+ * the password change.
+ * Returns 0 if a successful password change was detected, or the waited
+ * number of seconds otherwise.
+ */
+static int wait_on_pwchange(msktutil_flags *flags, std::string old_pwdLastSet, int max_wait=30)
+{
+    if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+        VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
+        return 0;
+    }
+
+    /* Loop and wait for the account and password set to replicate */
+    for (int this_time = 0; ; this_time += 5) {
+        std::string current_pwdLastSet = ldap_get_pwdLastSet(flags);
+
+        if (!current_pwdLastSet.empty() && current_pwdLastSet != old_pwdLastSet) {
+            /* Password set has replicated successfully */
+            VERBOSE("Successfully reset computer's password");
+            return 0;
+        }
+
+        if (this_time >= max_wait)
+            return this_time;
+
+        fprintf(stdout, "Waiting for account replication (%d seconds past)\n", this_time);
+        sleep(5);
+    }
+}
+
+/* Try to set the the new Samba secret to <password>. */
+static int set_samba_secret(std::string password)
+{
+    VERBOSE("Setting samba machine trust account password");
+
+    FILE *pipe = popen("net changesecretpw -f -i", "w");
+    if (pipe == NULL) {
+        fprintf(stdout, "Error executing samba net command\n");
+        return 1;
+    }
+
+    size_t len = password.length();
+    if (fwrite(password.c_str(), sizeof(char), len, pipe) != len) {
+        fprintf(stdout, "Write error putting password to samba net command\n");
+        return 1;
+    }
+
+    int rc = pclose(pipe);
+    if (rc != 0) {
+        fprintf(stdout, "Setting samba secret failed with error code %d\n", rc);
+        return 1;
+    }
+
+    VERBOSE("Successfully set samba machine trust account password");
+
+    return 0;
+}
 
 int set_password(msktutil_flags *flags, int time)
 {
@@ -100,8 +159,6 @@ int set_password(msktutil_flags *flags, int time)
     krb5_data resp_string;
     int response = 0;
     std::string old_pwdLastSet;
-    std::string current_pwdLastSet;
-
 
     // Zero out these data structures, because we attempt to free them below, and sometimes, upon
     // error conditions, the called API hasn't set them itself.
@@ -210,64 +267,22 @@ int set_password(msktutil_flags *flags, int time)
     }
 
     VERBOSE("Successfully set password, waiting for it to be reflected in LDAP.");
-    if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
 
-        VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
+    ret = wait_on_pwchange(flags, old_pwdLastSet);
+    if (ret != 0) {
+        time += ret;
 
-    }  else {
-
-        /* Loop and wait for the account and password set to replicate */
-        for (int this_time = 0; ; this_time += 5) {
-            current_pwdLastSet = ldap_get_pwdLastSet(flags);
-            if (time + this_time >= 60) {
-                fprintf(stdout, "Password reset failed.\n");
-                return 1;
-            }
-            if (this_time >= 30) {
-                fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
-                return set_password(flags, time + this_time);
-            }
-            if (current_pwdLastSet.empty()) {
-                /* Account hasn't replicated yet */
-                fprintf(stdout, "Waiting for account replication (%d seconds past)\n", time + this_time);
-                sleep(5);
-            } else {
-                /* The account exists: we're waiting for the value to
-                 * change, indicating the password set worked */
-                if (current_pwdLastSet != old_pwdLastSet) {
-                    /* Password set has replicated successfully */
-                    VERBOSE("Successfully reset computer's password");
-                    break;
-                }
-                fprintf(stdout, "Waiting for password replication (%d seconds past)\n", time + this_time);
-                sleep(5);
-            }
+        if (time >= 60) {
+            fprintf(stdout, "Password reset failed.\n");
+            return 1;
         }
+
+        fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
+        return set_password(flags, time);
     }
+        
+    if (!flags->set_samba_secret)
+        return 0;
 
-    if (flags->set_samba_secret) {
-        VERBOSE("Setting samba machine trust account password");
-
-        FILE *pipe = popen("net changesecretpw -f -i", "w");
-        if (pipe == NULL) {
-            fprintf(stdout, "Error executing samba net command\n");
-            return 1;
-        }
-
-        size_t len = flags->password.length();
-        if (fwrite(flags->password.c_str(), sizeof(char), len, pipe) != len) {
-            fprintf(stdout, "Write error putting password to samba net command\n");
-            return 1;
-        }
-
-        int rc = pclose(pipe);
-        if (rc != 0) {
-            fprintf(stdout, "Setting samba secret failed with error code %d\n", rc);
-            return 1;
-        }
-
-        VERBOSE("Successfully set samba machine trust account password");
-    }
-
-    return 0;
+    return set_samba_secret(flags->password);
 }
