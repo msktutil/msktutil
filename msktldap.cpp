@@ -30,6 +30,20 @@
 #include <sstream>
 #include <iostream>
 
+static void ldap_print_diagnostics(LDAP *ldap, char *msg, int err)
+{
+    fprintf(stderr, "Error: %s (%s)\n", msg, ldap_err2string(err));
+
+#if HAVE_DECL_LDAP_OPT_DIAGNOSTIC_MESSAGE
+    ldap_get_option(ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
+    if (msg)
+        fprintf(stderr, "\tadditional info: %s\n", msg );
+#else
+    /* Silence compiler warning about unused parameter */
+    (void) ldap;
+#endif
+}
+
 LDAPConnection::LDAPConnection(const std::string &server) : m_ldap() {
     int ret = 0;
 #ifndef SOLARIS_LDAP_KERBEROS
@@ -99,9 +113,7 @@ void LDAPConnection::search(LDAPMessage **mesg_p,
     VERBOSEldap("ldap_search_ext_s filter: %s", filter.c_str());
     int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(), attrs, attrsonly, serverctrls, clientctrls, timeout, sizelimit, mesg_p);
     if (ret) {
-        char *msg=NULL;
-        ldap_get_option(m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
-        fprintf(stderr, "Error: ldap_search_ext_s - additional info: %s\n", msg );
+        ldap_print_diagnostics(m_ldap, "ldap_search_ext_s failed", ret);
         throw LDAPException("ldap_search_ext_s", ret);
     }
 }
@@ -277,10 +289,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
                                        sasl_interact, NULL);
 
     if (ret) {
-        fprintf(stderr, "Error: ldap_sasl_interactive_bind_s failed (%s)\n", ldap_err2string(ret));
-        char *msg=NULL;
-        ldap_get_option(ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
-        fprintf(stderr, "\tadditional info: %s\n", msg );
+        ldap_print_diagnostics(ldap->m_ldap, "ldap_sasl_interactive_bind_s failed", ret);
         if (is_tls)
             return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
         return std::auto_ptr<LDAPConnection>(NULL);
@@ -344,10 +353,7 @@ int ldap_flush_principals(msktutil_flags *flags)
 
     /* Ignore if the attribute doesn't exist, that just means that it's already empty */
     if (ret != LDAP_SUCCESS && ret != LDAP_NO_SUCH_ATTRIBUTE) {
-        fprintf(stderr, "Error: ldap_modify_ext_s failed (%s)\n", ldap_err2string(ret));
-        char *msg=NULL;
-        ldap_get_option(flags->ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
-        fprintf(stderr, "\tadditional info: %s\n", msg );
+        ldap_print_diagnostics(flags->ldap->m_ldap, "ldap_modify_ext_s failed", ret);
         return -1;
     }
 
@@ -839,9 +845,7 @@ void ldap_check_account(msktutil_flags *flags)
 
         int ret = ldap_add_ext_s(flags->ldap->m_ldap, flags->ad_computerDn.c_str(), mod_attrs, NULL, NULL);
         if (ret) {
-            char *msg=NULL;
-            ldap_get_option(flags->ldap->m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
-            fprintf(stderr, "\tadditional info: %s\n", msg );
+            ldap_print_diagnostics(flags->ldap->m_ldap, "ldap_add_ext_s failed", ret);
             throw LDAPException("ldap_add_ext_s", ret);
         }
         delete bvals_unicodepwd[0]->bv_val;

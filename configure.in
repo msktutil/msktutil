@@ -254,6 +254,9 @@ AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
 # Since OpenLDAP libldap depends on it anyway, no additional dependency added.
 #
 AC_CHECK_LIB([lber], [ber_alloc], , [AC_MSG_WARN([liblber not found])])
+#
+# LDAP_OPT_DIAGNOSTIC_MESSAGE is present from OpenLDAP 2.4 upwards, only.
+AC_CHECK_DECLS([LDAP_OPT_DIAGNOSTIC_MESSAGE], [], [], [[#include <ldap.h>]])
 
 if test "$ac_cv_header_com_err_h"; then
 AC_MSG_CHECKING([whether com_err.h needs extern "C"]);
