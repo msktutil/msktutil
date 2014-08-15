@@ -99,12 +99,14 @@ int generate_new_password(msktutil_flags *flags)
  * Returns 0 if a successful password change was detected, or the waited
  * number of seconds otherwise.
  */
-static int wait_on_pwchange(msktutil_flags *flags, std::string old_pwdLastSet, int max_wait=30)
+static int wait_on_pwchange_ldap(msktutil_flags *flags, std::string old_pwdLastSet, int max_wait=30)
 {
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
         return 0;
     }
+
+    VERBOSE("Checking new password via ldap");
 
     /* Loop and wait for the account and password set to replicate */
     for (int this_time = 0; ; this_time += 5) {
@@ -122,6 +124,74 @@ static int wait_on_pwchange(msktutil_flags *flags, std::string old_pwdLastSet, i
         fprintf(stdout, "Waiting for account replication (%d seconds past)\n", this_time);
         sleep(5);
     }
+}
+  
+/* Wait a maximum of <max_wait> seconds for replication of password change,
+ * trying to obtain a ticket for service "kadmin/changepw" with the new
+ * password from <flags>->password.
+ * Returns 0 if a successful password change was detected, or the waited
+ * number of seconds otherwise.
+ */
+static int wait_on_pwchange_krb5(msktutil_flags *flags, int max_wait=30)
+{
+    bool ok;
+
+    VERBOSE("Checking new password via krb5");
+
+    KRB5Principal principal(flags->samAccountName);
+
+    /* Loop and wait for the account and password set to replicate */
+    for (int this_time = 0; ; this_time += 5) {
+        ok = true;
+
+        try {
+            KRB5Creds local_creds(principal, flags->password, "kadmin/changepw"); 
+        } catch (KRB5Exception &e) { 
+            ok = false;
+        }
+
+        if (ok)
+            return 0;
+
+        if (this_time >= max_wait)
+            return this_time;
+
+        fprintf(stdout, "Waiting for account replication (%d seconds past)\n", this_time);
+        sleep(5);
+    }
+}
+
+static int wait_on_pwchange(msktutil_flags *flags, std::string old_pwdLastSet, int max_wait=30)
+{
+    int ret1=0;
+
+    /* If possible, try to look for a change of LDAP attribute pwdLastSet, in
+     * the first half of our allowed waiting period. (Like original code
+     * behaviour.)
+     */
+    if (!old_pwdLastSet.empty()) {
+        max_wait /= 2;
+        ret1 = wait_on_pwchange_ldap(flags, old_pwdLastSet, max_wait);
+        if (!ret1)
+            return 0;
+    }
+
+    /* No successful password change detected so far. Let's try obtaining a
+     * service ticket using the new password during the second half of our
+     * waiting period. (New code behaviour.)
+     */
+    int ret2 = wait_on_pwchange_krb5(flags, max_wait);
+    if (!ret2)
+        return 0;
+
+    /* Compared to the original code, we just stole half the waiting period
+     * from LDAP lookups. So try once more without any delay, so we match old
+     * code behaviour as closely as possible.
+     */
+    if (!old_pwdLastSet.empty() && !wait_on_pwchange_ldap(flags, old_pwdLastSet, 0))
+        return 0;
+
+    return ret1 + ret2;
 }
 
 /* Try to set the the new Samba secret to <password>. */
@@ -266,9 +336,10 @@ int set_password(msktutil_flags *flags, int time)
 
     }
 
-    VERBOSE("Successfully set password, waiting for it to be reflected in LDAP.");
+    VERBOSE("Successfully set password, waiting for it to be reflected in AD.");
 
     ret = wait_on_pwchange(flags, old_pwdLastSet);
+
     if (ret != 0) {
         time += ret;
 
