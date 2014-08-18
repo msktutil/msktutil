@@ -280,7 +280,7 @@ int set_password(msktutil_flags *flags, int time)
         fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
         return set_password(flags, time);
     }
-        
+
     if (!flags->set_samba_secret)
         return 0;
 
