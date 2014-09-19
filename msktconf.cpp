@@ -93,8 +93,9 @@ void create_fake_krb5_conf(msktutil_flags *flags)
     file << "[libdefaults]\n"
          << " default_realm = " << flags->realm_name << "\n"
          << " dns_lookup_kdc = false\n"
-         << " udp_preference_limit = 1\n";
-    
+         << " udp_preference_limit = 1\n"
+         << " default_ccache_name = " << KRB5CCache::defaultName() << "\n";
+
     if (flags->allow_weak_crypto) {
         file << " allow_weak_crypto = true\n";
     }
@@ -137,7 +138,6 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 
     g_context.reload();
 }
-
 
 void remove_fake_krb5_conf()
 {
