@@ -28,6 +28,7 @@
 #include "msktutil.h"
 
 #include <fstream>
+#include <cctype>
 
 
 std::string create_default_machine_password(const std::string &samaccountname)
