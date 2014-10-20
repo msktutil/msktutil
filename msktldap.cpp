@@ -603,7 +603,7 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
     char *vals_serviceprincipalname[] = { NULL, NULL};
     int ret;
 
-    VERBOSE("Removing principal %s to LDAP entry", principal.c_str());
+    VERBOSE("Removing principal %s from LDAP entry", principal.c_str());
 
     mod_attrs[0] = &attrServicePrincipalName;
     attrServicePrincipalName.mod_op = LDAP_MOD_DELETE;

@@ -117,27 +117,26 @@ int flush_keytab(msktutil_flags *flags)
 void update_keytab(msktutil_flags *flags)
 {
     VERBOSE("Updating all entires for %s", flags->samAccountName.c_str());
-    krb5_kvno kvno = ldap_get_kvno(flags);
-
-    add_principal_keytab(flags->samAccountName, kvno, flags);
+    //    krb5_kvno kvno = ldap_get_kvno(flags);
+    add_principal_keytab(flags->samAccountName, flags);
     if (!flags->use_service_account) {
-        add_principal_keytab(flags->samAccountName_uppercase, kvno, flags);
+        add_principal_keytab(flags->samAccountName_uppercase, flags);
     }
     //add upn
     if (!flags->userPrincipalName.empty()) {
-        add_principal_keytab(flags->userPrincipalName, kvno, flags);
+        add_principal_keytab(flags->userPrincipalName, flags);
     }
     //add host/sAMAccountNAme
     if (!flags->use_service_account) {
-        add_principal_keytab("host/" + flags->samAccountName_nodollar, kvno, flags);
+        add_principal_keytab("host/" + flags->samAccountName_nodollar, flags);
     }
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
-        add_principal_keytab(flags->ad_principals[i], kvno, flags);
+        add_principal_keytab(flags->ad_principals[i], flags);
     }
 }
 
 
-void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil_flags *flags)
+void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 {
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
     KRB5Keytab keytab(flags->keytab_writename);
@@ -171,7 +170,7 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
             while (cursor.next()) {
                 std::string curr_principal = cursor.principal().name();
                 if (curr_principal == principal_string) {
-                    if (cursor.kvno() < kvno) {
+                    if (cursor.kvno() < flags->kvno) {
                         if (cursor.timestamp() < min_keep_timestamp)
                             earliest_kvno_to_keep = std::max(earliest_kvno_to_keep, cursor.kvno());
                     }
@@ -184,7 +183,7 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
             while (cursor.next()) {
                 std::string curr_principal = cursor.principal().name();
                 if (curr_principal == principal_string &&
-                    (cursor.kvno() >= kvno || cursor.kvno() < earliest_kvno_to_keep)) {
+                    (cursor.kvno() >= flags->kvno || cursor.kvno() < earliest_kvno_to_keep)) {
                     to_delete.push_back(std::make_pair(std::make_pair(curr_principal, cursor.kvno()),
                                                        cursor.enctype()));
                 }
@@ -283,6 +282,6 @@ void add_principal_keytab(const std::string &principal, krb5_kvno kvno, msktutil
         keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]), flags->password, salt);
 
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
-        keytab.addEntry(princ, kvno, keyblock);
+        keytab.addEntry(princ, flags->kvno, keyblock);
     }
 }

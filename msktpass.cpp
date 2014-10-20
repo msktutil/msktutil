@@ -333,24 +333,9 @@ int set_password(msktutil_flags *flags, int time)
                 return ret;
             }
         }
-
     }
 
-    VERBOSE("Successfully set password, waiting for it to be reflected in AD.");
-
-    ret = wait_on_pwchange(flags, old_pwdLastSet);
-
-    if (ret != 0) {
-        time += ret;
-
-        if (time >= 60) {
-            fprintf(stdout, "Password reset failed.\n");
-            return 1;
-        }
-
-        fprintf(stdout, "Re-attempting password reset for %s\n", flags->samAccountName.c_str());
-        return set_password(flags, time);
-    }
+    VERBOSE("Successfully set password.");
 
     if (!flags->set_samba_secret)
         return 0;

@@ -209,8 +209,8 @@ int finalize_exec(msktutil_exec *exec)
             fprintf(stderr, "Error: failed to change password\n");
             exit(1);
         }
-        VERBOSE("Waiting 3 seconds before trying to get kerberos credentials...");
-        sleep(3);
+	//        VERBOSE("Waiting 3 seconds before trying to get kerberos credentials...");
+	//        sleep(3);
         if (!get_creds(flags)) {
             fprintf(stderr, "Error: failed to get kerberos credentials\n");
             exit(1);
@@ -271,7 +271,7 @@ int add_and_remove_principals(msktutil_exec *exec) {
     }
     return ret;
 }
-
+        
 void do_help() {
     fprintf(stdout, "Usage: %s [OPTIONS]\n", PACKAGE_NAME);
     fprintf(stdout, "\n");
@@ -386,6 +386,7 @@ int execute(msktutil_exec *exec)
         }
     }
     ret = finalize_exec(exec);
+
     if (ret) {
         fprintf(stderr, "Error: finalize_exec failed\n");
         exit(ret);
@@ -418,9 +419,15 @@ int execute(msktutil_exec *exec)
                 }
             }
         }
-
+	
         // Check if computer account exists, update if so, create if not.
         ldap_check_account(flags);
+
+	// We retrieve the kvno _before_ the password change and increment it.
+        flags->kvno = ldap_get_kvno(flags);
+        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+            flags->kvno++;
+        }
 
         if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
             // Set the password.
@@ -438,6 +445,7 @@ int execute(msktutil_exec *exec)
                 return ret;
             }
         }
+
         // And add and remove principals to servicePrincipalName in LDAP.
         add_and_remove_principals(exec);
 
@@ -527,8 +535,6 @@ int main(int argc, char *argv [])
             exec->flags->user_creds_only = true;
             continue;
         }
-
-
 
         /* Service Principal Name */
         if (!strcmp(argv[i], "--service") || !strcmp(argv[i], "-s")) {
@@ -863,7 +869,8 @@ msktutil_flags::msktutil_flags() :
     use_service_account(false),
     allow_weak_crypto(false),
     password_expired(false),
-    auto_update_interval(30)
+    auto_update_interval(30),
+    kvno(0)
 {}
 
 msktutil_flags::~msktutil_flags() {

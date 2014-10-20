@@ -201,6 +201,7 @@ struct msktutil_flags {
     bool allow_weak_crypto;
     bool password_expired;
     int auto_update_interval;
+    krb5_kvno kvno;
     msktutil_flags();
     ~msktutil_flags();
 };
@@ -230,7 +231,7 @@ extern std::string complete_hostname(const std::string &);
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
-extern void add_principal_keytab(const std::string &, krb5_kvno kvno, msktutil_flags *);
+extern void add_principal_keytab(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
 extern int set_password(msktutil_flags *, int time = 0);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
