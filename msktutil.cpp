@@ -171,8 +171,9 @@ int finalize_exec(msktutil_exec *exec)
     }
 
     /* Determine uppercase version of sAMAccountName */
-    for (std::string::size_type i=0; i<flags->samAccountName.length(); ++i) {
-        flags->samAccountName_uppercase[i] = toupper(flags->samAccountName[i]);
+    flags->samAccountName_uppercase = flags->samAccountName;
+    for (std::string::size_type i=0; i<flags->samAccountName_uppercase.length(); ++i) {
+        flags->samAccountName_uppercase[i] = toupper(flags->samAccountName_uppercase[i]);
     }
 
     /* The samAccountName will cause win 9x, NT problems if longer than MAX_SAM_ACCOUNT_LEN characters */
