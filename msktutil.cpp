@@ -218,8 +218,11 @@ int finalize_exec(msktutil_exec *exec)
     }
 
     VERBOSE("Authenticated using method %d\n", flags->auth_type);
-
-    flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
+    if (flags->no_tls) {
+        flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
+    } else {
+        flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
+    }
     if (!flags->ldap.get()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         // Print a hint as to the likely cause:
@@ -361,6 +364,7 @@ void do_help() {
     fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
     fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
     fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
+    fprintf(stdout, "  --no-tls               Don't use TLS on LDAP.\n");
 }
 
 void do_version() {
@@ -740,6 +744,12 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* don't use tls on ldap */
+        if (!strcmp(argv[i], "--no-tls")) {
+            exec->flags->no_tls = true;
+            continue;
+        }
+
         /* Use user kerberos credentials only */
         if (!strcmp(argv[i], "--user-creds-only")) {
             exec->flags->user_creds_only = true;
@@ -836,6 +846,7 @@ msktutil_flags::msktutil_flags() :
     no_reverse_lookups(false),
     server_behind_nat(false),
     set_samba_secret(false),
+    no_tls(false),
     dont_expire_password(VALUE_IGNORE),
     no_pac(VALUE_IGNORE),
     delegate(VALUE_IGNORE),

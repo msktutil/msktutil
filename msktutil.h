@@ -184,6 +184,7 @@ struct msktutil_flags {
     bool no_reverse_lookups;
     bool server_behind_nat;
     bool set_samba_secret;
+    bool no_tls;
 
     msktutil_val dont_expire_password;
     msktutil_val no_pac;
