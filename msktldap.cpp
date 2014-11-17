@@ -790,7 +790,6 @@ void ldap_check_account(msktutil_flags *flags)
             fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
         }
         flags->ad_computerDn = sform("cn=%s,%s", flags->samAccountName_nodollar.c_str(), flags->ldap_ou.c_str());
-        fprintf(stderr, "dn: %s\n", flags->ad_computerDn.c_str());
         mod_attrs[attr_count++] = &attrObjectClass;
         attrObjectClass.mod_op = LDAP_MOD_ADD;
         attrObjectClass.mod_type = "objectClass";
