@@ -299,6 +299,10 @@ This operation requires administrator privileges.
 --set-samba-secret
 Use Samba's net changesecretpw command to locally set the machine account password in Samba's secrets.tdb.
 $PATH need to include Samba's net command.  Samba needs to be configured appropriately.
+.TP
+--no-tls
+Don't use TLS on LDAP. LDAP traffic in Active Directory is already encrypted by SASL/GSSAPI so 
+there is no need for TLS.
 .SH EXAMPLES
 For unprivileged users the most common invocations are:
 .PP
