@@ -371,6 +371,30 @@ void do_version() {
     fprintf(stdout, "%s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 }
 
+static int wait_for_new_kvno(msktutil_exec *exec)
+{
+    if (exec->flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+        VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
+        return 0;
+    }
+
+    VERBOSE("Checking new kvno via ldap");
+
+    /* Loop and wait for the account and password set to replicate */
+    for (int this_time = 0; ; this_time += 5) {
+        krb5_kvno current_kvno = ldap_get_kvno(exec->flags);
+        if (current_kvno == exec->flags->kvno) {
+            return 0;
+        }
+	//        if (this_time >= max_wait)
+        //    return this_time;
+
+        fprintf(stdout, "Waiting for account replication (%d seconds past)\n", this_time);
+        sleep(5);
+    }
+}
+
+
 int execute(msktutil_exec *exec)
 {
     int ret = 0;
@@ -452,7 +476,7 @@ int execute(msktutil_exec *exec)
         VERBOSE("Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
                 flags->keytab_writename.c_str());
         update_keytab(flags);
-
+        wait_for_new_kvno(exec);
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
         // Change account password to default value:
@@ -469,6 +493,7 @@ int execute(msktutil_exec *exec)
 
         // And add and remove principals to servicePrincipalName in LDAP.
         add_and_remove_principals(exec);
+        wait_for_new_kvno(exec);
         return ret;
     }
 
