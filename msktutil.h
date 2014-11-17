@@ -233,7 +233,7 @@ extern int flush_keytab(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
 extern void add_principal_keytab(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
-extern int set_password(msktutil_flags *, int time = 0);
+extern int set_password(msktutil_flags *);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
 extern std::string ldap_get_pwdLastSet(msktutil_flags *);
 extern std::vector<std::string> ldap_list_principals(msktutil_flags *);

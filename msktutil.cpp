@@ -386,8 +386,6 @@ static int wait_for_new_kvno(msktutil_exec *exec)
         if (current_kvno == exec->flags->kvno) {
             return 0;
         }
-	//        if (this_time >= max_wait)
-        //    return this_time;
 
         fprintf(stdout, "Waiting for account replication (%d seconds past)\n", this_time);
         sleep(5);
