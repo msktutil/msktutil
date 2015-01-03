@@ -850,7 +850,7 @@ void ldap_check_account(msktutil_flags *flags)
             ldap_print_diagnostics(flags->ldap->m_ldap, "ldap_add_ext_s failed", ret);
             throw LDAPException("ldap_add_ext_s", ret);
         }
-        delete bvals_unicodepwd[0]->bv_val;
+        delete[] bvals_unicodepwd[0]->bv_val;
         delete bvals_unicodepwd[0];
 
         flags->ad_userAccountControl = userAcctFlags;
