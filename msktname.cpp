@@ -163,6 +163,7 @@ static std::string get_dc_host_from_srv_rr(const std::string &domain, const std:
                 }
 
                 dc = bestdc->name;
+                free(srv);
             }
         }
 
