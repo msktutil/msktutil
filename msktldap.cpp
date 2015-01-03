@@ -35,9 +35,11 @@ static void ldap_print_diagnostics(LDAP *ldap, const char *msg, int err)
     fprintf(stderr, "Error: %s (%s)\n", msg, ldap_err2string(err));
 
 #if HAVE_DECL_LDAP_OPT_DIAGNOSTIC_MESSAGE
-    ldap_get_option(ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&msg);
-    if (msg)
+    char *opt_message = NULL;
+    ldap_get_option(ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, &opt_message);
+    if (opt_message)
         fprintf(stderr, "\tadditional info: %s\n", msg );
+    ldap_memfree(opt_message);
 #else
     /* Silence compiler warning about unused parameter */
     (void) ldap;
