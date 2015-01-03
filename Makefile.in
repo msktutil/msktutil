@@ -18,11 +18,11 @@ CAT=@CAT@
 ECHO=@ECHO@
 MKDIR=@MKDIR@
 WARNFLAGS=-Wall -Wextra -Wno-write-strings
-
+MAN=$(PROG).1
 
 objects = krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o strtoll.o
 
-all: $(PROG)
+all: $(PROG) $(MAN)
 
 $(PROG) : $(objects)
 	@$(ECHO) "Assembling $(PROG)"
@@ -32,18 +32,21 @@ $(PROG) : $(objects)
 	@$(ECHO) "Compiling $<"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
+$(MAN) : msktutil.M Makefile
+	$(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" \
+               -e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" < $(srcdir)/msktutil.M >$@
 
 clean :
-	@$(RM) $(PROG) $(objects)
+	$(RM) $(PROG) $(objects) $(MAN)
+
 distclean: clean
-	@$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~
+	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~
 
 install: all
-	@$(MKDIR) -p $(DESTDIR)$(sbindir)
-	@$(MKDIR) -p $(DESTDIR)$(mandir)/man1
-	@$(INSTALL) $(PROG) $(DESTDIR)$(sbindir)
-	@$(CAT) $(srcdir)/msktutil.M | $(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" | $(SED) -e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" | $(SED) -e "s/REPLACE_AUTHOR/@PACKAGE_AUTHOR@/g" > $(DESTDIR)$(mandir)/man1/@PACKAGE_NAME@.1
+	$(MKDIR) -p $(DESTDIR)$(sbindir)
+	$(MKDIR) -p $(DESTDIR)$(mandir)/man1
+	$(INSTALL) $(PROG) $(DESTDIR)$(sbindir)
+	$(INSTALL) $(MAN) $(DESTDIR)$(mandir)/man1
 
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
-

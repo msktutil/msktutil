@@ -365,4 +365,16 @@ password will be stored in Samba's secrets.tdb database to provide interoperabil
 As Samba (version 3) only supports arcfour-encrypted Kerberos tickets the --enctypes option must be used
 to select only that encryption type.
 .SH AUTHOR
-REPLACE_AUTHOR
+(C) 2004-2006 Dan Perry <dperry at pppl.gov>
+.PP
+(C) 2006 Brian Elliott Finley (finley at anl.gov)
+.PP
+(C) 2009-2010 Doug Engert (deengert at anl.gov)
+.PP
+(C) 2010 James Knight <foom at fuhm.net>
+.PP
+(C) 2010-2013 Ken Dreyer <ktdreyer at ktdreyer.com>
+.PP
+(C) 2012-2014 Mark Proehl <mark at mproehl.net>
+.PP
+(C) 2012-2015 Olaf Flebbe <of at oflebbe.de>
