@@ -93,7 +93,7 @@ int generate_new_password(msktutil_flags *flags)
 }
 
 /* Try to set the the new Samba secret to <password>. */
-static int set_samba_secret(std::string password)
+static int set_samba_secret(const std::string& password)
 {
     VERBOSE("Setting samba machine trust account password");
 

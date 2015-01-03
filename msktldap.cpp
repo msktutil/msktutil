@@ -30,7 +30,7 @@
 #include <sstream>
 #include <iostream>
 
-static void ldap_print_diagnostics(LDAP *ldap, char *msg, int err)
+static void ldap_print_diagnostics(LDAP *ldap, const char *msg, int err)
 {
     fprintf(stderr, "Error: %s (%s)\n", msg, ldap_err2string(err));
 
@@ -105,20 +105,20 @@ public:
 
 
 void LDAPConnection::search(LDAPMessage **mesg_p,
-                            const std::string &base_dn, int scope, const std::string &filter, char *attrs[],
+                            const std::string &base_dn, int scope, const std::string &filter, const char *attrs[],
                             int attrsonly, LDAPControl **serverctrls, LDAPControl **clientctrls,
                             struct timeval *timeout, int sizelimit) {
     VERBOSEldap("calling ldap_search_ext_s");
     VERBOSEldap("ldap_search_ext_s base context: %s", base_dn.c_str());
     VERBOSEldap("ldap_search_ext_s filter: %s", filter.c_str());
-    int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(), attrs, attrsonly, serverctrls, clientctrls, timeout, sizelimit, mesg_p);
+    int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(), const_cast<char **>(attrs), attrsonly, serverctrls, clientctrls, timeout, sizelimit, mesg_p);
     if (ret) {
         ldap_print_diagnostics(m_ldap, "ldap_search_ext_s failed", ret);
         throw LDAPException("ldap_search_ext_s", ret);
     }
 }
 
-std::string LDAPConnection::get_one_val(LDAPMessage *mesg, char *name) {
+std::string LDAPConnection::get_one_val(LDAPMessage *mesg, const char *name) {
     MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
     if (vals) {
         if (vals[0]) {
@@ -129,7 +129,7 @@ std::string LDAPConnection::get_one_val(LDAPMessage *mesg, char *name) {
     return "";
 }
 
-std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg, char *name) {
+std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg, const char *name) {
     MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
     std::vector<std::string> ret;
     if (vals) {
@@ -149,7 +149,7 @@ void get_default_ou(msktutil_flags *flags)
         /* Only do this on an empty value */
         std::string dn;
         LDAPMessage *mesg;
-        char *attrs[] = {"distinguishedName", NULL};
+        const char *attrs[] = {"distinguishedName", NULL};
 
         if (flags->use_service_account) {
             std::string wkguid = sform("<WKGUID=a9d1ca15768811d1aded00c04fd8d5cd,%s>", flags->base_dn.c_str());
@@ -313,7 +313,7 @@ void ldap_cleanup(msktutil_flags *flags)
     flags->ldap.reset();
 }
 
-void ldap_get_account_attrs(msktutil_flags *flags, char **attrs, LDAPMessage **mesg_p) {
+void ldap_get_account_attrs(msktutil_flags *flags, const char **attrs, LDAPMessage **mesg_p) {
     std::string filter;
     filter = sform("(&(|(objectCategory=Computer)(objectCategory=User))(sAMAccountName=%s))", flags->samAccountName.c_str());
     flags->ldap->search(mesg_p, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
@@ -323,7 +323,7 @@ int ldap_flush_principals(msktutil_flags *flags)
 {
     std::string dn;
     LDAPMessage *mesg;
-    char *attrs[] = {"distinguishedName", NULL};
+    const char *attrs[] = {"distinguishedName", NULL};
     LDAPMod *mod_attrs[2];
     LDAPMod attrServicePrincipalName;
     char *vals_serviceprincipalname[] = {NULL};
@@ -367,7 +367,7 @@ krb5_kvno ldap_get_kvno(msktutil_flags *flags)
 {
     krb5_kvno kvno = KVNO_FAILURE;
     LDAPMessage *mesg;
-    char *attrs[] = {"msDS-KeyVersionNumber", NULL};
+    const char *attrs[] = {"msDS-KeyVersionNumber", NULL};
 
     ldap_get_account_attrs(flags, attrs, &mesg);
     if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
@@ -392,7 +392,7 @@ std::string ldap_get_pwdLastSet(msktutil_flags *flags)
 {
     std::string pwdLastSet;
     LDAPMessage *mesg;
-    char *attrs[] = {"pwdLastSet", NULL};
+    const char *attrs[] = {"pwdLastSet", NULL};
 
     ldap_get_account_attrs(flags, attrs, &mesg);
 
@@ -527,7 +527,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
 {
     const std::string &dn(flags->ad_computerDn);
     LDAPMessage *mesg;
-    char *attrs[] = {"distinguishedName", NULL};
+    const char *attrs[] = {"distinguishedName", NULL};
     LDAPMod *mod_attrs[2];
     LDAPMod attrServicePrincipalName;
     char *vals_serviceprincipalname[] = { NULL, NULL};
@@ -680,9 +680,9 @@ void ldap_check_account_strings(msktutil_flags *flags)
 void ldap_check_account(msktutil_flags *flags)
 {
     LDAPMessage *mesg;
-    char *machine_attrs[] = {"distinguishedName", "dNSHostName", "msDs-supportedEncryptionTypes",
+    const char *machine_attrs[] = {"distinguishedName", "dNSHostName", "msDs-supportedEncryptionTypes",
                       "userAccountControl", "servicePrincipalName", "userPrincipalName", NULL};
-    char *user_attrs[] = {"distinguishedName", "msDs-supportedEncryptionTypes",
+    const char *user_attrs[] = {"distinguishedName", "msDs-supportedEncryptionTypes",
                       "userAccountControl", "servicePrincipalName", "userPrincipalName", "unicodePwd", NULL};
     int userAcctFlags;
     std::string dn;
@@ -692,8 +692,8 @@ void ldap_check_account(msktutil_flags *flags)
     LDAPMod attrUserAccountControl;
     LDAPMod attrSamAccountName;
     LDAPMod attrunicodePwd;
-    char *vals_machine_objectClass[] = {"top", "person", "organizationalPerson", "user", "computer", NULL};
-    char *vals_user_objectClass[] = {"top", "person", "organizationalPerson", "user", NULL};
+    const char *vals_machine_objectClass[] = {"top", "person", "organizationalPerson", "user", "computer", NULL};
+    const char *vals_user_objectClass[] = {"top", "person", "organizationalPerson", "user", NULL};
     char *vals_cn[] = {NULL, NULL};
     char *vals_useraccountcontrol[] = {NULL, NULL};
     char *vals_samaccountname[] = {NULL, NULL};
@@ -794,9 +794,9 @@ void ldap_check_account(msktutil_flags *flags)
         attrObjectClass.mod_op = LDAP_MOD_ADD;
         attrObjectClass.mod_type = "objectClass";
         if (flags->use_service_account) {
-            attrObjectClass.mod_values = vals_user_objectClass;
+            attrObjectClass.mod_values = const_cast<char **>(vals_user_objectClass);
         } else {
-            attrObjectClass.mod_values = vals_machine_objectClass;
+            attrObjectClass.mod_values = const_cast<char **>(vals_machine_objectClass);
         }
 
         mod_attrs[attr_count++] = &attrCN;
