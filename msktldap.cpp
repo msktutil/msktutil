@@ -148,7 +148,7 @@ void get_default_ou(msktutil_flags *flags)
     if (flags->ldap_ou.empty()) {
         /* Only do this on an empty value */
         std::string dn;
-        LDAPMessage *mesg;
+        LDAPMessage *mesg = NULL;
         const char *attrs[] = {"distinguishedName", NULL};
 
         if (flags->use_service_account) {
@@ -526,7 +526,7 @@ int ldap_set_userAccountControl_flag(const std::string &dn, int mask, msktutil_v
 int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
 {
     const std::string &dn(flags->ad_computerDn);
-    LDAPMessage *mesg;
+    LDAPMessage *mesg = NULL;
     const char *attrs[] = {"distinguishedName", NULL};
     LDAPMod *mod_attrs[2];
     LDAPMod attrServicePrincipalName;
@@ -536,7 +536,9 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     VERBOSE("Checking that adding principal %s to %s won't cause a conflict", principal.c_str(), flags->samAccountName.c_str());
     std::string filter = sform("(servicePrincipalName=%s)", principal.c_str());
     flags->ldap->search(&mesg, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
-    switch (ldap_count_entries(flags->ldap->m_ldap, mesg)) {
+    int num_entries = ldap_count_entries(flags->ldap->m_ldap, mesg);
+    ldap_msgfree(mesg);
+    switch (num_entries) {
         case 0:
             VERBOSE("Adding principal %s to LDAP entry", principal.c_str());
             mod_attrs[0] = &attrServicePrincipalName;
@@ -564,7 +566,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             } else {
                 flags->ad_principals.push_back(principal);
             }
-            return ret;
+            break;
         case 1: {
             /* Check if we are the owner of the this principal or not */
             mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
@@ -579,15 +581,14 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             } else
                 ret = 0;
             ldap_msgfree(mesg);
-            return ret;
+            break;
         }
         default:
-            ret = ldap_count_entries(flags->ldap->m_ldap, mesg);
             fprintf(stderr, "Error: Multiple (%d) LDAP entries were found containing the principal %s\n",
-                    ret, principal.c_str());
-            ldap_msgfree(mesg);
-            return ret;
+                    num_entries, principal.c_str());
+            ret = num_entries;
     }
+    return ret;
 }
 
 template<typename T>
