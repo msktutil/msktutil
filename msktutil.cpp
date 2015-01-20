@@ -226,8 +226,13 @@ int finalize_exec(msktutil_exec *exec)
     if (!flags->ldap) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         // Print a hint as to the likely cause:
-        if (flags->auth_type == AUTH_FROM_USER_CREDS)
+        if (flags->auth_type == AUTH_FROM_USER_CREDS) {
             fprintf(stderr, "--> Is your kerberos ticket expired? You might try re-\"kinit\"ing.\n");
+        }
+        if (flags->no_reverse_lookups == false) {
+            fprintf(stderr, "--> Is DNS configured correctly? ");
+            fprintf(stderr, "You might try options \"--server\" and \"--no-reverse-lookups\".\n");
+        }
         exit(1);
     }
     ldap_get_base_dn(flags);
