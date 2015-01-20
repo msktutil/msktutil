@@ -88,7 +88,7 @@ int generate_new_password(msktutil_flags *flags)
         }
     }
     close(fd);
-    VERBOSE(" Characters read from /dev/udandom = %d",chars_used);
+    VERBOSE(" Characters read from /dev/urandom = %d",chars_used);
     return 0;
 }
 
