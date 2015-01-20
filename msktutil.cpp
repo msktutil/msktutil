@@ -223,7 +223,7 @@ int finalize_exec(msktutil_exec *exec)
     } else {
         flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
     }
-    if (!flags->ldap.get()) {
+    if (!flags->ldap) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         // Print a hint as to the likely cause:
         if (flags->auth_type == AUTH_FROM_USER_CREDS)
@@ -869,7 +869,7 @@ error:
 msktutil_flags::msktutil_flags() :
     password(),
     password_from_cmdline(false),
-    ldap(),
+    ldap(NULL),
     set_description(false),
     set_userPrincipalName(false),
     no_reverse_lookups(false),

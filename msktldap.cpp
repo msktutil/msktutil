@@ -217,7 +217,7 @@ void ldap_get_base_dn(msktutil_flags *flags)
     }
 }
 
-std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
+LDAPConnection* ldap_connect(const std::string &server,
                                            bool no_reverse_lookups,
                                            int try_tls)
 {
@@ -227,7 +227,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
         ldap_set_option(NULL, LDAP_OPT_DEBUG_LEVEL, &debug);
 #endif
 
-    std::auto_ptr<LDAPConnection> ldap;
+    LDAPConnection* ldap=NULL;
     int version = LDAP_VERSION3;
     int ret;
     bool is_tls = false;
@@ -235,7 +235,7 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
     VERBOSE("Connecting to LDAP server: %s try_tls=%s", server.c_str(),
             (try_tls == ATTEMPT_SASL_NO_TLS)?"NO":"YES");
 
-    ldap.reset(new LDAPConnection(server));
+    ldap = new LDAPConnection(server);
     ldap->set_option(LDAP_OPT_PROTOCOL_VERSION, &version);
 
     ldap->set_option(LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
@@ -292,9 +292,11 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
 
     if (ret) {
         ldap_print_diagnostics(ldap->m_ldap, "ldap_sasl_interactive_bind_s failed", ret);
+        delete ldap;
+
         if (is_tls)
             return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
-        return std::auto_ptr<LDAPConnection>(NULL);
+        return NULL;
     }
 
     if (g_verbose) {
@@ -312,7 +314,8 @@ std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
 void ldap_cleanup(msktutil_flags *flags)
 {
     VERBOSE("Disconnecting from LDAP server");
-    flags->ldap.reset();
+    delete flags->ldap;
+    flags->ldap = NULL;
 }
 
 void ldap_get_account_attrs(msktutil_flags *flags, const char **attrs, LDAPMessage **mesg_p) {
@@ -456,7 +459,7 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *fla
         VERBOSE("DEE dn=%s old=%d new=%d\n",
                 dn.c_str(), flags->ad_supportedEncryptionTypes, flags->supportedEncryptionTypes);
 
-        ret = ldap_simple_set_attr(flags->ldap.get(), dn, "msDs-supportedEncryptionTypes",
+        ret = ldap_simple_set_attr(flags->ldap, dn, "msDs-supportedEncryptionTypes",
                                    supportedEncryptionTypes, flags);
 
         if (ret == LDAP_SUCCESS) {
@@ -637,12 +640,12 @@ void ldap_check_account_strings(msktutil_flags *flags)
     // don't set dnsHostname on service accounts
     if (!flags->use_service_account) {
         if (!flags->hostname.empty() && flags->hostname != flags->ad_dnsHostName) {
-            ldap_simple_set_attr(flags->ldap.get(), dn, "dNSHostName", flags->hostname, flags);
+            ldap_simple_set_attr(flags->ldap, dn, "dNSHostName", flags->hostname, flags);
         }
     }
 
     if (flags->set_description) {
-        ldap_simple_set_attr(flags->ldap.get(), dn, "description", flags->description, flags);
+        ldap_simple_set_attr(flags->ldap, dn, "description", flags->description, flags);
     }
 
 
@@ -653,7 +656,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
         } else {
             userPrincipalName_string = sform("%s@%s", flags->userPrincipalName.c_str(), flags->realm_name.c_str());
         }
-        ldap_simple_set_attr(flags->ldap.get(), dn, "userPrincipalName", userPrincipalName_string, flags);
+        ldap_simple_set_attr(flags->ldap, dn, "userPrincipalName", userPrincipalName_string, flags);
     }
     ldap_set_supportedEncryptionTypes(dn, flags);
 

@@ -174,7 +174,7 @@ struct msktutil_flags {
     std::string unicodePwd;
     std::string old_account_password;
     std::string site;
-    std::auto_ptr<LDAPConnection> ldap;
+    LDAPConnection* ldap;
     std::string ad_computerDn;
     std::string ad_dnsHostName;
     std::vector<std::string> ad_principals;
@@ -223,7 +223,7 @@ extern void init_password(msktutil_flags *);
 extern std::string get_default_hostname();
 extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
-extern std::auto_ptr<LDAPConnection> ldap_connect(const std::string &server,
+extern LDAPConnection* ldap_connect(const std::string &server,
                                                   bool no_reverse_lookups = false,
                                                   int try_tls=ATTEMPT_SASL_PARAMS_TLS);
 extern void ldap_get_base_dn(msktutil_flags *);
