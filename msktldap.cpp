@@ -542,7 +542,6 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     std::string filter = sform("(servicePrincipalName=%s)", principal.c_str());
     flags->ldap->search(&mesg, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
     int num_entries = ldap_count_entries(flags->ldap->m_ldap, mesg);
-    ldap_msgfree(mesg);
     switch (num_entries) {
         case 0:
             VERBOSE("Adding principal %s to LDAP entry", principal.c_str());
@@ -585,7 +584,6 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
                 ret = -1;
             } else
                 ret = 0;
-            ldap_msgfree(mesg);
             break;
         }
         default:
@@ -593,6 +591,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
                     num_entries, principal.c_str());
             ret = num_entries;
     }
+    ldap_msgfree(mesg);
     return ret;
 }
 
