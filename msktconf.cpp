@@ -115,7 +115,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
             file << " aes256-cts";
         file << "\n";
     }
-    if (flags->no_reverse_lookups)
+    if ((flags->no_reverse_lookups) || (flags->no_canonical_name))
         file << " rdns = false\n";
 
     file << "[realms]\n"
