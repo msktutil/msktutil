@@ -430,7 +430,9 @@ int execute(msktutil_exec *exec)
     } else if (exec->mode == MODE_CREATE || exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
         if (exec->mode == MODE_AUTO_UPDATE) {
             // Don't bother doing anything if the auth was from the keytab (and not e.g. default password), and the
-            if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB || exec->flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
+            if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
+		exec->flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
+		exec->flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
                 std::string pwdLastSet = ldap_get_pwdLastSet(exec->flags);
                 // Windows timestamp is in 100-nanoseconds-since-1601. (or, tenths of microseconds)
                 long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);

@@ -175,11 +175,14 @@ int set_password(msktutil_flags *flags)
         KRB5Creds creds;
         /* Use the machine's credentials */
         if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
+	    flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
             flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB ||
             flags->auth_type == AUTH_FROM_HOSTNAME_KEYTAB) {
             std::string princ_name;
             if (flags->auth_type == AUTH_FROM_SAM_KEYTAB)
                 princ_name = flags->samAccountName;
+            else if (flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB)
+                princ_name = flags->samAccountName_uppercase;
             else if (flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB)
                 princ_name = flags->keytab_auth_princ;
             else

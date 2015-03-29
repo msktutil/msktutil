@@ -293,6 +293,8 @@ int find_working_creds(msktutil_flags *flags) {
             return AUTH_FROM_EXPLICIT_KEYTAB;
         if (try_machine_keytab_princ(flags, flags->samAccountName, ccache_name.c_str()))
             return AUTH_FROM_SAM_KEYTAB;
+        if (try_machine_keytab_princ(flags, flags->samAccountName_uppercase, ccache_name.c_str()))
+            return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
         if (try_machine_keytab_princ(flags, host_princ, ccache_name.c_str()))
             return AUTH_FROM_HOSTNAME_KEYTAB;
         if (try_machine_password(flags, ccache_name.c_str()))
