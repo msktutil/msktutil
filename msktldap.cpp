@@ -230,6 +230,8 @@ LDAPConnection* ldap_connect(const std::string &server,
     ldap->set_option(LDAP_OPT_PROTOCOL_VERSION, &version);
 
     ldap->set_option(LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+    sasl_ssf_t sasl_gssapi_minssf=56;
+    ldap->set_option(LDAP_OPT_X_SASL_SSF_MIN,&sasl_gssapi_minssf);
 
 #ifdef LDAP_OPT_X_SASL_NOCANON
     if (no_reverse_lookups) {
