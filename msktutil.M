@@ -220,6 +220,10 @@ credentials (description, userAccountControl, userPrincipalName, in a default AD
 --auto-update-interval <days>
 Number of <days> when --auto-update will change the account password. Defaults to 30 days.
 .TP
+--housekeeping <time span>
+Perform housekeeping for the given time span. Example: --housekeeping 10 deletes all entries
+older than 10 hours, keeping at least the last entry.
+.TP
 --verbose
 Enables verbose status messages.  May be specified more then once to get LDAP debugging.
 .SH OBJECT TYPE/ATTRIBUTE-SETTING OPTIONS

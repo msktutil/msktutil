@@ -32,6 +32,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
@@ -40,10 +41,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
+#include <limits.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <ldap.h>
+#include <list>
 
 #ifdef HAVE_COM_ERR_H
 # ifdef COM_ERR_NEEDS_EXTERN_C
@@ -146,6 +149,7 @@ enum msktutil_mode {
     MODE_UPDATE,
     MODE_AUTO_UPDATE,
     MODE_FLUSH,
+    MODE_HOUSEKEEPING,
     MODE_PRECREATE
 };
 
@@ -198,6 +202,7 @@ struct msktutil_flags {
     bool password_expired;
     int auto_update_interval;
     krb5_kvno kvno;
+    int housekeeping_hours;
     msktutil_flags();
     ~msktutil_flags();
 };

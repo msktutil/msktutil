@@ -63,7 +63,6 @@ std::string sform(const char* format, ...)
     return outstr;
 }
 
-
 void remove_files_at_exit() {
     remove_fake_krb5_conf();
     remove_ccache();
@@ -74,7 +73,6 @@ void catch_int(int)
     remove_files_at_exit();
     exit(1);
 }
-
 
 void set_supportedEncryptionTypes(msktutil_exec *exec, char * value)
 {
@@ -275,34 +273,198 @@ int add_and_remove_principals(msktutil_exec *exec) {
     }
     return ret;
 }
+
+char progname[] = "msktutil";
+#define _(__x__) __x__
+bool show_time = true, show_etype = true, show_keys = true;
+unsigned int timestamp_width = 28; // 15;
+
+void fillit( FILE *f, unsigned int num, int c ) {
+  for( unsigned int i = 0; i < num; ++ i )
+    fputc( c, f );
+}
+
+void printtime( time_t tv ) {
+  char timestring[BUFSIZ];
+  char fill;
+  fill = ' ';
+  if (!krb5_timestamp_to_sfstring((krb5_timestamp) tv,
+				  timestring,
+				  timestamp_width+1,
+				  &fill)) {
+    printf("%s", timestring);
+  }
+}
+
+char * etype_string( krb5_enctype enctype ) {
+  static char buf[100];
+  krb5_error_code retval;
+  if ((retval = krb5_enctype_to_string(enctype, buf, sizeof(buf))) != 0) {
+    /* XXX if there's an error != EINVAL, I should probably report it */
+    snprintf(buf, sizeof(buf), "etype %d", enctype);
+  }
+  return buf;
+}
+
+
+void stat_housekeeping_do_keytab( char * name, int housekeeping_hours) {
+    krb5_context kcontext;
+    krb5_keytab kt;
+    krb5_keytab_entry entry;
+    krb5_kt_cursor cursor;
+    char buf[BUFSIZ]; /* hopefully large enough for any type */
+    char *pname;
+    int code;
+
+    krb5_error_code retval = krb5_init_context( &kcontext );
+    if (retval) {
+	com_err(progname, retval, _("while initializing krb5"));
+	exit(1);
+    }
+
+    if (name == NULL) {
+        if ((code = krb5_kt_default(kcontext, &kt))) {
+            com_err(progname, code, _("while getting default keytab"));
+            exit(1);
+        }
+    } else {
+        if ((code = krb5_kt_resolve(kcontext, name, &kt))) {
+            com_err(progname, code, _("while resolving keytab %s"), name);
+            exit(1);
+        }
+    }
+
+    if ((code = krb5_kt_get_name(kcontext, kt, buf, BUFSIZ))) {
+        com_err(progname, code, _("while getting keytab name"));
+        exit(1);
+    }
+
+    printf("Keytab name: %s\n", buf);
+
+    if ((code = krb5_kt_start_seq_get(kcontext, kt, &cursor))) {
+        com_err(progname, code, _("while starting keytab scan"));
+        exit(1);
+    }
+
+    /* XXX Translating would disturb table alignment; skip for now. */
+    if (show_time) {
+        printf("KVNO Timestamp");
+        fillit(stdout, timestamp_width - sizeof("Timestamp") + 2, (int) ' ');
+        printf("Principal\n");
+        printf("---- ");
+        fillit(stdout, timestamp_width, (int) '-');
+        printf(" ");
+        fillit(stdout, 78 - timestamp_width - sizeof("KVNO"), (int) '-');
+        printf("\n");
+    } else {
+        printf("KVNO Principal\n");
+        printf("---- --------------------------------------------------------------------------\n");
+    }
+
+    time_t ttNow = time( NULL );
+    std::list<krb5_keytab_entry> lDeletes;
+    krb5_kvno kvno = 0;
+
+    while ((code = krb5_kt_next_entry(kcontext, kt, &entry, &cursor)) == 0) {
+        if ((code = krb5_unparse_name(kcontext, entry.principal, &pname))) {
+            com_err(progname, code, _("while unparsing principal name"));
+            exit(1);
+        }
+	if (kvno < entry.vno) {
+	    kvno = entry.vno;
+	}
+	time_t ttTkt = entry.timestamp;
+	time_t ttDiff = ttNow - ttTkt;
+	if( ttDiff < housekeeping_hours * 60 * 60 )
+	    continue; // not older
+
+        printf("%4d ", entry.vno);
+        if (show_time) {
+            printtime(entry.timestamp);
+            printf(" ");
+        }
+        printf("%s", pname);
+        if (show_etype)
+            printf(" (%s) " , etype_string(entry.key.enctype));
+        if (show_keys) {
+            printf(" (0x");
+            {
+                unsigned int i;
+                for (i = 0; i < entry.key.length; i++)
+                    printf("%02x", entry.key.contents[i]);
+            }
+            printf(")");
+        }
+        printf("\n");
+        krb5_free_unparsed_name(kcontext, pname);
+
+	lDeletes.push_back( entry);
+    }
+    if (code && code != KRB5_KT_END) {
+        com_err(progname, code, _("while scanning keytab"));
+        exit(1);
+    }
+    if ((code = krb5_kt_end_seq_get(kcontext, kt, &cursor))) {
+        com_err(progname, code, _("while ending keytab scan"));
+        exit(1);
+    }
+
+    int did_deletions = 0;
+    for (std::list<krb5_keytab_entry>::iterator ptr = lDeletes.begin(); ptr != lDeletes.end(); ptr++) {
+	krb5_keytab_entry *curr_entry = &(*ptr);
+	// do never delete the last entry
+	if (curr_entry->vno == kvno) {
+	    continue;
+	}
+
+        code = krb5_kt_remove_entry(kcontext, kt, curr_entry);
+        if (code != 0) {
+            com_err(progname, code, _("while deleting entry from keytab"));
+            return;
+        }
+        did_deletions++;
+    }
+    printf( "%d %s deleted\n", did_deletions, ( did_deletions == 1 ) ? "entry was" : "entries were" );
+    return;
+}
+
+static void
+stat_housekeeping_do( int housekeeping_hours) {
+    char * name = NULL; // keytab name, NULL - detect default
+    stat_housekeeping_do_keytab( name, housekeeping_hours);
+}
         
 void do_help() {
     fprintf(stdout, "Usage: %s [OPTIONS]\n", PACKAGE_NAME);
     fprintf(stdout, "\n");
     fprintf(stdout, "Mode options: \n");
-    fprintf(stdout, "  --help                   Displays this message\n");
-    fprintf(stdout, "  -v, --version            Display the current version\n");
+    fprintf(stdout, "  --help                 Displays this message\n");
+    fprintf(stdout, "  -v, --version          Display the current version\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -c, --create   Creates a keytab for the current host or a given service account.\n");
-    fprintf(stdout, "                 (same as -u -s host).\n");
+    fprintf(stdout, "  -c, --create           Creates a keytab for the current host or a given service account.\n");
+    fprintf(stdout, "                         (same as -u -s host).\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -f, --flush    Flushes all principals for the current host or service account\n");
-    fprintf(stdout, "                 from the keytab, and deletes servicePrincipalName from AD.\n");
+    fprintf(stdout, "  -f, --flush            Flushes all principals for the current host or service account\n");
+    fprintf(stdout, "                         from the keytab, and deletes servicePrincipalName from AD.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -u, --update   Updates the keytab for the current host or service account. This\n");
-    fprintf(stdout, "                 changes the account's password and updates the keytab with entries\n");
-    fprintf(stdout, "                 for all principals in servicePrincipalName and userPrincipalName.\n");
-    fprintf(stdout, "                 It also updates LDAP attributes for msDS-supportedEncryptionTypes,\n");
-    fprintf(stdout, "                 dNSHostName, and applies other options you specify.\n");
+    fprintf(stdout, "  -u, --update           Updates the keytab for the current host or service account. This\n");
+    fprintf(stdout, "                         changes the account's password and updates the keytab with entries\n");
+    fprintf(stdout, "                         for all principals in servicePrincipalName and userPrincipalName.\n");
+    fprintf(stdout, "                         It also updates LDAP attributes for msDS-supportedEncryptionTypes,\n");
+    fprintf(stdout, "                         dNSHostName, and applies other options you specify.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  --auto-update  Same as --update, but only if keytab fails to authenticate, or\n");
-    fprintf(stdout, "                 the last password change was more than 30 days ago\n");
-    fprintf(stdout, "                 (see --auto-update-interval). Useful to run from a daily cron job.\n");
+    fprintf(stdout, "  --auto-update          Same as --update, but only if keytab fails to authenticate, or\n");
+    fprintf(stdout, "                         the last password change was more than 30 days ago\n");
+    fprintf(stdout, "                         (see --auto-update-interval). Useful to run from a daily cron job.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  --precreate    Pre-create an account for the given host with default password\n");
-    fprintf(stdout, "                 but do not update local keytab.\n");
-    fprintf(stdout, "                 Requires -h or --computer-name argument.\n");
-    fprintf(stdout, "                 Implies --user-creds-only.\n");
+    fprintf(stdout, "  --precreate            Pre-create an account for the given host with default password\n");
+    fprintf(stdout, "                         but do not update local keytab.\n");
+    fprintf(stdout, "                         Requires -h or --computer-name argument.\n");
+    fprintf(stdout, "                         Implies --user-creds-only.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  --housekeeping <hours> Perform housekeeping for the given time span.\n");
+    fprintf(stdout, "                         Example: --housekeeping 10 deletes all entries\n");
+    fprintf(stdout, "                         older than 10 hours.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Connection/setup options: \n");
     fprintf(stdout, "  -b, --base <base ou>   Sets the LDAP base OU to use when creating an account.\n");
@@ -397,7 +559,6 @@ static int wait_for_new_kvno(msktutil_exec *exec)
         sleep(5);
     }
 }
-
 
 int execute(msktutil_exec *exec)
 {
@@ -501,6 +662,8 @@ int execute(msktutil_exec *exec)
         add_and_remove_principals(exec);
         wait_for_new_kvno(exec);
         return ret;
+    } else if (exec->mode == MODE_HOUSEKEEPING) {
+	stat_housekeeping_do( flags->housekeeping_hours);
     }
 
     return 0;
@@ -514,6 +677,7 @@ void set_mode(msktutil_exec *exec, msktutil_mode mode) {
     }
     exec->mode = mode;
 }
+
 
 int main(int argc, char *argv [])
 {
@@ -804,15 +968,25 @@ int main(int argc, char *argv [])
         }
 
         if (!strcmp(argv[i], "--auto-update-interval")) {
+	    if (++i < argc) {
+		exec->flags->auto_update_interval = atoi(argv[i]);
+	    } else {
+		fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
+		goto error;
+	    }
+	    continue;
+        }
+
+        if (!strcmp(argv[i], "--housekeeping")) {
+            set_mode(exec.get(), MODE_HOUSEKEEPING);
             if (++i < argc) {
-                exec->flags->auto_update_interval = atoi(argv[i]);
+		exec->flags->housekeeping_hours = atoi(argv[i]);
             } else {
                 fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
                 goto error;
             }
             continue;
         }
-
 
         /* Display Verbose Messages */
         if (!strcmp(argv[i], "--verbose")) {
@@ -848,12 +1022,13 @@ int main(int argc, char *argv [])
         }
     }
 
-
-    if (exec->mode == MODE_CREATE && !exec->flags->use_service_account)
+    if (exec->mode == MODE_CREATE && !exec->flags->use_service_account) {
         exec->add_principals.push_back("host");
+    }
 
-    if (exec->mode == MODE_NONE && !exec->add_principals.empty())
+    if (exec->mode == MODE_NONE && !exec->add_principals.empty()) {
         set_mode(exec.get(), MODE_UPDATE);
+    }
 
     if (exec->mode == MODE_NONE) {
         /* Default, no options present */
@@ -900,7 +1075,8 @@ msktutil_flags::msktutil_flags() :
     allow_weak_crypto(false),
     password_expired(false),
     auto_update_interval(30),
-    kvno(0)
+    kvno(0),
+    housekeeping_hours(0)
 {}
 
 msktutil_flags::~msktutil_flags() {
