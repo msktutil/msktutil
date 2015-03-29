@@ -80,12 +80,6 @@ void LDAPConnection::get_option(int option, void *outvalue) {
     }
 }
 
-void LDAPConnection::start_tls(LDAPControl **serverctrls, LDAPControl **clientctrls) {
-    int ret = ldap_start_tls_s(m_ldap, serverctrls, clientctrls);
-    if (ret)
-        throw LDAPException("ldap_start_tls_s", ret);
-}
-
 LDAPConnection::~LDAPConnection() {
     ldap_unbind_ext(m_ldap, NULL, NULL);
 }
@@ -218,8 +212,7 @@ void ldap_get_base_dn(msktutil_flags *flags)
 }
 
 LDAPConnection* ldap_connect(const std::string &server,
-                                           bool no_reverse_lookups,
-                                           int try_tls)
+                                           bool no_reverse_lookups)
 {
 #ifndef SOLARIS_LDAP_KERBEROS
     int debug = 0xffffff;
@@ -230,10 +223,8 @@ LDAPConnection* ldap_connect(const std::string &server,
     LDAPConnection* ldap=NULL;
     int version = LDAP_VERSION3;
     int ret;
-    bool is_tls = false;
 
-    VERBOSE("Connecting to LDAP server: %s try_tls=%s", server.c_str(),
-            (try_tls == ATTEMPT_SASL_NO_TLS)?"NO":"YES");
+    VERBOSE("Connecting to LDAP server: %s", server.c_str());
 
     ldap = new LDAPConnection(server);
     ldap->set_option(LDAP_OPT_PROTOCOL_VERSION, &version);
@@ -252,34 +243,6 @@ LDAPConnection* ldap_connect(const std::string &server,
     VERBOSE("Your LDAP version does not support the option to disable reverse lookups");
 #endif
 
-#ifdef LDAP_OPT_X_TLS
-    switch (try_tls) {
-        case ATTEMPT_SASL_PARAMS_TLS: {
-            sasl_ssf_t tryssf = 1;
-            try {
-                ldap->set_option(LDAP_OPT_X_SASL_SSF_MAX, &tryssf);
-            } catch (LDAPException &e) {
-                // Don't worry if it fails.
-            }
-            // fall through
-        }
-        case ATTEMPT_SASL_NO_PARAMS_TLS: {
-            try {
-                ldap->start_tls();
-            } catch (LDAPException &e) {
-                // If it fails, then...
-                return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
-            }
-            is_tls = true;
-            break;
-        }
-        case ATTEMPT_SASL_NO_TLS: {
-            sasl_ssf_t tryssf=56; // Will cause gssapi to use at least des encryption
-            ldap->set_option(LDAP_OPT_X_SASL_SSF_MIN, &tryssf);
-            break;
-        }
-    }
-#endif
     VERBOSEldap("calling ldap_sasl_interactive_bind_s");
 
     ret = ldap_sasl_interactive_bind_s(ldap->m_ldap, NULL, "GSSAPI", NULL, NULL,
@@ -293,21 +256,9 @@ LDAPConnection* ldap_connect(const std::string &server,
     if (ret) {
         ldap_print_diagnostics(ldap->m_ldap, "ldap_sasl_interactive_bind_s failed", ret);
         delete ldap;
-
-        if (is_tls)
-            return ldap_connect(server, no_reverse_lookups, ATTEMPT_SASL_NO_TLS);
         return NULL;
     }
 
-    if (g_verbose) {
-        try {
-            sasl_ssf_t ssf = -1; /* indicates we dont know what it is */
-            ldap->get_option(LDAP_OPT_X_SASL_SSF,&ssf);
-            VERBOSE("LDAP_OPT_X_SASL_SSF=%d\n",ssf);
-        } catch (LDAPException &e) {
-            std::cerr << e.what() << std::endl;
-        }
-    }
     return ldap;
 }
 

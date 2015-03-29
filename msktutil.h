@@ -117,11 +117,6 @@
 #define KVNO_FAILURE                    -1
 #define KVNO_WIN_2000                   0
 
-/* LDAP Binding Attempts */
-#define ATTEMPT_SASL_PARAMS_TLS         0
-#define ATTEMPT_SASL_NO_PARAMS_TLS      1
-#define ATTEMPT_SASL_NO_TLS             2
-
 /* Ways we can authenticate */
 enum auth_types {
     AUTH_NONE = 0,
@@ -186,7 +181,6 @@ struct msktutil_flags {
     bool server_behind_nat;
     bool no_canonical_name;
     bool set_samba_secret;
-    bool no_tls;
 
     msktutil_val dont_expire_password;
     msktutil_val no_pac;
@@ -226,8 +220,7 @@ extern std::string get_default_hostname(bool no_canonical_name = false);
 extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
 extern LDAPConnection* ldap_connect(const std::string &server,
-                                                  bool no_reverse_lookups = false,
-                                                  int try_tls=ATTEMPT_SASL_PARAMS_TLS);
+                                                  bool no_reverse_lookups = false);
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string complete_hostname(const std::string &,
                                      bool no_canonical_name = false);
@@ -325,7 +318,6 @@ public:
 
     void set_option(int option, const void *invalue);
     void get_option(int option, void *outvalue);
-    void start_tls(LDAPControl **serverctrls=NULL, LDAPControl **clientctrls=NULL);
 
     void search(LDAPMessage **mesg_p,
                 const std::string &base_dn, int scope, const std::string &filter, const char *attrs[],
