@@ -40,14 +40,18 @@
 #endif
 
 #include <cctype>
-
-std::string complete_hostname(const std::string &hostname)
+std::string complete_hostname(const std::string &hostname, bool no_canonical_name)
 {
     // Ask the kerberos lib to canonicalize the hostname, and then pull it out of the principal.
+    krb5_int32 type = KRB5_NT_SRV_HST;
     krb5_principal temp_princ_raw = NULL;
+
+    // do not canonicalize, use supplied hostname
+    if(no_canonical_name) { type = KRB5_NT_UNKNOWN; }
+
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), hostname.c_str(), "host",
-                                KRB5_NT_SRV_HST, &temp_princ_raw);
+                                type, &temp_princ_raw);
     if (ret != 0) {
         fprintf(stderr, "Warning: hostname canonicalization for %s failed (%s)\n",
                 hostname.c_str(), error_message(ret));
@@ -74,12 +78,18 @@ std::string complete_hostname(const std::string &hostname)
 }
 
 
-std::string get_default_hostname()
+std::string get_default_hostname(bool no_canonical_name)
 {
     // Ask the kerberos lib to canonicalize the hostname, and then pull it out of the principal.
+    krb5_int32 type = KRB5_NT_SRV_HST;
     krb5_principal temp_princ_raw;
+
+    // do not canonicalize, use supplied hostname
+    if(no_canonical_name) { type = KRB5_NT_UNKNOWN; }
+
     krb5_error_code ret =
-        krb5_sname_to_principal(g_context.get(), NULL, "host", KRB5_NT_SRV_HST, &temp_princ_raw);
+        krb5_sname_to_principal(g_context.get(), NULL, "host", type, &temp_princ_raw);
+
     if (ret != 0)
         throw KRB5Exception("krb5_sname_to_principal (get_default_hostname)", ret);
 

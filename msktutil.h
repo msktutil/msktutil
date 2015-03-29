@@ -183,6 +183,7 @@ struct msktutil_flags {
     bool set_userPrincipalName;
     bool no_reverse_lookups;
     bool server_behind_nat;
+    bool no_canonical_name;
     bool set_samba_secret;
     bool no_tls;
 
@@ -220,14 +221,15 @@ struct msktutil_exec {
 extern std::string create_default_machine_password(const std::string &samaccountname);
 extern void ldap_cleanup(msktutil_flags *);
 extern void init_password(msktutil_flags *);
-extern std::string get_default_hostname();
+extern std::string get_default_hostname(bool no_canonical_name = false);
 extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
 extern LDAPConnection* ldap_connect(const std::string &server,
                                                   bool no_reverse_lookups = false,
                                                   int try_tls=ATTEMPT_SASL_PARAMS_TLS);
 extern void ldap_get_base_dn(msktutil_flags *);
-extern std::string complete_hostname(const std::string &);
+extern std::string complete_hostname(const std::string &,
+                                     bool no_canonical_name = false);
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);

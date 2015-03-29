@@ -144,11 +144,12 @@ int finalize_exec(msktutil_exec *exec)
             fprintf(stderr, "You must supply either --computer-name or --hostname when using --precreate.\n");
             exit(1);
         }
-    } else if (flags->hostname.empty())
+    } else if (flags->hostname.empty()) {
         /* Canonicalize the hostname if need be */
-        flags->hostname = get_default_hostname();
-    else
+        flags->hostname = get_default_hostname(flags->no_canonical_name);
+    } else {
         flags->hostname = complete_hostname(flags->hostname);
+    }
 
     /* Determine the samAccountName, if not set */
     if (flags->samAccountName.empty()) {
@@ -334,6 +335,9 @@ void do_help() {
     fprintf(stdout, "                         This option is ignored if option --server is used.\n");
     fprintf(stdout, "  -N, --no-reverse-lookups\n");
     fprintf(stdout, "                         Don't reverse-lookup the domain controller.\n");
+    fprintf(stdout, "  -n, --no-canonical-name\n");
+    fprintf(stdout, "                         Do not attempt to canonicalize hostname while\n");
+    fprintf(stdout, "                         creating Kerberos principal(s).\n");
     fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
     fprintf(stdout, "                         only use user's credentials (from e.g. kinit).\n");
     fprintf(stdout, "  --auto-update-interval <days>\n");
@@ -592,6 +596,12 @@ int main(int argc, char *argv [])
                 fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
                 goto error;
             }
+            continue;
+        }
+
+        /* no canonical name */
+        if (!strcmp(argv[i], "--no-canonical-name") || !strcmp(argv[i], "-n")) {
+            exec->flags->no_canonical_name = true;
             continue;
         }
 

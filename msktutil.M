@@ -205,6 +205,13 @@ Do not attempt to canonicalize the name of the domain controller via DNS reverse
 need to do this if your client cannot resolve the PTR records for a domain controller or your DNS
 servers store incorrect PTR records.  Default: Use DNS reverse lookups to canonicalize DC names.
 .TP
+-n, --no-canonical-name
+Do not attempt to canonicalize the hostname while creating names of kerberos principals.
+Instead use supplied hostname. This may be needed for systems where forward and reverse
+DNS lookups do not return the same (an dynamic dns system for example where lookup for
+myhost.mydomain returns IP X.Y.Z.W , but lookup for IP X.Y.Z.W returns a name different
+than myhost.mydomain).
+.TP
 --user-creds-only
 Don't attempt to authenticate with a keytab: only use user's credentials (from
 e.g. kinit).  You may need to do this to modify certain attributes that require Administrator
