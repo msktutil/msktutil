@@ -295,7 +295,7 @@ void do_help() {
     fprintf(stdout, "                 changes the account's password and updates the keytab with entries\n");
     fprintf(stdout, "                 for all principals in servicePrincipalName and userPrincipalName.\n");
     fprintf(stdout, "                 It also updates LDAP attributes for msDS-supportedEncryptionTypes,\n");
-    fprintf(stdout, "                 dNSDomainName, and applies other options you specify.\n");
+    fprintf(stdout, "                 dNSHostName, and applies other options you specify.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "  --auto-update  Same as --update, but only if keytab fails to authenticate, or\n");
     fprintf(stdout, "                 the last password change was more than 30 days ago\n");

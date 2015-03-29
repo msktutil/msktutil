@@ -112,7 +112,7 @@ to the machine or service account.
 .TP
 -u, --update
 Forces a password change and updates all related service principal entries from the
-servicePrincipalName and userPrincipalName attributes.  Updates dNSDomainName for machine accounts and
+servicePrincipalName and userPrincipalName attributes.  Updates dNSHostName for machine accounts and
 always updates msDS-supportedEncryptionTypes attributes with current values, and applies other changes
 as specified.
 .TP
@@ -164,7 +164,7 @@ when defining the string.
 Overrides the current hostname to be used to be <name>.  If this is not specified, the local host
 name will be used.  Note that the local name lookup service will be to qualify and resolve names
 into fully-qualified names, including a domain extension.  This affects the default hostname for
-other arguments, and the default computer-name.  The hostname is also used to set the dNSDomainName
+other arguments, and the default computer-name.  The hostname is also used to set the dNSHostName
 attribute.
 .TP
 -k, --keytab <file>
