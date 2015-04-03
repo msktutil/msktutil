@@ -149,7 +149,7 @@ enum msktutil_mode {
     MODE_UPDATE,
     MODE_AUTO_UPDATE,
     MODE_FLUSH,
-    MODE_HOUSEKEEPING,
+    MODE_CLEANUP,
     MODE_PRECREATE
 };
 
@@ -202,7 +202,8 @@ struct msktutil_flags {
     bool password_expired;
     int auto_update_interval;
     krb5_kvno kvno;
-    int housekeeping_hours;
+    int cleanup_days;
+    int cleanup_enctypes;
     msktutil_flags();
     ~msktutil_flags();
 };
