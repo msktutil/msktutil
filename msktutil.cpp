@@ -75,7 +75,11 @@ void catch_int(int)
     exit(1);
 }
 
-
+void set_supportedEncryptionTypes(msktutil_flags *flags, char * value)
+{
+    flags->enctypes = VALUE_ON;
+    flags->supportedEncryptionTypes = strtol(value, NULL, 0);
+}
 
 void do_verbose()
 {
@@ -640,7 +644,7 @@ int main(int argc, char *argv [])
         /* W2008 msDs-supportedEncryptionTypes */
         if (!strcmp(argv[i], "--enctypes")) {
             if (++i < argc) {
-                Globals::get()->set_supportedEncryptionTypes(argv[i]);
+                set_supportedEncryptionTypes(flags, argv[i]);
             } else {
                 fprintf(stderr, "Error: No enctype after '%s'\n", argv[i - 1]);
                 goto error;
