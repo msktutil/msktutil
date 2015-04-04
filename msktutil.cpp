@@ -139,7 +139,7 @@ int finalize_exec(msktutil_exec *exec)
     if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
         /* Don't set a default hostname if none provided in precreate mode. */
         if (flags->samAccountName.empty()) {
-+            fprintf(stderr, "Error: You must supply either --computer-name or --hostname when using precreate mode.\n");
+            fprintf(stderr, "Error: You must supply either --computer-name or --hostname when using precreate mode.\n");
             exit(1);
         }
     } else if (flags->hostname.empty()) {
