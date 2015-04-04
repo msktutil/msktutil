@@ -176,7 +176,6 @@ credentials (description, userAccountControl, userPrincipalName, in a default AD
 .TP
 --auto-update-interval <days>
 Number of <days> when REPLACE_PROGNAME auto-update will change the account password. Defaults to 30 days.
-.TP
 .SS OBJECT TYPE/ATTRIBUTE-SETTING OPTIONS
 .TP
 --use-service-account
