@@ -55,11 +55,7 @@
 # endif
 #endif
 #include <krb5.h>
-#ifdef HAVE_SASL_H
-#include <sasl.h>
-#else
-#include <sasl/sasl.h>
-#endif
+
 
 #include <stdexcept>
 #include <string>
@@ -149,7 +145,8 @@ enum msktutil_mode {
     MODE_PRECREATE
 };
 
-struct msktutil_flags {
+class msktutil_flags {
+public:
     std::string keytab_file;
     std::string keytab_writename;
     std::string keytab_readname;
@@ -199,17 +196,44 @@ struct msktutil_flags {
     int auto_update_interval;
     krb5_kvno kvno;
     msktutil_flags();
+private:
+
+    msktutil_flags operator=(const msktutil_flags& other);
+    msktutil_flags(const msktutil_flags& other);
     ~msktutil_flags();
 };
 
-struct msktutil_exec {
-    msktutil_mode mode;
+class msktutil_exec {
+public:
+	msktutil_mode mode;
     std::vector<std::string> add_principals;
     std::vector<std::string> remove_principals;
-    msktutil_flags *flags;
+
 
     msktutil_exec();
+
     ~msktutil_exec();
+    void set_mode(msktutil_mode mode);
+};
+
+
+class Globals {
+	msktutil_flags* _flags;
+	msktutil_exec* _exec;
+
+	static Globals *instance;
+public:
+	static Globals* get();
+
+	static msktutil_flags *flags() {
+		return Globals::get()->_flags;
+	}
+
+	static msktutil_exec *exec() {
+		return Globals::get()->_exec;
+	}
+
+	void set_supportedEncryptionTypes( char * value);
 };
 
 /* Prototypes */
@@ -219,8 +243,7 @@ extern void init_password(msktutil_flags *);
 extern std::string get_default_hostname(bool no_canonical_name = false);
 extern void get_default_keytab(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
-extern LDAPConnection* ldap_connect(const std::string &server,
-                                                  bool no_reverse_lookups = false);
+
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string complete_hostname(const std::string &,
                                      bool no_canonical_name = false);
@@ -251,7 +274,6 @@ int generate_new_password(msktutil_flags *flags);
 #define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }
 
 
-#define VERBOSEldap(text...) if (g_verbose > 1) { fprintf(stderr, " ###### %s: ", __FUNCTION__); fprintf(stderr, ## text); fprintf(stderr, "\n"); }
 #endif
 
 // printf into a C++ string.
@@ -306,25 +328,7 @@ class LDAPException : public Exception
 
 
 #include "krb5wrap.h"
+#include "ldapconnection.h"
 
 
 
-class LDAPConnection {
-public: //fixme
-    LDAP *m_ldap;
-
-public:
-    LDAPConnection(const std::string &server);
-
-    void set_option(int option, const void *invalue);
-    void get_option(int option, void *outvalue);
-
-    void search(LDAPMessage **mesg_p,
-                const std::string &base_dn, int scope, const std::string &filter, const char *attrs[],
-                int attrsonly=0, LDAPControl **serverctrls=NULL, LDAPControl **clientctrls=NULL,
-                struct timeval *timeout=NULL, int sizelimit=-1);
-
-    std::string get_one_val(LDAPMessage *mesg, const char *name);
-    std::vector<std::string> get_all_vals(LDAPMessage *mesg, const char *name);
-    ~LDAPConnection();
-};

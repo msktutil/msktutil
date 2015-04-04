@@ -1,0 +1,254 @@
+#include <sstream>
+#include "msktutil.h"
+#include "config.h"
+#ifdef HAVE_SASL_H
+#include <sasl.h>
+#else
+#include <sasl/sasl.h>
+#endif
+
+#define VERBOSEldap(text...) if (g_verbose > 1) { fprintf(stderr, " ###### %s: ", __FUNCTION__); fprintf(stderr, ## text); fprintf(stderr, "\n"); }
+
+static int sasl_interact(ATTRUNUSED LDAP *ld, ATTRUNUSED unsigned flags,
+        ATTRUNUSED void *defaults, void *in) {
+    char *dflt = NULL;
+    sasl_interact_t *interact = (sasl_interact_t *) in;
+    while (interact->id != SASL_CB_LIST_END) {
+        dflt = (char *) interact->defresult;
+        interact->result = (dflt && *dflt) ? dflt : (void *) "";
+        interact->len = (dflt && *dflt) ? strlen(dflt) : 0;
+        interact++;
+    }
+    return LDAP_SUCCESS;
+}
+
+LDAPConnection::LDAPConnection(const std::string &server,
+        bool no_reverse_lookups) :
+        m_ldap() {
+    int ret = 0;
+
+#ifndef SOLARIS_LDAP_KERBEROS
+    std::string ldap_url = "ldap://" + server;
+    VERBOSEldap("calling ldap_initialize");
+    ret = ldap_initialize(&m_ldap, ldap_url.c_str());
+#else
+    VERBOSEldap("calling ldap_init");
+    m_ldap = ldap_init(server.c_str(), LDAP_PORT);
+    if (m_ldap) ret = LDAP_SUCCESS;
+    else ret = LDAP_OTHER;
+#endif
+    if (ret)
+        throw LDAPException("ldap_initialize", ret);
+
+#ifndef SOLARIS_LDAP_KERBEROS
+    int debug = 0xffffff;
+    if (g_verbose > 1)
+        ldap_set_option(NULL, LDAP_OPT_DEBUG_LEVEL, &debug);
+#endif
+
+    int version = LDAP_VERSION3;
+
+    VERBOSE("Connecting to LDAP server: %s", server.c_str());
+
+    set_option(LDAP_OPT_PROTOCOL_VERSION, &version);
+    set_option(LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
+    sasl_ssf_t sasl_gssapi_minssf = 56;
+    set_option(LDAP_OPT_X_SASL_SSF_MIN, &sasl_gssapi_minssf);
+
+#ifdef LDAP_OPT_X_SASL_NOCANON
+    if (no_reverse_lookups)
+    {
+        try
+        {
+            set_option(LDAP_OPT_X_SASL_NOCANON, LDAP_OPT_ON);
+        }
+        catch (LDAPException &e)
+        {
+            VERBOSE("Could not disable reverse lookups in LDAP");
+        }
+    }
+#else
+    VERBOSE(
+            "Your LDAP version does not support the option to disable reverse lookups");
+#endif
+
+    VERBOSEldap("calling ldap_sasl_interactive_bind_s");
+
+    ret = ldap_sasl_interactive_bind_s(m_ldap, NULL, "GSSAPI", NULL, NULL,
+#ifndef SOLARIS_LDAP_KERBEROS
+            g_verbose ? 0 : LDAP_SASL_QUIET,
+#else
+            0,
+#endif
+            sasl_interact, NULL);
+
+    if (ret) {
+        print_diagnostics("ldap_sasl_interactive_bind_s failed", ret);
+        m_ldap = NULL;
+    }
+}
+
+void LDAPConnection::print_diagnostics(const char *msg, int err) {
+    fprintf(stderr, "Error: %s (%s)\n", msg, ldap_err2string(err));
+
+#if HAVE_DECL_LDAP_OPT_DIAGNOSTIC_MESSAGE
+    char *opt_message = NULL;
+    ldap_get_option(m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, &opt_message);
+    if (opt_message)
+        fprintf(stderr, "\tadditional info: %s\n", opt_message);
+    ldap_memfree(opt_message);
+#endif
+}
+
+void LDAPConnection::set_option(int option, const void *invalue) {
+    int ret = ldap_set_option(m_ldap, option, invalue);
+    if (ret) {
+        std::stringstream ss;
+        ss << "ldap_set_option (option=" << option << ") ";
+        throw LDAPException(ss.str(), ret);
+    }
+}
+
+void LDAPConnection::get_option(int option, void *outvalue) {
+    int ret = ldap_get_option(m_ldap, option, outvalue);
+    if (ret) {
+        std::stringstream ss;
+        ss << "ldap_get_option (option=" << option << ") ";
+        throw LDAPException(ss.str(), ret);
+    }
+}
+
+LDAPConnection::~LDAPConnection() {
+    ldap_unbind_ext(m_ldap, NULL, NULL);
+}
+
+class MessageVals {
+    berval** m_vals;
+public:
+    MessageVals(berval **vals) :
+            m_vals(vals) {
+    }
+    ~MessageVals() {
+        if (m_vals)
+            ldap_value_free_len(m_vals);
+    }
+    BerValue *&
+    operator *() {
+        return *m_vals;
+    }
+    BerValue *&
+    operator [](size_t off) {
+        return m_vals[off];
+    }
+    operator bool() {
+        return m_vals;
+    }
+};
+
+LDAPMessage *
+LDAPConnection::search(const std::string &base_dn, int scope,
+        const std::string &filter, const std::string& attr) {
+    const char *attrs[] = { attr.c_str(), NULL };
+    return search(base_dn, scope, filter, attrs);
+}
+
+LDAPMessage *
+LDAPConnection::search(const std::string &base_dn, int scope,
+        const std::string &filter, const char *attrs[]) {
+    LDAPMessage * mesg;
+
+    VERBOSEldap("calling ldap_search_ext_s");
+    VERBOSEldap("ldap_search_ext_s base context: %s", base_dn.c_str());
+    VERBOSEldap("ldap_search_ext_s filter: %s", filter.c_str());
+    int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(),
+            const_cast<char **>(attrs), 0, NULL, NULL, NULL, -1, &mesg);
+
+    if (ret) {
+        print_diagnostics("ldap_search_ext_s failed", ret);
+        throw LDAPException("ldap_search_ext_s", ret);
+    }
+    return mesg;
+}
+
+LDAPMessage *LDAPConnection::first_entry(LDAPMessage *mesg) {
+    return mesg = ldap_first_entry(m_ldap, mesg);
+}
+
+std::string LDAPConnection::get_one_val(LDAPMessage *mesg, const std::string& name) {
+    MessageVals vals = ldap_get_values_len(m_ldap, mesg, name.c_str());
+    if (vals) {
+        if (vals[0]) {
+            berval *val = vals[0];
+            return std::string(val->bv_val, val->bv_len);
+        }
+    }
+    return "";
+}
+
+std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg,
+        const std::string& name) {
+    MessageVals vals = ldap_get_values_len(m_ldap, mesg, name.c_str());
+    std::vector < std::string > ret;
+    if (vals) {
+        size_t i = 0;
+        while (berval *val = vals[i]) {
+            ret.push_back(std::string(val->bv_val, val->bv_len));
+            i++;
+        }
+    }
+    return ret;
+}
+
+int LDAPConnection::count_entries(LDAPMessage *mesg) {
+    return ldap_count_entries(m_ldap, mesg);
+}
+
+int LDAPConnection::modify_ext(const std::string &dn, const std::string& type,
+        char *vals[], int op, bool check) {
+
+    LDAPMod *mod_attrs[2];
+    LDAPMod attr;
+
+    int ret;
+
+    mod_attrs[0] = &attr;
+    attr.mod_op = op;
+    attr.mod_type = const_cast<char *>(type.c_str());
+    attr.mod_values = vals;
+    mod_attrs[1] = NULL;
+
+    VERBOSEldap("calling ldap_modify_ext_s");
+    ret = ldap_modify_ext_s(m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
+    if (check && ret != LDAP_SUCCESS) {
+        VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
+    }
+    return ret;
+}
+
+int LDAPConnection::remove_attr(const std::string &dn, const std::string& type,
+        const std::string& val) {
+    char *vals_name[] = { NULL, NULL };
+    vals_name[0] = const_cast<char *>(val.c_str());
+    return modify_ext(dn, type, vals_name, LDAP_MOD_DELETE, true);
+}
+
+int LDAPConnection::add_attr(const std::string &dn, const std::string& type,
+        const std::string& val) {
+    char *vals_name[] = { NULL, NULL };
+    vals_name[0] = const_cast<char *>(val.c_str());
+    return modify_ext(dn, type, vals_name, LDAP_MOD_ADD, true);
+}
+
+int LDAPConnection::simple_set_attr(const std::string &dn,
+        const std::string &type, const std::string &val) {
+    char *vals_name[] = { NULL, NULL };
+    vals_name[0] = const_cast<char *>(val.c_str());
+    return modify_ext(dn, type, vals_name, LDAP_MOD_REPLACE, true);
+}
+
+int LDAPConnection::flush_attr_no_check(const std::string &dn,
+        const std::string &type) {
+    char *vals[] = { };
+    return modify_ext(dn, type, vals, LDAP_MOD_REPLACE, false);
+}
+

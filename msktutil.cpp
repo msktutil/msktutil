@@ -76,11 +76,6 @@ void catch_int(int)
 }
 
 
-void set_supportedEncryptionTypes(msktutil_exec *exec, char * value)
-{
-    exec->flags->enctypes = VALUE_ON;
-    exec->flags->supportedEncryptionTypes = strtol(value, NULL, 0);
-}
 
 void do_verbose()
 {
@@ -100,9 +95,8 @@ void qualify_principal_vec(std::vector<std::string> &principals, const std::stri
     }
 }
 
-int finalize_exec(msktutil_exec *exec)
+int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 {
-    msktutil_flags *flags = exec->flags;
     int ret;
     
     char *temp_realm;
@@ -220,7 +214,7 @@ int finalize_exec(msktutil_exec *exec)
 
     VERBOSE("Authenticated using method %d\n", flags->auth_type);
 
-    flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
+    flags->ldap = new LDAPConnection(flags->server, flags->no_reverse_lookups);
     
     if (!flags->ldap) {
         fprintf(stderr, "Error: ldap_connect failed\n");
@@ -242,13 +236,14 @@ int finalize_exec(msktutil_exec *exec)
 
 int add_and_remove_principals(msktutil_exec *exec) {
     int ret = 0;
-    std::vector<std::string> &cur_princs(exec->flags->ad_principals);
+
+    std::vector<std::string> &cur_princs(Globals::flags()->ad_principals);
 
     for (size_t i = 0; i < exec->add_principals.size(); ++i) {
         std::string principal = exec->add_principals[i];
         if (std::find(cur_princs.begin(), cur_princs.end(), principal) == cur_princs.end()) {
             // Not already in the list, so add it.
-            int loc_ret = ldap_add_principal(principal, exec->flags);
+            int loc_ret = ldap_add_principal(principal, Globals::flags());
             if (loc_ret) {
                 fprintf(stderr, "Error: ldap_add_principal failed\n");
                 ret = 1;
@@ -260,7 +255,7 @@ int add_and_remove_principals(msktutil_exec *exec) {
     for (size_t i = 0; i < exec->remove_principals.size(); ++i) {
         std::string principal = exec->remove_principals[i];
         if (std::find(cur_princs.begin(), cur_princs.end(), principal) != cur_princs.end()) {
-            int loc_ret = ldap_remove_principal(principal, exec->flags);
+            int loc_ret = ldap_remove_principal(principal, Globals::flags());
             if (loc_ret) {
                 fprintf(stderr, "Error: ldap_remove_principal failed\n");
                 ret = 1;
@@ -377,9 +372,9 @@ void do_version() {
     fprintf(stdout, "%s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 }
 
-static int wait_for_new_kvno(msktutil_exec *exec)
+static int wait_for_new_kvno(msktutil_flags *flags)
 {
-    if (exec->flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+    if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
         return 0;
     }
@@ -388,8 +383,8 @@ static int wait_for_new_kvno(msktutil_exec *exec)
 
     /* Loop and wait for the account and password set to replicate */
     for (int this_time = 0; ; this_time += 5) {
-        krb5_kvno current_kvno = ldap_get_kvno(exec->flags);
-        if (current_kvno == exec->flags->kvno) {
+    	krb5_kvno current_kvno = ldap_get_kvno( flags);
+        if (current_kvno == flags->kvno) {
             return 0;
         }
 
@@ -399,10 +394,10 @@ static int wait_for_new_kvno(msktutil_exec *exec)
 }
 
 
-int execute(msktutil_exec *exec)
+int
+execute(msktutil_exec *exec, msktutil_flags *flags)
 {
     int ret = 0;
-    msktutil_flags *flags = exec->flags;
     if( flags->password_from_cmdline ) {
         VERBOSE("Using password from command line");
     } else {
@@ -413,7 +408,7 @@ int execute(msktutil_exec *exec)
             return ret;
         }
     }
-    ret = finalize_exec(exec);
+    ret = finalize_exec(exec, flags);
 
     if (ret) {
         fprintf(stderr, "Error: finalize_exec failed\n");
@@ -427,10 +422,10 @@ int execute(msktutil_exec *exec)
     } else if (exec->mode == MODE_CREATE || exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
         if (exec->mode == MODE_AUTO_UPDATE) {
             // Don't bother doing anything if the auth was from the keytab (and not e.g. default password), and the
-            if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
-		exec->flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
-		exec->flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
-                std::string pwdLastSet = ldap_get_pwdLastSet(exec->flags);
+            if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
+            		flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
+					flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
+            	std::string pwdLastSet = ldap_get_pwdLastSet(flags);
                 // Windows timestamp is in 100-nanoseconds-since-1601. (or, tenths of microseconds)
                 long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);
                 long long epoch_bias_1601_to_1970 = 116444736000000000LL;
@@ -482,7 +477,7 @@ int execute(msktutil_exec *exec)
         VERBOSE("Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
                 flags->keytab_writename.c_str());
         update_keytab(flags);
-        wait_for_new_kvno(exec);
+        wait_for_new_kvno(flags);
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
         // Change account password to default value:
@@ -499,21 +494,24 @@ int execute(msktutil_exec *exec)
 
         // And add and remove principals to servicePrincipalName in LDAP.
         add_and_remove_principals(exec);
-        wait_for_new_kvno(exec);
+        wait_for_new_kvno(flags);
         return ret;
     }
 
     return 0;
 }
 
-void set_mode(msktutil_exec *exec, msktutil_mode mode) {
-    if (exec->mode != MODE_NONE) {
+void
+msktutil_exec::set_mode( msktutil_mode mode) {
+    if (this->mode != MODE_NONE) {
         fprintf(stderr, "Error: only one mode argument may be provided.\n");
         fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
         exit(1);
     }
-    exec->mode = mode;
+    this->mode = mode;
 }
+
+Globals *Globals::instance;
 
 int main(int argc, char *argv [])
 {
@@ -521,7 +519,9 @@ int main(int argc, char *argv [])
     setbuf(stdout, NULL);
 
     int i;
-    std::auto_ptr<msktutil_exec> exec(new msktutil_exec());
+
+    msktutil_exec *exec = Globals::exec();
+    msktutil_flags *flags = Globals::flags();
 
     for (i = 1; i < argc; i++) {
         /* Display Version Message and exit */
@@ -538,32 +538,32 @@ int main(int argc, char *argv [])
 
         /* Flush the keytab */
         if (!strcmp(argv[i], "--flush") || !strcmp(argv[i], "-f")) {
-            set_mode(exec.get(), MODE_FLUSH);
+        	exec->set_mode( MODE_FLUSH);
             continue;
         }
 
         /* Update All Principals */
         if (!strcmp(argv[i], "--update") || !strcmp(argv[i], "-u")) {
-            set_mode(exec.get(), MODE_UPDATE);
+        	exec->set_mode( MODE_UPDATE);
             continue;
         }
 
         /* Update All Principals, if needed */
         if (!strcmp(argv[i], "--auto-update")) {
-            set_mode(exec.get(), MODE_AUTO_UPDATE);
+        	exec->set_mode( MODE_AUTO_UPDATE);
             continue;
         }
 
         /* Create 'Default' Keytab */
         if (!strcmp(argv[i], "--create") || !strcmp(argv[i], "-c")) {
-            set_mode(exec.get(), MODE_CREATE);
+        	exec->set_mode( MODE_CREATE);
             continue;
         }
 
         /* Pre-create computer account for another host */
         if (!strcmp(argv[i], "--precreate")) {
-            set_mode(exec.get(), MODE_PRECREATE);
-            exec->flags->user_creds_only = true;
+        	exec->set_mode( MODE_PRECREATE);
+            flags->user_creds_only = true;
             continue;
         }
 
@@ -590,7 +590,7 @@ int main(int argc, char *argv [])
         /* Host name */
         if (!strcmp(argv[i], "--host") || !strcmp(argv[i], "--hostname") || !strcmp(argv[i], "-h")) {
             if (++i < argc) {
-                exec->flags->hostname = argv[i];
+                flags->hostname = argv[i];
             } else {
                 fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -600,14 +600,14 @@ int main(int argc, char *argv [])
 
         /* no canonical name */
         if (!strcmp(argv[i], "--no-canonical-name") || !strcmp(argv[i], "-n")) {
-            exec->flags->no_canonical_name = true;
+            flags->no_canonical_name = true;
             continue;
         }
 
         /* computer password */
         if (!strcmp(argv[i], "--old-account-password")) {
             if (++i < argc) {
-                exec->flags->old_account_password = argv[i];
+                flags->old_account_password = argv[i];
             } else {
                 fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -617,8 +617,8 @@ int main(int argc, char *argv [])
 
         if (!strcmp(argv[i], "--password")) {
             if (++i < argc) {
-                                exec->flags->password_from_cmdline = true;
-                                exec->flags->password = argv[i];
+                                flags->password_from_cmdline = true;
+                                flags->password = argv[i];
             } else {
                 fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -629,7 +629,7 @@ int main(int argc, char *argv [])
         /* site */
         if (!strcmp(argv[i], "--site")) {
             if (++i < argc) {
-                exec->flags->site = argv[i];
+                flags->site = argv[i];
             } else {
                 fprintf(stderr, "Error: No site given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -640,7 +640,7 @@ int main(int argc, char *argv [])
         /* W2008 msDs-supportedEncryptionTypes */
         if (!strcmp(argv[i], "--enctypes")) {
             if (++i < argc) {
-                set_supportedEncryptionTypes(exec.get(), argv[i]);
+                Globals::get()->set_supportedEncryptionTypes(argv[i]);
             } else {
                 fprintf(stderr, "Error: No enctype after '%s'\n", argv[i - 1]);
                 goto error;
@@ -650,51 +650,51 @@ int main(int argc, char *argv [])
 
         /* Re-activate DES encryption in fake krb5.conf */
         if (!strcmp(argv[i], "--allow-weak-crypto")) {
-            exec->flags->allow_weak_crypto = true;
+            flags->allow_weak_crypto = true;
             continue;
         }
 
         /* Disable the PAC ? */
         if (!strcmp(argv[i], "--no-pac")) {
-            exec->flags->no_pac = VALUE_ON;
+            flags->no_pac = VALUE_ON;
             continue;
         }
         if (!strcmp(argv[i], "--disable-no-pac")) {
-            exec->flags->no_pac = VALUE_OFF;
+            flags->no_pac = VALUE_OFF;
             continue;
         }
 
         /* Use service account */
         if (!strcmp(argv[i], "--use-service-account")) {
-            exec->flags->use_service_account = true;
+            flags->use_service_account = true;
             continue;
         }
 
         /* Trust for delegation ? */
         if (!strcmp(argv[i], "--delegation")) {
-            exec->flags->delegate = VALUE_ON;
+            flags->delegate = VALUE_ON;
             continue;
         }
         if (!strcmp(argv[i], "--disable-delegation")) {
-            exec->flags->delegate = VALUE_OFF;
+            flags->delegate = VALUE_OFF;
             continue;
         }
 
         /* Password expiry (is rotation required?) */
         if (!strcmp(argv[i], "--dont-expire-password")) {
-            exec->flags->dont_expire_password = VALUE_ON;
+            flags->dont_expire_password = VALUE_ON;
             continue;
         }
 
         if (!strcmp(argv[i], "--do-expire-password")) {
-            exec->flags->dont_expire_password = VALUE_OFF;
+            flags->dont_expire_password = VALUE_OFF;
             continue;
         }
 
         /* Use a certain sam account name */
         if (!strcmp(argv[i], "--computer-name") || !strcmp(argv[i], "--account-name")) {
             if (++i < argc) {
-                exec->flags->samAccountName = argv[i];
+                flags->samAccountName = argv[i];
             } else {
                 fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -704,8 +704,8 @@ int main(int argc, char *argv [])
 
         if (!strcmp(argv[i], "--upn")) {
             if (++i < argc) {
-                exec->flags->set_userPrincipalName = true;
-                exec->flags->userPrincipalName = argv[i];
+                flags->set_userPrincipalName = true;
+                flags->userPrincipalName = argv[i];
             } else {
                 fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -716,7 +716,7 @@ int main(int argc, char *argv [])
         /* Use certain keytab file */
         if (!strcmp(argv[i], "--keytab") || !strcmp(argv[i], "-k")) {
             if (++i < argc) {
-                exec->flags->keytab_file = argv[i];
+                flags->keytab_file = argv[i];
             } else {
                 fprintf(stderr, "Error: No file given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -727,7 +727,7 @@ int main(int argc, char *argv [])
         /* Use a certain LDAP base OU ? */
         if (!strcmp(argv[i], "--base") || !strcmp(argv[i], "-b")) {
             if (++i < argc) {
-                exec->flags->ldap_ou = argv[i];
+                flags->ldap_ou = argv[i];
             } else {
                 fprintf(stderr, "Error: No base given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -738,8 +738,8 @@ int main(int argc, char *argv [])
         /* Set the description on the computer account */
         if (!strcmp(argv[i], "--description")) {
             if (++i < argc) {
-                exec->flags->set_description = true;
-                exec->flags->description = argv[i];
+                flags->set_description = true;
+                flags->description = argv[i];
             } else {
                 fprintf(stderr, "Error: No description given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -750,7 +750,7 @@ int main(int argc, char *argv [])
         /* Use a certain LDAP server */
         if (!strcmp(argv[i], "--server")) {
             if (++i < argc) {
-                exec->flags->server = argv[i];
+                flags->server = argv[i];
             } else {
                 fprintf(stderr, "Error: No server given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -760,14 +760,14 @@ int main(int argc, char *argv [])
 
         /* ignore server IP validation error caused by NAT */
         if (!strcmp(argv[i], "--server-behind-nat")) {
-            exec->flags->server_behind_nat = true;
+            flags->server_behind_nat = true;
             continue;
         }
 
         /* Use a certain realm */
         if (!strcmp(argv[i], "--realm")) {
             if (++i < argc) {
-                exec->flags->realm_name = argv[i];
+                flags->realm_name = argv[i];
             } else {
                 fprintf(stderr, "Error: No realm given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -777,25 +777,25 @@ int main(int argc, char *argv [])
 
         /* do not reverse lookup server names */
         if (!strcmp(argv[i], "--no-reverse-lookups") || !strcmp(argv[i], "-N")) {
-            exec->flags->no_reverse_lookups = true;
+            flags->no_reverse_lookups = true;
             continue;
         }
 
         /* synchronize machine password with samba */
         if (!strcmp(argv[i], "--set-samba-secret")) {
-            exec->flags->set_samba_secret = true;
+            flags->set_samba_secret = true;
             continue;
         }
 
         /* Use user kerberos credentials only */
         if (!strcmp(argv[i], "--user-creds-only")) {
-            exec->flags->user_creds_only = true;
+            flags->user_creds_only = true;
             continue;
         }
 
         if (!strcmp(argv[i], "--keytab-auth-as")) {
             if (++i < argc) {
-                exec->flags->keytab_auth_princ = argv[i];
+                flags->keytab_auth_princ = argv[i];
             } else {
                 fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -805,7 +805,7 @@ int main(int argc, char *argv [])
 
         if (!strcmp(argv[i], "--auto-update-interval")) {
             if (++i < argc) {
-                exec->flags->auto_update_interval = atoi(argv[i]);
+                flags->auto_update_interval = atoi(argv[i]);
             } else {
                 fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -826,34 +826,36 @@ int main(int argc, char *argv [])
     }
 
     // make --old-account-password and --user-creds-only  mutually exclusive:
-    if (strlen(exec->flags->old_account_password.c_str()) && exec->flags->user_creds_only) {
+    if (strlen(flags->old_account_password.c_str()) && flags->user_creds_only) {
         fprintf(stderr, "--old-account-password and --user-creds-only are mutually exclusive\n");
         goto error;
     }
 
-    if (exec->flags->enctypes == VALUE_ON) {
+    if (flags->enctypes == VALUE_ON) {
         unsigned known= MS_KERB_ENCTYPE_DES_CBC_CRC |
                         MS_KERB_ENCTYPE_DES_CBC_MD5 |
                         MS_KERB_ENCTYPE_RC4_HMAC_MD5 |
                         MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 |
                         MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
 
-        if ((exec->flags->supportedEncryptionTypes|known) != known) {
+        if ((flags->supportedEncryptionTypes|known) != known) {
             fprintf(stderr, " Unsupported --enctypes must be integer that fits mask=0x%x\n", known);
             goto error;
         }
-        if (exec->flags->supportedEncryptionTypes == 0) {
+        if (flags->supportedEncryptionTypes == 0) {
             fprintf(stderr, " --enctypes must not be zero\n");
             goto error;
         }
     }
 
 
-    if (exec->mode == MODE_CREATE && !exec->flags->use_service_account)
+    if (exec->mode == MODE_CREATE && !flags->use_service_account) {
         exec->add_principals.push_back("host");
+    }
 
-    if (exec->mode == MODE_NONE && !exec->add_principals.empty())
-        set_mode(exec.get(), MODE_UPDATE);
+    if (exec->mode == MODE_NONE && !exec->add_principals.empty()) {
+        exec->set_mode( MODE_UPDATE);
+    }
 
     if (exec->mode == MODE_NONE) {
         /* Default, no options present */
@@ -862,7 +864,7 @@ int main(int argc, char *argv [])
     }
 
     try {
-        return execute(exec.get());
+        return execute(exec, flags);
     } catch (Exception &e) {
         fprintf(stderr, "%s\n", e.what());
         exit(1);
@@ -871,6 +873,23 @@ int main(int argc, char *argv [])
 error:
     fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
     return 1;
+}
+
+Globals*
+Globals::get() {
+	if (instance==NULL) {
+		instance = new Globals();
+		instance->_flags = new msktutil_flags;
+		instance->_exec = new msktutil_exec;
+	}
+	return instance;
+}
+
+void
+Globals::set_supportedEncryptionTypes(char * value)
+{
+    _flags->enctypes = VALUE_ON;
+    _flags->supportedEncryptionTypes = strtol(value, NULL, 0);
 }
 
 
@@ -901,7 +920,18 @@ msktutil_flags::msktutil_flags() :
     password_expired(false),
     auto_update_interval(30),
     kvno(0)
-{}
+{
+	if (getenv("MSKTUTIL_KEYTAB"))
+		keytab_file = getenv("MSKTUTIL_KEYTAB");
+	if (getenv("MSKTUTIL_NO_PAC"))
+	    no_pac = VALUE_ON;
+	if (getenv("MSKTUTIL_DELEGATION"))
+		delegate = VALUE_ON;
+	if (getenv("MSKTUTIL_LDAP_BASE"))
+	    ldap_ou = getenv("MSKTUTIL_LDAP_BASE");
+	if (getenv("MSKTUTIL_SERVER"))
+		server = getenv("MSKTUTIL_SERVER");
+}
 
 msktutil_flags::~msktutil_flags() {
     ldap_cleanup(this);
@@ -910,20 +940,9 @@ msktutil_flags::~msktutil_flags() {
 
 
 msktutil_exec::msktutil_exec() :
-    mode(MODE_NONE), flags(new msktutil_flags())
+    mode(MODE_NONE)
 {
-    /* Check for environment variables as well.  These variables will be overriden
-     * By command line arguments. */
-    if (getenv("MSKTUTIL_KEYTAB"))
-        flags->keytab_file = getenv("MSKTUTIL_KEYTAB");
-    if (getenv("MSKTUTIL_NO_PAC"))
-        flags->no_pac = VALUE_ON;
-    if (getenv("MSKTUTIL_DELEGATION"))
-        flags->delegate = VALUE_ON;
-    if (getenv("MSKTUTIL_LDAP_BASE"))
-        flags->ldap_ou = getenv("MSKTUTIL_LDAP_BASE");
-    if (getenv("MSKTUTIL_SERVER"))
-        flags->server = getenv("MSKTUTIL_SERVER");
+
 }
 
 msktutil_exec::~msktutil_exec() {
@@ -931,5 +950,4 @@ msktutil_exec::~msktutil_exec() {
     remove_fake_krb5_conf();
     remove_ccache();
 
-    delete flags;
 }
