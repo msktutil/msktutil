@@ -295,7 +295,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     switch (num_entries) {
         case 0:
             VERBOSE("Adding principal %s to LDAP entry", principal.c_str());
-            ret = ldap->add_attr( dn, "distinguishedName", principal);
+            ret = ldap->add_attr( dn, "servicePrincipalName", principal);
             if (ret != LDAP_SUCCESS) {
         	fprintf(stderr, "WARNING: ldap modification of %s\n", dn.c_str());
                 fprintf(stderr, "         failed while trying to add servicePrincipalName %s.\n", principal.c_str());
@@ -316,7 +316,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             if (found_dn.empty()) {
                 fprintf(stderr, "Error: Inconsistent LDAP entry: No DN value present\n");
                 ret = -1;
-            } else if ( dn != found_dn) {
+            } else if (dn != found_dn) {
                 fprintf(stderr, "Error: Another computer account (%s) has the principal %s\n",
                         found_dn.c_str(), principal.c_str());
                 ret = -1;
