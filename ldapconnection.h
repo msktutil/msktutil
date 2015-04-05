@@ -10,6 +10,15 @@
 #include <sasl/sasl.h>
 #endif
 
+class LDAP_mod {
+    std::vector<LDAPMod *> attrs;
+public:
+    void add(const std::string& type);
+    void add(const std::string& type, const std::string& val, bool ucs = false);
+    void add(const std::string& type, const std::vector<std::string>& val);
+    LDAPMod **get() const;
+    ~LDAP_mod();
+};
 
 
 class LDAPConnection {
@@ -31,6 +40,9 @@ public:
     LDAPMessage *search(
                    const std::string &base_dn, int scope, const std::string &filter, const char *attr[]);
 
+    LDAPMessage *search(
+                       const std::string &base_dn, int scope, const std::string &filter, const std::vector<std::string>& attr);
+
     LDAPMessage *first_entry(LDAPMessage *mesg);
 
     int add_attr(const std::string &dn, const std::string &attrName, const std::string &val);
@@ -38,6 +50,7 @@ public:
     int remove_attr(const std::string &dn, const std::string& type, const std::string& name);
     int flush_attr_no_check(const std::string &dn, const std::string& type);
 
+    int add(const std::string &dn, const LDAP_mod& mod);
 
     void print_diagnostics(const char *msg, int err);
     std::string get_one_val(LDAPMessage *msg, const std::string& name);

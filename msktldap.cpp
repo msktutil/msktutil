@@ -406,25 +406,20 @@ void ldap_check_account(msktutil_flags *flags)
 {
     LDAPMessage *mesg;
     const char *machine_attrs[] = {"distinguishedName", "dNSHostName", "msDs-supportedEncryptionTypes",
-                      "userAccountControl", "servicePrincipalName", "userPrincipalName", NULL};
+                      "userAccountControl", "servicePrincipalName", "userPrincipalName"};
     const char *user_attrs[] = {"distinguishedName", "msDs-supportedEncryptionTypes",
-                      "userAccountControl", "servicePrincipalName", "userPrincipalName", "unicodePwd", NULL};
-    int userAcctFlags;
-    std::string dn;
-    LDAPMod *mod_attrs[6];
-    LDAPMod attrObjectClass;
-    LDAPMod attrCN;
-    LDAPMod attrUserAccountControl;
-    LDAPMod attrSamAccountName;
-    LDAPMod attrunicodePwd;
-    const char *vals_machine_objectClass[] = {"top", "person", "organizationalPerson", "user", "computer", NULL};
-    const char *vals_user_objectClass[] = {"top", "person", "organizationalPerson", "user", NULL};
+                      "userAccountControl", "servicePrincipalName", "userPrincipalName", "unicodePwd"};
+    std::vector<std::string> v_machine_attrs( machine_attrs, std::end(machine_attrs));
+    std::vector<std::string> v_user_attrs( user_attrs, std::end(user_attrs));
 
-    char *vals_cn[] = {NULL, NULL};
-    char *vals_useraccountcontrol[] = {NULL, NULL};
-    char *vals_samaccountname[] = {NULL, NULL};
-    BerValue *bvals_unicodepwd[] = {NULL, NULL};
-    int attr_count = 0;
+    std::string dn;
+
+    const char *vals_objectClass[] = {"top", "person", "organizationalPerson", "user"};
+
+    std::vector<std::string> v_user_objectClass(vals_objectClass, std::end(vals_objectClass));
+    std::vector<std::string> v_machine_objectClass(vals_objectClass, std::end(vals_objectClass));
+    v_machine_objectClass.push_back("computer");
+
     LDAPConnection *ldap = flags->ldap;
 
     if (flags->use_service_account) {
@@ -472,14 +467,14 @@ void ldap_check_account(msktutil_flags *flags)
 
         if (!flags->use_service_account) {
             // Save current dNSHostName
-            flags->ad_dnsHostName = flags->ldap->get_one_val(mesg, "dNSHostName");
+            flags->ad_dnsHostName = ldap->get_one_val(mesg, "dNSHostName");
             VERBOSE("Found dNSHostName = %s\n", flags->ad_dnsHostName.c_str());
         }
 
         // Save current servicePrincipalName and userPrincipalName attrs
         if (ldap->count_entries(mesg) == 1) {
-            mesg = ldap->first_entry(mesg);
-            std::vector<std::string> vals = flags->ldap->get_all_vals(mesg, "servicePrincipalName");
+            mesg = ldap->first_entry(mesg);  // TODO Why first_entry ?? already at first entry!
+            std::vector<std::string> vals = ldap->get_all_vals(mesg, "servicePrincipalName");
             for (size_t i = 0; i < vals.size(); ++i) {
                 // translate HOST/ to host/
                 if (vals[i].compare(0, 5, "HOST/") == 0) {
@@ -492,7 +487,7 @@ void ldap_check_account(msktutil_flags *flags)
             if (flags->set_userPrincipalName) {
                 VERBOSE("  userPrincipal specified on command line");
             } else {
-                std::string upn = flags->ldap->get_one_val(mesg, "userPrincipalName");
+                std::string upn = ldap->get_one_val(mesg, "userPrincipalName");
                 if(!upn.empty()) {
                     size_t pos = upn.find('@');
                     if (pos != std::string::npos)
@@ -517,66 +512,32 @@ void ldap_check_account(msktutil_flags *flags)
             fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
         }
         flags->ad_computerDn = sform("cn=%s,%s", flags->samAccountName_nodollar.c_str(), flags->ldap_ou.c_str());
-        mod_attrs[attr_count++] = &attrObjectClass;
-        attrObjectClass.mod_op = LDAP_MOD_ADD;
-        attrObjectClass.mod_type = "objectClass";
+        LDAP_mod mod_attrs;
+
         if (flags->use_service_account) {
-            attrObjectClass.mod_values = const_cast<char **>(vals_user_objectClass);
+            mod_attrs.add("objectClass", v_user_objectClass);
         } else {
-            attrObjectClass.mod_values = const_cast<char **>(vals_machine_objectClass);
+            mod_attrs.add("objectClass", v_machine_objectClass);
         }
 
-        mod_attrs[attr_count++] = &attrCN;
-        attrCN.mod_op = LDAP_MOD_ADD;
-        attrCN.mod_type = "cn";
-        attrCN.mod_values = vals_cn;
-        vals_cn[0] = const_cast<char*>(flags->samAccountName_nodollar.c_str());
+        mod_attrs.add("cn", flags->samAccountName_nodollar);
 
-        mod_attrs[attr_count++] = &attrUserAccountControl;
-        attrUserAccountControl.mod_op = LDAP_MOD_ADD;
-        attrUserAccountControl.mod_type = "userAccountControl";
-        attrUserAccountControl.mod_values = vals_useraccountcontrol;
+        int userAcctFlags;
         if (flags->use_service_account) {
             userAcctFlags = UF_NORMAL_ACCOUNT;
         } else {
             userAcctFlags = UF_WORKSTATION_TRUST_ACCOUNT;
         }
-        std::string userAcctFlags_string = sform("%d", userAcctFlags);
-        vals_useraccountcontrol[0] = const_cast<char*>(userAcctFlags_string.c_str());
+        mod_attrs.add("userAccountControl", sform("%d", userAcctFlags));
 
-        mod_attrs[attr_count++] = &attrSamAccountName;
-        attrSamAccountName.mod_op = LDAP_MOD_ADD;
-        attrSamAccountName.mod_type = "sAMAccountName";
-        attrSamAccountName.mod_values = vals_samaccountname;
-        vals_samaccountname[0] = const_cast<char*>(flags->samAccountName.c_str());
-        mod_attrs[attr_count++] = &attrunicodePwd;
-        attrunicodePwd.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
-        attrunicodePwd.mod_type = "unicodePwd";
-        attrunicodePwd.mod_bvalues = bvals_unicodepwd;
-        std::string passwd = "\"" + flags->password  + "\"";
-        bvals_unicodepwd[0] = new BerValue;
-        bvals_unicodepwd[0]->bv_val = new char[ (passwd.length())  * 2 ];
-        memset(bvals_unicodepwd[0]->bv_val , 0, passwd.length()   * 2);
-        for (unsigned int i = 0; i < passwd.length(); i++) {
-            bvals_unicodepwd[0]->bv_val[i*2] = passwd[i];
-        }
-        bvals_unicodepwd[0]->bv_len = (passwd.length()) *2;
-
-        mod_attrs[attr_count++] = NULL;
+        mod_attrs.add("sAMAccountName", flags->samAccountName);
+        mod_attrs.add("unicodePwd", "\"" + flags->password  + "\"", true);
+        ldap->add(flags->ad_computerDn, mod_attrs);
 
         // Defaults, will attempt to reset later
         flags->ad_supportedEncryptionTypes = MS_KERB_ENCTYPE_DES_CBC_CRC | MS_KERB_ENCTYPE_DES_CBC_MD5 |
             MS_KERB_ENCTYPE_RC4_HMAC_MD5;
         flags->ad_enctypes = VALUE_OFF;
-
-        int ret = ldap_add_ext_s(flags->ldap->m_ldap, flags->ad_computerDn.c_str(), mod_attrs, NULL, NULL);
-        if (ret) {
-            flags->ldap->print_diagnostics( "ldap_add_ext_s failed", ret);
-            throw LDAPException("ldap_add_ext_s", ret);
-        }
-        delete[] bvals_unicodepwd[0]->bv_val;
-        delete bvals_unicodepwd[0];
-
         flags->ad_userAccountControl = userAcctFlags;
     }
 

@@ -154,6 +154,20 @@ LDAPConnection::search(const std::string &base_dn, int scope,
 
 LDAPMessage *
 LDAPConnection::search(const std::string &base_dn, int scope,
+        const std::string &filter, const std::vector<std::string>& attr) {
+
+    std::vector<char *> v_chptr;
+    for (unsigned int i = 0; i < attr.size(); i++) {
+        char *p = const_cast<char *>(attr[i].c_str());
+        v_chptr.push_back(p);
+    }
+    v_chptr.push_back(NULL);
+    char **vattr = &v_chptr[0];
+    return search(base_dn, scope, filter, const_cast<const char**>(vattr));
+}
+
+LDAPMessage *
+LDAPConnection::search(const std::string &base_dn, int scope,
         const std::string &filter, const char *attrs[]) {
     LDAPMessage * mesg;
 
@@ -174,7 +188,8 @@ LDAPMessage *LDAPConnection::first_entry(LDAPMessage *mesg) {
     return mesg = ldap_first_entry(m_ldap, mesg);
 }
 
-std::string LDAPConnection::get_one_val(LDAPMessage *mesg, const std::string& name) {
+std::string LDAPConnection::get_one_val(LDAPMessage *mesg,
+        const std::string& name) {
     MessageVals vals = ldap_get_values_len(m_ldap, mesg, name.c_str());
     if (vals) {
         if (vals[0]) {
@@ -252,3 +267,88 @@ int LDAPConnection::flush_attr_no_check(const std::string &dn,
     return modify_ext(dn, type, vals, LDAP_MOD_REPLACE, false);
 }
 
+int LDAPConnection::add(const std::string &dn, const LDAP_mod& mod) {
+
+    int ret = ldap_add_ext_s( m_ldap, dn.c_str(), const_cast<LDAPMod **>(mod.get()), NULL, NULL);
+    if (ret) {
+        print_diagnostics("ldap_add_ext_s failed", ret);
+        throw LDAPException("ldap_add_ext_s", ret);
+    }
+    return ret;
+}
+
+void LDAP_mod::add(const std::string& type, const std::string& val,
+        bool ucs) {
+    LDAPMod *lm = new LDAPMod;
+    lm->mod_type = strdup(type.c_str());
+    if (ucs == false) {
+        char **mv = new char *[2];
+        mv[0] = strdup(val.c_str());
+        mv[1] = NULL;
+        lm->mod_values = mv;
+        lm->mod_op = LDAP_MOD_ADD;
+    } else {
+        lm->mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
+        lm->mod_bvalues = new BerValue *[2];
+        lm->mod_bvalues[0] = new BerValue;
+        lm->mod_bvalues[0]->bv_val = new char[(val.length()) * 2];
+
+        memset(lm->mod_bvalues[0]->bv_val, 0, val.length() * 2);
+        for (unsigned int i = 0; i < val.length(); i++) {
+            lm->mod_bvalues[0]->bv_val[i * 2] = val[i];
+        }
+        lm->mod_bvalues[0]->bv_len = (val.length()) * 2;
+        lm->mod_bvalues[1] = NULL;
+    }
+    attrs.push_back(lm);
+}
+
+void LDAP_mod::add(const std::string& type,
+        const std::vector<std::string>& val) {
+    LDAPMod *lm = new LDAPMod;
+    lm->mod_op = LDAP_MOD_ADD;
+    lm->mod_type = strdup(type.c_str());
+    char **mv = new char *[val.size() + 1];
+    for (unsigned int i = 0; i < val.size(); i++) {
+        mv[i] = strdup(val[i].c_str());
+    }
+    mv[val.size()] = NULL;
+    lm->mod_values = mv;
+
+    attrs.push_back(lm);
+}
+
+LDAP_mod::~LDAP_mod() {
+    for (std::vector<LDAPMod*>::iterator ptr = attrs.begin();
+            ptr != attrs.end(); ptr++) {
+        if (*ptr) {
+            LDAPMod *lm = *ptr;
+            free(lm->mod_type);
+
+            if (lm->mod_op | LDAP_MOD_BVALUES) {
+                BerValue **p = lm->mod_bvalues;
+                while (*p != NULL) {
+                    delete[] (*p)->bv_val;
+                    p++;
+                }
+                delete[] lm->mod_bvalues;
+            } else {
+                char **p = lm->mod_values;
+                while (*p != NULL) {
+                    free(*p++);
+                }
+                delete[] lm->mod_values;
+            }
+        }
+    }
+    attrs.clear();
+}
+
+LDAPMod**
+LDAP_mod::get() const {
+    // Argh: why are the ldap function not prototyped const correctly?
+    std::vector<LDAPMod *> sec(attrs.begin(), attrs.end());
+
+    sec.push_back(NULL);
+    return &sec[0];
+}
