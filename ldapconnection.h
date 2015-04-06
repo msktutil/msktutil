@@ -33,6 +33,8 @@ public:
     void set_option(int option, const void *invalue);
     void get_option(int option, void *outvalue);
 
+    bool is_connected() const { return m_ldap != NULL; };
+
 
     LDAPMessage *search(
                 const std::string &base_dn, int scope, const std::string &filter, const std::string& attr);

@@ -220,7 +220,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     flags->ldap = new LDAPConnection(flags->server, flags->no_reverse_lookups);
     
-    if (!flags->ldap) {
+    if (!flags->ldap->is_connected()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         // Print a hint as to the likely cause:
         if (flags->auth_type == AUTH_FROM_USER_CREDS) {
