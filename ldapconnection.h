@@ -22,7 +22,7 @@ public:
 
 
 class LDAPConnection {
-public:
+private:
     LDAP *m_ldap;
 
     int modify_ext(const std::string &dn, const std::string& type, char *vals[], int op, bool check );
