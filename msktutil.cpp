@@ -7,6 +7,9 @@
  * (C) 2006 Brian Elliott Finley (finley@anl.gov)
  * (C) 2009-2010 Doug Engert (deengert@anl.gov)
  * (C) 2010 James Y Knight (foom@fuhm.net)
+ * (C) 2010-2013 Ken Dreyer <ktdreyer at ktdreyer.com>
+ * (C) 2012-2015 Mark Proehl <mark at mproehl.net>
+ * (C) 2012-2015 Olaf Flebbe <of at oflebbe.de>
  *
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -904,6 +907,7 @@ msktutil_flags::msktutil_flags() :
     set_description(false),
     set_userPrincipalName(false),
     no_reverse_lookups(false),
+    no_canonical_name(false),
     server_behind_nat(false),
     set_samba_secret(false),
     dont_expire_password(VALUE_IGNORE),
