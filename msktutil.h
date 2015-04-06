@@ -35,6 +35,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
@@ -43,10 +44,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
+#include <limits.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <ldap.h>
+#include <list>
 
 #ifdef HAVE_COM_ERR_H
 # ifdef COM_ERR_NEEDS_EXTERN_C
@@ -149,6 +152,7 @@ enum msktutil_mode {
     MODE_UPDATE,
     MODE_AUTO_UPDATE,
     MODE_FLUSH,
+    MODE_CLEANUP,
     MODE_PRECREATE
 };
 
@@ -201,6 +205,8 @@ struct msktutil_flags {
     bool password_expired;
     int auto_update_interval;
     krb5_kvno kvno;
+    int cleanup_days;
+    int cleanup_enctypes;
     msktutil_flags();
     ~msktutil_flags();
 };
@@ -229,6 +235,7 @@ extern std::string complete_hostname(const std::string &,
                                      bool no_canonical_name = false);
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
+extern void cleanup_keytab(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
 extern void add_principal_keytab(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);

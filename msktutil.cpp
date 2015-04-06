@@ -66,7 +66,6 @@ std::string sform(const char* format, ...)
     return outstr;
 }
 
-
 void remove_files_at_exit() {
     remove_fake_krb5_conf();
     remove_ccache();
@@ -77,7 +76,6 @@ void catch_int(int)
     remove_files_at_exit();
     exit(1);
 }
-
 
 void set_supportedEncryptionTypes(msktutil_exec *exec, char * value)
 {
@@ -144,7 +142,7 @@ int finalize_exec(msktutil_exec *exec)
     if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
         /* Don't set a default hostname if none provided in precreate mode. */
         if (flags->samAccountName.empty()) {
-            fprintf(stderr, "You must supply either --computer-name or --hostname when using --precreate.\n");
+            fprintf(stderr, "Error: You must supply either --computer-name or --hostname when using precreate mode.\n");
             exit(1);
         }
     } else if (flags->hostname.empty()) {
@@ -157,7 +155,7 @@ int finalize_exec(msktutil_exec *exec)
     /* Determine the samAccountName, if not set */
     if (flags->samAccountName.empty()) {
         if (flags->use_service_account) {
-            fprintf(stderr, "You must supply --account-name when using --use-service-account.\n");
+            fprintf(stderr, "Error: You must supply --account-name when using --use-service-account.\n");
             exit(1);
         } else {
             flags->samAccountName = get_short_hostname(flags)  + "$";
@@ -184,7 +182,7 @@ int finalize_exec(msktutil_exec *exec)
     if (flags->samAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
         fprintf(stderr, "Error: The SAM name (%s) for this host is longer than the maximum of MAX_SAM_ACCOUNT_LEN characters\n",
                 flags->samAccountName.c_str());
-        fprintf(stderr, "You can specify a shorter name using --computer-name\n");
+        fprintf(stderr, "Error: You can specify a shorter name using --computer-name\n");
         exit(1);
     }
     VERBOSE("SAM Account Name is: %s", flags->samAccountName.c_str());
@@ -213,8 +211,8 @@ int finalize_exec(msktutil_exec *exec)
             fprintf(stderr, "Error: failed to change password\n");
             exit(1);
         }
-	//        VERBOSE("Waiting 3 seconds before trying to get kerberos credentials...");
-	//        sleep(3);
+        //        VERBOSE("Waiting 3 seconds before trying to get kerberos credentials...");
+        //        sleep(3);
         if (!get_creds(flags)) {
             fprintf(stderr, "Error: failed to get kerberos credentials\n");
             exit(1);
@@ -278,34 +276,40 @@ int add_and_remove_principals(msktutil_exec *exec) {
     }
     return ret;
 }
-        
+
 void do_help() {
-    fprintf(stdout, "Usage: %s [OPTIONS]\n", PACKAGE_NAME);
+    fprintf(stdout, "Usage: %s [MODE] [OPTIONS]\n", PACKAGE_NAME);
     fprintf(stdout, "\n");
-    fprintf(stdout, "Mode options: \n");
-    fprintf(stdout, "  --help                   Displays this message\n");
-    fprintf(stdout, "  -v, --version            Display the current version\n");
+    fprintf(stdout, "Modes: \n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -c, --create   Creates a keytab for the current host or a given service account.\n");
-    fprintf(stdout, "                 (same as -u -s host).\n");
+    fprintf(stdout, "  create                 Creates a keytab for the current host or a given service account.\n");
+    fprintf(stdout, "                         (same as update -s host).\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -f, --flush    Flushes all principals for the current host or service account\n");
-    fprintf(stdout, "                 from the keytab, and deletes servicePrincipalName from AD.\n");
+    fprintf(stdout, "  update                 Updates the keytab for the current host or service account. This\n");
+    fprintf(stdout, "                         changes the account's password and updates the keytab with entries\n");
+    fprintf(stdout, "                         for all principals in servicePrincipalName and userPrincipalName.\n");
+    fprintf(stdout, "                         It also updates LDAP attributes for msDS-supportedEncryptionTypes,\n");
+    fprintf(stdout, "                         dNSHostName, and applies other options you specify.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  -u, --update   Updates the keytab for the current host or service account. This\n");
-    fprintf(stdout, "                 changes the account's password and updates the keytab with entries\n");
-    fprintf(stdout, "                 for all principals in servicePrincipalName and userPrincipalName.\n");
-    fprintf(stdout, "                 It also updates LDAP attributes for msDS-supportedEncryptionTypes,\n");
-    fprintf(stdout, "                 dNSHostName, and applies other options you specify.\n");
+    fprintf(stdout, "  auto-update            Same as update, but only if keytab fails to authenticate, or\n");
+    fprintf(stdout, "                         the last password change was more than 30 days ago\n");
+    fprintf(stdout, "                         (see --auto-update-interval). Useful to run from a daily cron job.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  --auto-update  Same as --update, but only if keytab fails to authenticate, or\n");
-    fprintf(stdout, "                 the last password change was more than 30 days ago\n");
-    fprintf(stdout, "                 (see --auto-update-interval). Useful to run from a daily cron job.\n");
+    fprintf(stdout, "  precreate              Pre-create an account for the given host with default password\n");
+    fprintf(stdout, "                         but do not update local keytab.\n");
+    fprintf(stdout, "                         Requires -h or --computer-name argument.\n");
+    fprintf(stdout, "                         Implies --user-creds-only.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  --precreate    Pre-create an account for the given host with default password\n");
-    fprintf(stdout, "                 but do not update local keytab.\n");
-    fprintf(stdout, "                 Requires -h or --computer-name argument.\n");
-    fprintf(stdout, "                 Implies --user-creds-only.\n");
+    fprintf(stdout, "  flush                  Flushes all principals for the current host or service account\n");
+    fprintf(stdout, "                         from the keytab, and deletes servicePrincipalName from AD.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  cleanup                Deletes entries from the keytab that are no longer needed.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Common options: \n");
+    fprintf(stdout, "  --help                 Displays this message\n");
+    fprintf(stdout, "  -v, --version          Display the current version\n");
+    fprintf(stdout, "  --verbose              Enable verbose messages.\n");
+    fprintf(stdout, "                         More then once to get LDAP debugging.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Connection/setup options: \n");
     fprintf(stdout, "  -b, --base <base ou>   Sets the LDAP base OU to use when creating an account.\n");
@@ -342,10 +346,8 @@ void do_help() {
     fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
     fprintf(stdout, "                         only use user's credentials (from e.g. kinit).\n");
     fprintf(stdout, "  --auto-update-interval <days>\n");
-    fprintf(stdout, "                         Number of <days> when --auto-update will change the\n");
+    fprintf(stdout, "                         Number of <days> when auto-update will change the\n");
     fprintf(stdout, "                         account password. Defaults to 30 days.\n");
-    fprintf(stdout, "  --verbose              Enable verbose messages.\n");
-    fprintf(stdout, "                         More then once to get LDAP debugging.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Object type/attribute-setting options:\n");
     fprintf(stdout, "  --use-service-account  Create and maintain service account instead of\n");
@@ -374,6 +376,10 @@ void do_help() {
     fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
     fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
     fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Cleanup options:\n");
+    fprintf(stdout, "  --remove-old <number>  Removes entries older than <number> days\n");
+    fprintf(stdout, "  --remove-enctype <int> Removes entries with given enctype.\n");
 }
 
 void do_version() {
@@ -400,7 +406,6 @@ static int wait_for_new_kvno(msktutil_exec *exec)
         sleep(5);
     }
 }
-
 
 int execute(msktutil_exec *exec)
 {
@@ -431,8 +436,8 @@ int execute(msktutil_exec *exec)
         if (exec->mode == MODE_AUTO_UPDATE) {
             // Don't bother doing anything if the auth was from the keytab (and not e.g. default password), and the
             if (exec->flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
-		exec->flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
-		exec->flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
+                exec->flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
+                exec->flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
                 std::string pwdLastSet = ldap_get_pwdLastSet(exec->flags);
                 // Windows timestamp is in 100-nanoseconds-since-1601. (or, tenths of microseconds)
                 long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);
@@ -452,11 +457,11 @@ int execute(msktutil_exec *exec)
                 }
             }
         }
-	
+
         // Check if computer account exists, update if so, create if not.
         ldap_check_account(flags);
 
-	// We retrieve the kvno _before_ the password change and increment it.
+        // We retrieve the kvno _before_ the password change and increment it.
         flags->kvno = ldap_get_kvno(flags);
         if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
             flags->kvno++;
@@ -504,6 +509,11 @@ int execute(msktutil_exec *exec)
         add_and_remove_principals(exec);
         wait_for_new_kvno(exec);
         return ret;
+    } else if (exec->mode == MODE_CLEANUP) {
+        fprintf(stdout, "Cleaning keytab %s\n",
+                flags->keytab_writename.c_str());
+        cleanup_keytab(flags);
+        return 0;
     }
 
     return 0;
@@ -518,15 +528,42 @@ void set_mode(msktutil_exec *exec, msktutil_mode mode) {
     exec->mode = mode;
 }
 
+
 int main(int argc, char *argv [])
 {
     // unbuffer stdout.
     setbuf(stdout, NULL);
 
     int i;
+    int start_i;
+    start_i = 2;
     std::auto_ptr<msktutil_exec> exec(new msktutil_exec());
 
-    for (i = 1; i < argc; i++) {
+    if (argc > 1) {
+        /* determine MODE */
+        if (!strcmp(argv[1], "create")) {
+            set_mode(exec.get(), MODE_CREATE);
+        } else if (!strcmp(argv[1], "update")) {
+            set_mode(exec.get(), MODE_UPDATE);
+        } else if (!strcmp(argv[1], "auto-update")) {
+            set_mode(exec.get(), MODE_AUTO_UPDATE);
+        } else if (!strcmp(argv[1], "pre-create")) {
+            set_mode(exec.get(), MODE_PRECREATE);
+        } else if (!strcmp(argv[1], "flush")) {
+            set_mode(exec.get(), MODE_FLUSH);
+        } else if (!strcmp(argv[1], "cleanup")) {
+            set_mode(exec.get(), MODE_CLEANUP);
+        }
+    }
+
+    if (exec->mode == MODE_NONE) {
+      /* compatibility for old command line syntax (e.g. "--create" or
+         "-c" instead of "create") */
+      start_i = 1;
+    }
+
+    for (i = start_i; i < argc; i++) {
+
         /* Display Version Message and exit */
         if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
             do_version();
@@ -816,6 +853,25 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        if (!strcmp(argv[i], "--remove-old")) {
+            if (++i < argc) {
+                exec->flags->cleanup_days = atoi(argv[i]);
+            } else {
+                fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
+
+        if (!strcmp(argv[i], "--remove-enctype")) {
+            if (++i < argc) {
+                exec->flags->cleanup_enctypes = atoi(argv[i]);
+            } else {
+                fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
+                goto error;
+            }
+            continue;
+        }
 
         /* Display Verbose Messages */
         if (!strcmp(argv[i], "--verbose")) {
@@ -830,7 +886,7 @@ int main(int argc, char *argv [])
 
     // make --old-account-password and --user-creds-only  mutually exclusive:
     if (strlen(exec->flags->old_account_password.c_str()) && exec->flags->user_creds_only) {
-        fprintf(stderr, "--old-account-password and --user-creds-only are mutually exclusive\n");
+        fprintf(stderr, "Error: --old-account-password and --user-creds-only are mutually exclusive\n");
         goto error;
     }
 
@@ -842,21 +898,29 @@ int main(int argc, char *argv [])
                         MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
 
         if ((exec->flags->supportedEncryptionTypes|known) != known) {
-            fprintf(stderr, " Unsupported --enctypes must be integer that fits mask=0x%x\n", known);
+            fprintf(stderr, "Error: Unsupported --enctypes must be integer that fits mask=0x%x\n", known);
             goto error;
         }
         if (exec->flags->supportedEncryptionTypes == 0) {
-            fprintf(stderr, " --enctypes must not be zero\n");
+            fprintf(stderr, "Error: --enctypes must not be zero\n");
             goto error;
         }
     }
 
-
-    if (exec->mode == MODE_CREATE && !exec->flags->use_service_account)
+    if (exec->mode == MODE_CREATE && !exec->flags->use_service_account) {
         exec->add_principals.push_back("host");
+    }
 
-    if (exec->mode == MODE_NONE && !exec->add_principals.empty())
+    if (exec->mode == MODE_NONE && !exec->add_principals.empty()) {
         set_mode(exec.get(), MODE_UPDATE);
+    }
+
+    if (exec->mode == MODE_CLEANUP &&
+        exec->flags->cleanup_days == -1 &&
+        exec->flags->cleanup_enctypes == VALUE_IGNORE) {
+            fprintf(stderr, "Error: cleanup mode needs --remove-old or --remove-enctype\n");
+            goto error;
+    }
 
     if (exec->mode == MODE_NONE) {
         /* Default, no options present */
@@ -904,14 +968,15 @@ msktutil_flags::msktutil_flags() :
     allow_weak_crypto(false),
     password_expired(false),
     auto_update_interval(30),
-    kvno(0)
+    kvno(0),
+    cleanup_days(-1),
+    cleanup_enctypes(VALUE_IGNORE)
 {}
 
 msktutil_flags::~msktutil_flags() {
     ldap_cleanup(this);
     init_password(this);
 }
-
 
 msktutil_exec::msktutil_exec() :
     mode(MODE_NONE), flags(new msktutil_flags())
