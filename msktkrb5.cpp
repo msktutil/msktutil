@@ -113,6 +113,62 @@ int flush_keytab(msktutil_flags *flags)
     return ldap_flush_principals(flags);
 }
 
+void cleanup_keytab(msktutil_flags *flags)
+{
+    VERBOSE("Cleaning the keytab");
+    KRB5Keytab keytab(flags->keytab_writename);
+
+    // Determine max kvno
+    krb5_kvno max_kvno;
+    // Delete all entries for this host
+    typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
+    to_delete_t to_delete;
+    time_t ttNow = time(NULL);
+    try {
+        max_kvno = 0;
+        {
+            KRB5Keytab::cursor cursor(keytab);
+            while (cursor.next()) {
+                if (max_kvno < cursor.kvno()) {
+                    max_kvno = cursor.kvno();
+                }
+            }
+        }
+
+        KRB5Keytab::cursor cursor(keytab);
+        while (cursor.next()) {
+            if (flags->cleanup_days > 0) {
+                // newer than cleanup_days
+                if (ttNow - cursor.timestamp() < flags->cleanup_days * 60 * 60 * 24)
+                    continue;
+                // Never delete latest keys
+                if (max_kvno == cursor.kvno())
+                    continue;
+            }
+            if (flags->cleanup_enctypes != VALUE_IGNORE) {
+                if (cursor.enctype() != flags->cleanup_enctypes) {
+                    continue;
+                }
+            }
+            std::string principal = cursor.principal().name();
+            to_delete.push_back(std::make_pair(std::make_pair(principal, cursor.kvno()),
+                                                               cursor.enctype()));
+        }
+
+
+    } catch (KRB5Exception ex) {
+        // Ignore errors reading keytab
+    }
+
+    for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {
+            KRB5Principal princ(it->first.first);
+            krb5_kvno kvno = it->first.second;
+            krb5_enctype enctype = it->second;
+            VERBOSE("Deleting %s kvno=%d, enctype=%d", it->first.first.c_str(), kvno, enctype);
+            keytab.removeEntry(princ, kvno, enctype);
+    }
+}
+
 
 void update_keytab(msktutil_flags *flags)
 {

@@ -274,155 +274,6 @@ int add_and_remove_principals(msktutil_exec *exec) {
     return ret;
 }
 
-char progname[] = "msktutil";
-#define _(__x__) __x__
-bool show_time = true, show_etype = true, show_keys = true;
-unsigned int timestamp_width = 28; // 15;
-
-void fillit( FILE *f, unsigned int num, int c ) {
-  for( unsigned int i = 0; i < num; ++ i )
-    fputc( c, f );
-}
-
-void printtime( time_t tv ) {
-  char timestring[BUFSIZ];
-  char fill;
-  fill = ' ';
-  if (!krb5_timestamp_to_sfstring((krb5_timestamp) tv,
-                                  timestring,
-                                  timestamp_width+1,
-                                  &fill)) {
-    printf("%s", timestring);
-  }
-}
-
-char * etype_string( krb5_enctype enctype ) {
-  static char buf[100];
-  krb5_error_code retval;
-  if ((retval = krb5_enctype_to_string(enctype, buf, sizeof(buf))) != 0) {
-    /* XXX if there's an error != EINVAL, I should probably report it */
-    snprintf(buf, sizeof(buf), "etype %d", enctype);
-  }
-  return buf;
-}
-void stat_cleanup_do_keytab( const std::string& keytab_file, int cleanup_days) {
-    krb5_context kcontext;
-    krb5_keytab kt;
-    krb5_keytab_entry entry;
-    krb5_kt_cursor cursor;
-    char buf[BUFSIZ]; /* hopefully large enough for any type */
-    char *pname;
-    int code;
-
-    krb5_error_code retval = krb5_init_context( &kcontext );
-    if (retval) {
-        com_err(progname, retval, _("while initializing krb5"));
-        exit(1);
-    }
-
-    if (keytab_file == "") {
-        if ((code = krb5_kt_default(kcontext, &kt))) {
-            com_err(progname, code, _("while getting default keytab"));
-            exit(1);
-        }
-    } else {
-        if ((code = krb5_kt_resolve(kcontext, keytab_file.c_str(), &kt))) {
-            com_err(progname, code, _("while resolving keytab %s"), keytab_file.c_str());
-            exit(1);
-        }
-    }
-
-    if ((code = krb5_kt_get_name(kcontext, kt, buf, BUFSIZ))) {
-        com_err(progname, code, _("while getting keytab name"));
-        exit(1);
-    }
-
-    printf("Keytab name: %s\n", buf);
-
-    if ((code = krb5_kt_start_seq_get(kcontext, kt, &cursor))) {
-        com_err(progname, code, _("while starting keytab scan"));
-        exit(1);
-    }
-
-    /* XXX Translating would disturb table alignment; skip for now. */
-    if (show_time) {
-        printf("KVNO Timestamp");
-        fillit(stdout, timestamp_width - sizeof("Timestamp") + 2, (int) ' ');
-        printf("Principal\n");
-        printf("---- ");
-        fillit(stdout, timestamp_width, (int) '-');
-        printf(" ");
-        fillit(stdout, 78 - timestamp_width - sizeof("KVNO"), (int) '-');
-        printf("\n");
-    } else {
-        printf("KVNO Principal\n");
-        printf("---- --------------------------------------------------------------------------\n");
-    }
-
-    time_t ttNow = time( NULL );
-    std::list<krb5_keytab_entry> lDeletes;
-    krb5_kvno kvno = 0;
-
-    while ((code = krb5_kt_next_entry(kcontext, kt, &entry, &cursor)) == 0) {
-        if ((code = krb5_unparse_name(kcontext, entry.principal, &pname))) {
-            com_err(progname, code, _("while unparsing principal name"));
-            exit(1);
-        }
-        if (kvno < entry.vno) {
-            kvno = entry.vno;
-        }
-        time_t ttTkt = entry.timestamp;
-        time_t ttDiff = ttNow - ttTkt;
-        if( ttDiff < cleanup_days * 60 * 60 * 24 )
-            continue; // not older
-
-        printf("%4d ", entry.vno);
-        if (show_time) {
-            printtime(entry.timestamp);
-            printf(" ");
-        }
-        printf("%s", pname);
-        if (show_etype)
-            printf(" (%s) " , etype_string(entry.key.enctype));
-        if (show_keys) {
-            printf(" (0x");
-            for (unsigned int i = 0; i < entry.key.length; i++)
-                printf("%02x", entry.key.contents[i]);
-            printf(")");
-        }
-        printf("\n");
-        krb5_free_unparsed_name(kcontext, pname);
-
-        lDeletes.push_back( entry);
-    }
-    if (code && code != KRB5_KT_END) {
-        com_err(progname, code, _("while scanning keytab"));
-        exit(1);
-    }
-    if ((code = krb5_kt_end_seq_get(kcontext, kt, &cursor))) {
-        com_err(progname, code, _("while ending keytab scan"));
-        exit(1);
-    }
-
-    int did_deletions = 0;
-    for (std::list<krb5_keytab_entry>::iterator ptr = lDeletes.begin(); ptr != lDeletes.end(); ptr++) {
-        krb5_keytab_entry *curr_entry = &(*ptr);
-        // do never delete the last entry
-        if (curr_entry->vno == kvno) {
-            continue;
-        }
-
-        code = krb5_kt_remove_entry(kcontext, kt, curr_entry);
-        if (code != 0) {
-            com_err(progname, code, _("while deleting entry from keytab"));
-            return;
-        }
-        did_deletions++;
-    }
-    printf( "%d %s deleted\n", did_deletions, ( did_deletions == 1 ) ? "entry was" : "entries were" );
-    return;
-}
-
 void do_help() {
     fprintf(stdout, "Usage: %s [MODE] [OPTIONS]\n", PACKAGE_NAME);
     fprintf(stdout, "\n");
@@ -656,7 +507,10 @@ int execute(msktutil_exec *exec)
         wait_for_new_kvno(exec);
         return ret;
     } else if (exec->mode == MODE_CLEANUP) {
-        stat_cleanup_do_keytab( flags->keytab_file, flags->cleanup_days);
+        fprintf(stdout, "Cleaning keytab %s\n",
+                flags->keytab_writename.c_str());
+        cleanup_keytab(flags);
+        return 0;
     }
 
     return 0;

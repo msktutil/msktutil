@@ -232,6 +232,7 @@ extern std::string complete_hostname(const std::string &,
                                      bool no_canonical_name = false);
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
+extern int cleanup_keytab(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
 extern void add_principal_keytab(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
