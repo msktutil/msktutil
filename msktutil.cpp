@@ -884,6 +884,7 @@ msktutil_flags::msktutil_flags() :
     set_description(false),
     set_userPrincipalName(false),
     no_reverse_lookups(false),
+    no_canonical_name(false),
     server_behind_nat(false),
     set_samba_secret(false),
     dont_expire_password(VALUE_IGNORE),
