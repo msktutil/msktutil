@@ -401,6 +401,10 @@ void ldap_check_account_strings(msktutil_flags *flags)
     ldap_set_userAccountControl_flag(dn, UF_DONT_EXPIRE_PASSWORD, flags->dont_expire_password, flags);
 }
 
+template<typename T, size_t N>
+T * myend(T (&ra)[N]) {
+    return ra + N;
+}
 
 void ldap_check_account(msktutil_flags *flags)
 {
@@ -409,15 +413,15 @@ void ldap_check_account(msktutil_flags *flags)
                       "userAccountControl", "servicePrincipalName", "userPrincipalName"};
     const char *user_attrs[] = {"distinguishedName", "msDs-supportedEncryptionTypes",
                       "userAccountControl", "servicePrincipalName", "userPrincipalName", "unicodePwd"};
-    std::vector<std::string> v_machine_attrs( machine_attrs, std::end(machine_attrs));
-    std::vector<std::string> v_user_attrs( user_attrs, std::end(user_attrs));
+    std::vector<std::string> v_machine_attrs( machine_attrs, myend(machine_attrs));
+    std::vector<std::string> v_user_attrs( user_attrs, myend(user_attrs));
 
     std::string dn;
 
     const char *vals_objectClass[] = {"top", "person", "organizationalPerson", "user"};
 
-    std::vector<std::string> v_user_objectClass(vals_objectClass, std::end(vals_objectClass));
-    std::vector<std::string> v_machine_objectClass(vals_objectClass, std::end(vals_objectClass));
+    std::vector<std::string> v_user_objectClass(vals_objectClass, myend(vals_objectClass));
+    std::vector<std::string> v_machine_objectClass(vals_objectClass, myend(vals_objectClass));
     v_machine_objectClass.push_back("computer");
 
     LDAPConnection *ldap = flags->ldap;
