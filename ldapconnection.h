@@ -16,7 +16,7 @@ public:
     void add(const std::string& type);
     void add(const std::string& type, const std::string& val, bool ucs = false);
     void add(const std::string& type, const std::vector<std::string>& val);
-    LDAPMod **get() const;
+    std::vector<LDAPMod *> get() const;
     ~LDAP_mod();
 };
 

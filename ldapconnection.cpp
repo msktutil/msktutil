@@ -268,8 +268,10 @@ int LDAPConnection::flush_attr_no_check(const std::string &dn,
 }
 
 int LDAPConnection::add(const std::string &dn, const LDAP_mod& mod) {
+    std::vector<LDAPMod*> tmp = mod.get();
+    tmp.push_back(NULL);
 
-    int ret = ldap_add_ext_s( m_ldap, dn.c_str(), const_cast<LDAPMod **>(mod.get()), NULL, NULL);
+    int ret = ldap_add_ext_s( m_ldap, dn.c_str(), const_cast<LDAPMod **>(&tmp[0]), NULL, NULL);
     if (ret) {
         print_diagnostics("ldap_add_ext_s failed", ret);
         throw LDAPException("ldap_add_ext_s", ret);
@@ -325,7 +327,7 @@ LDAP_mod::~LDAP_mod() {
             LDAPMod *lm = *ptr;
             free(lm->mod_type);
 
-            if (lm->mod_op | LDAP_MOD_BVALUES) {
+            if (lm->mod_op & LDAP_MOD_BVALUES) {
                 BerValue **p = lm->mod_bvalues;
                 while (*p != NULL) {
                     delete[] (*p)->bv_val;
@@ -344,11 +346,8 @@ LDAP_mod::~LDAP_mod() {
     attrs.clear();
 }
 
-LDAPMod**
+std::vector<LDAPMod *>
 LDAP_mod::get() const {
-    // Argh: why are the ldap function not prototyped const correctly?
-    std::vector<LDAPMod *> sec(attrs.begin(), attrs.end());
 
-    sec.push_back(NULL);
-    return &sec[0];
+    return attrs;
 }
