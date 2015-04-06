@@ -121,7 +121,7 @@ int ldap_flush_principals(msktutil_flags *flags)
     int ret;
 
     VERBOSE("Flushing principals from LDAP entry");
-    LDAPMessage *mesg = ldap_get_account_attrs(flags, "");
+    LDAPMessage *mesg = ldap_get_account_attrs(flags, "distinguishedName");
 
     if (flags->ldap->count_entries( mesg) == 1) {
         mesg = flags->ldap->first_entry(mesg);
@@ -133,7 +133,7 @@ int ldap_flush_principals(msktutil_flags *flags)
         return -1;
     }
 
-    ret = flags->ldap->flush_attr_no_check( dn, "distinguishedName");
+    ret = flags->ldap->flush_attr_no_check( dn, "servicePrincipalName");
 
     /* Ignore if the attribute doesn't exist, that just means that it's already empty */
     if (ret != LDAP_SUCCESS && ret != LDAP_NO_SUCH_ATTRIBUTE) {

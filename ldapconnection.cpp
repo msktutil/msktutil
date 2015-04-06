@@ -263,7 +263,7 @@ int LDAPConnection::simple_set_attr(const std::string &dn,
 
 int LDAPConnection::flush_attr_no_check(const std::string &dn,
         const std::string &type) {
-    char *vals[] = { };
+    char *vals[] = { NULL };
     return modify_ext(dn, type, vals, LDAP_MOD_REPLACE, false);
 }
 
