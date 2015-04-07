@@ -173,8 +173,9 @@ int finalize_exec(msktutil_exec *exec)
 
     /* Determine samAccountName_nodollar */
     flags->samAccountName_nodollar = flags->samAccountName;
-    if (flags->samAccountName_nodollar[flags->samAccountName_nodollar.size()-1] == '$')
+    if (flags->samAccountName_nodollar[flags->samAccountName_nodollar.size()-1] == '$') {
         flags->samAccountName_nodollar.erase(flags->samAccountName_nodollar.size()-1);
+    }
 
     /* Add a "$" to machine accounts */
     if ((!flags->use_service_account) && (flags->samAccountName[flags->samAccountName.size()-1] != '$')) {
@@ -461,10 +462,11 @@ int execute(msktutil_exec *exec)
                 long long epoch_bias_1601_to_1970 = 116444736000000000LL;
                 // Unix timestamp is seconds since 1970.
                 long long unix_timestamp;
-                if (windows_timestamp < epoch_bias_1601_to_1970)
+                if (windows_timestamp < epoch_bias_1601_to_1970) {
                     unix_timestamp = 0;
-                else
+                } else {
                     unix_timestamp = (windows_timestamp - epoch_bias_1601_to_1970) / 10000000;
+                }
                 time_t current_unix_time = time(NULL);
                 long long days_since_password_change = (current_unix_time - unix_timestamp) / 86400;
                 VERBOSE("Password last set %lld days ago.", days_since_password_change);
@@ -1004,16 +1006,26 @@ msktutil_exec::msktutil_exec() :
 {
     /* Check for environment variables as well.  These variables will be overriden
      * By command line arguments. */
-    if (getenv("MSKTUTIL_KEYTAB"))
+
+    if (getenv("MSKTUTIL_KEYTAB")) {
         flags->keytab_file = getenv("MSKTUTIL_KEYTAB");
-    if (getenv("MSKTUTIL_NO_PAC"))
+    }
+
+    if (getenv("MSKTUTIL_NO_PAC")) {
         flags->no_pac = VALUE_ON;
-    if (getenv("MSKTUTIL_DELEGATION"))
+    }
+
+    if (getenv("MSKTUTIL_DELEGATION")) {
         flags->delegate = VALUE_ON;
-    if (getenv("MSKTUTIL_LDAP_BASE"))
+    }
+
+    if (getenv("MSKTUTIL_LDAP_BASE")) {
         flags->ldap_ou = getenv("MSKTUTIL_LDAP_BASE");
-    if (getenv("MSKTUTIL_SERVER"))
+    }
+
+    if (getenv("MSKTUTIL_SERVER")) {
         flags->server = getenv("MSKTUTIL_SERVER");
+    }
 }
 
 

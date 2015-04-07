@@ -184,14 +184,15 @@ int set_password(msktutil_flags *flags)
             flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB ||
             flags->auth_type == AUTH_FROM_HOSTNAME_KEYTAB) {
             std::string princ_name;
-            if (flags->auth_type == AUTH_FROM_SAM_KEYTAB)
+            if (flags->auth_type == AUTH_FROM_SAM_KEYTAB) {
                 princ_name = flags->samAccountName;
-            else if (flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB)
+            } else if (flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB) {
                 princ_name = flags->samAccountName_uppercase;
-            else if (flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB)
+            } else if (flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
                 princ_name = flags->keytab_auth_princ;
-            else
+            } else {
                 princ_name = "host/" + flags->hostname;
+            }
             VERBOSE("Try using keytab for %s to change password\n", princ_name.c_str());
 
             KRB5Keytab keytab(flags->keytab_readname);
@@ -243,8 +244,9 @@ int set_password(msktutil_flags *flags)
 
     VERBOSE("Successfully set password.");
 
-    if (!flags->set_samba_secret)
+    if (!flags->set_samba_secret) {
         return 0;
+    }
 
     return set_samba_secret(flags->password);
 }

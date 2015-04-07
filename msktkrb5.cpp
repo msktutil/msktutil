@@ -51,14 +51,16 @@ void get_default_keytab(msktutil_flags *flags)
         /* Only set the field to a default if it's empty */
 
         krb5_error_code ret = krb5_kt_default_name(g_context.get(), keytab_name, MAX_KEYTAB_NAME_LEN);
-        if (ret)
+        if (ret) {
             throw KRB5Exception("krb5_kt_default_name (get_default_keytab)", ret);
+        }
         flags->keytab_readname = std::string(keytab_name);
 
 #ifdef HEIMDAL
         ret = krb5_kt_default_modify_name(g_context.get(), keytab_name, MAX_KEYTAB_NAME_LEN);
-        if (ret)
+        if (ret) {
             throw KRB5Exception("krb5_kt_default_modify_name (get_default_keytab)", ret);
+        }
         flags->keytab_writename = std::string(keytab_name);
 #else
         if (!strncmp(keytab_name, "FILE:", 5)) {
@@ -144,11 +146,13 @@ void cleanup_keytab(msktutil_flags *flags)
         while (cursor.next()) {
             if (flags->cleanup_days > 0) {
                 // newer than cleanup_days
-                if (ttNow - cursor.timestamp() < flags->cleanup_days * 60 * 60 * 24)
+                if (ttNow - cursor.timestamp() < flags->cleanup_days * 60 * 60 * 24) {
                     continue;
+                }
                 // Never delete latest keys
-                if (max_kvno == cursor.kvno())
+                if (max_kvno == cursor.kvno()) {
                     continue;
+                }
             }
             if (flags->cleanup_enctypes != VALUE_IGNORE) {
                 if (cursor.enctype() != flags->cleanup_enctypes) {
@@ -232,8 +236,9 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
                 std::string curr_principal = cursor.principal().name();
                 if (curr_principal == principal_string) {
                     if (cursor.kvno() < flags->kvno) {
-                        if (cursor.timestamp() < min_keep_timestamp)
+                        if (cursor.timestamp() < min_keep_timestamp) {
                             earliest_kvno_to_keep = std::max(earliest_kvno_to_keep, cursor.kvno());
+                        }
                     }
                 }
             }
@@ -263,19 +268,24 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     }
 
     std::vector<uint32_t> enc_types;
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_CRC)
+    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_CRC) {
         enc_types.push_back(ENCTYPE_DES_CBC_CRC);
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_MD5)
+    }
+    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_MD5) {
         enc_types.push_back(ENCTYPE_DES_CBC_MD5);
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_RC4_HMAC_MD5)
+    }
+    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_RC4_HMAC_MD5) {
         enc_types.push_back(ENCTYPE_ARCFOUR_HMAC);
+    }
 #if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96)
+    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96) {
         enc_types.push_back(ENCTYPE_AES128_CTS_HMAC_SHA1_96);
+    }
 #endif
 #if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
         enc_types.push_back(ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+    }
 #endif
 
     std::string salt;

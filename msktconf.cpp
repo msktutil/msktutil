@@ -48,20 +48,17 @@ std::string create_default_machine_password(const std::string &samaccountname)
      */
 
     // Remove trailing '$'
-    if (machine_password[machine_password.size() - 1] == '$')
-    {
+    if (machine_password[machine_password.size() - 1] == '$') {
         machine_password.resize(machine_password.size() - 1);
     }
 
     // Truncate to first 14 characters
-    if (machine_password.size() > MAX_DEF_MACH_PASS_LEN)
-    {
+    if (machine_password.size() > MAX_DEF_MACH_PASS_LEN) {
         machine_password.resize(MAX_DEF_MACH_PASS_LEN);
     }
 
     // Convert all characters to lowercase
-    for (size_t i = 0; i < machine_password.size(); i++)
-    {
+    for (size_t i = 0; i < machine_password.size(); i++) {
         machine_password[i] = std::tolower(machine_password[i]);
     }
 
@@ -82,8 +79,9 @@ std::string get_tempfile_name(const char *name)
     memcpy(template_arr, full_template.c_str(), full_template.size() + 1);
 
     int fd = mkstemp(template_arr);
-    if (fd < 0)
+    if (fd < 0) {
         throw Exception(sform("Error: mkstemp failed: %d", errno));
+    }
 
     // Didn't need an fd, just to have the filename created securely.
     close(fd);
@@ -108,20 +106,26 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 
     if (flags->enctypes == VALUE_ON) {
         file << " default_tkt_enctypes =";
-        if (flags->supportedEncryptionTypes & 0x1)
+        if (flags->supportedEncryptionTypes & 0x1) {
             file << " des-cbc-crc";
-        if (flags->supportedEncryptionTypes & 0x2)
+        }
+        if (flags->supportedEncryptionTypes & 0x2) {
             file << " des-cbc-md5";
-        if (flags->supportedEncryptionTypes & 0x4)
+        }
+        if (flags->supportedEncryptionTypes & 0x4) {
             file << " arcfour-hmac-md5";
-        if (flags->supportedEncryptionTypes & 0x8)
+        }
+        if (flags->supportedEncryptionTypes & 0x8) {
             file << " aes128-cts";
-        if (flags->supportedEncryptionTypes & 0x10)
+        }
+        if (flags->supportedEncryptionTypes & 0x10) {
             file << " aes256-cts";
+        }
         file << "\n";
     }
-    if ((flags->no_reverse_lookups) || (flags->no_canonical_name))
+    if ((flags->no_reverse_lookups) || (flags->no_canonical_name)) {
         file << " rdns = false\n";
+    }
 
     file << "[realms]\n"
          << " " << flags->realm_name << " = {\n"
@@ -132,12 +136,14 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 
 #ifdef HAVE_SETENV
     int ret = setenv("KRB5_CONFIG", g_config_filename.c_str(), 1);
-    if (ret)
+    if (ret) {
         throw Exception("setenv failed");
+    }
 #else
     int ret = putenv(strdup((std::string("KRB5_CONFIG=") +  g_config_filename).c_str()));
-    if (ret)
+    if (ret) {
         throw Exception("putenv failed");
+    }
 #endif
 
     VERBOSE("Created a fake krb5.conf file: %s", g_config_filename.c_str());
@@ -172,11 +178,13 @@ void switch_default_ccache(const char *ccache_name)
     // ...answer: YES, because ldap's sasl won't be using our context object,
     // and may in fact be using a different implementation of kerberos entirely!
 #ifdef HAVE_SETENV
-    if (setenv("KRB5CCNAME", ccache_name, 1))
+    if (setenv("KRB5CCNAME", ccache_name, 1)) {
         throw Exception("Error: setenv failed");
+    }
 #else
-    if (!putenv(strdup((std::string("KRB5CCNAME=")+ ccache_name).c_str())))
+    if (!putenv(strdup((std::string("KRB5CCNAME=")+ ccache_name).c_str()))) {
         throw Exception("Error: putenv failed");
+    }
 #endif
     krb5_cc_set_default_name(g_context.get(), ccache_name);
 }
@@ -310,16 +318,21 @@ int find_working_creds(msktutil_flags *flags)
         g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
         std::string ccache_name = "FILE:" + g_ccache_filename;
 
-        if (!flags->keytab_auth_princ.empty() && try_machine_keytab_princ(flags, flags->keytab_auth_princ, ccache_name.c_str()))
+        if (!flags->keytab_auth_princ.empty() && try_machine_keytab_princ(flags, flags->keytab_auth_princ, ccache_name.c_str())) {
             return AUTH_FROM_EXPLICIT_KEYTAB;
-        if (try_machine_keytab_princ(flags, flags->samAccountName, ccache_name.c_str()))
+        }
+        if (try_machine_keytab_princ(flags, flags->samAccountName, ccache_name.c_str())) {
             return AUTH_FROM_SAM_KEYTAB;
-        if (try_machine_keytab_princ(flags, flags->samAccountName_uppercase, ccache_name.c_str()))
+        }
+        if (try_machine_keytab_princ(flags, flags->samAccountName_uppercase, ccache_name.c_str())) {
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
-        if (try_machine_keytab_princ(flags, host_princ, ccache_name.c_str()))
+        }
+        if (try_machine_keytab_princ(flags, host_princ, ccache_name.c_str())) {
             return AUTH_FROM_HOSTNAME_KEYTAB;
-        if (try_machine_password(flags, ccache_name.c_str()))
+        }
+        if (try_machine_password(flags, ccache_name.c_str())) {
             return AUTH_FROM_PASSWORD;
+        }
         if (strlen(flags->old_account_password.c_str())) {
             if (try_machine_supplied_password(flags, ccache_name.c_str())) {
                 return AUTH_FROM_SUPPLIED_PASSWORD;
@@ -329,8 +342,9 @@ int find_working_creds(msktutil_flags *flags)
             }
         }
     }
-    if (try_user_creds())
+    if (try_user_creds()) {
         return AUTH_FROM_USER_CREDS;
+    }
 
     return AUTH_NONE;
 }

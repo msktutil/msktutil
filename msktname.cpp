@@ -93,9 +93,9 @@ std::string get_default_hostname(bool no_canonical_name)
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), NULL, "host", type, &temp_princ_raw);
 
-    if (ret != 0)
+    if (ret != 0) {
         throw KRB5Exception("krb5_sname_to_principal (get_default_hostname)", ret);
-
+    }
     KRB5Principal temp_princ(temp_princ_raw);
 
 #ifdef HEIMDAL
@@ -103,9 +103,9 @@ std::string get_default_hostname(bool no_canonical_name)
 #else
     krb5_data *comp = krb5_princ_component(g_context.get(), temp_princ.get(), 1);
 #endif
-    if (comp == NULL)
+    if (comp == NULL) {
         throw Exception("Error: get_default_hostname: couldn't determine hostname, strange value from krb5_sname_to_principal.");
-
+    }
 #ifdef HEIMDAL
     return std::string(comp);
 #else
@@ -137,11 +137,21 @@ static int compare_priority_weight(const void *a, const void *b)
     struct msktutil_dcdata *ia = (struct msktutil_dcdata *)a;
     struct msktutil_dcdata *ib = (struct msktutil_dcdata *)b;
 
-    if (ia->priority > ib->priority) return 1;
-    if (ia->priority < ib->priority) return -1;
+    if (ia->priority > ib->priority) {
+        return 1;
+    }
 
-    if (ia->weight > ib->weight) return -1;
-    if (ia->weight < ib->weight) return 1;
+    if (ia->priority < ib->priority) {
+        return -1;
+    }
+
+    if (ia->weight > ib->weight) {
+        return -1;
+    }
+
+    if (ia->weight < ib->weight) {
+        return 1;
+    }
 
     return 0;
 }
@@ -251,8 +261,9 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
                             "DNS SRV record in domain %s for site %s and procotol %s",
                             realm_name.c_str(), site_name.c_str(), protocols[i].c_str());
             dcsrv = get_dc_host_from_srv_rr(site_name + "._sites." + realm_name, protocols[i]);
-            if (!dcsrv.empty())
+            if (!dcsrv.empty()) {
                 break;
+            }
         }
     }
 
@@ -262,8 +273,9 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
                             "DNS SRV record in domain %s for procotol %s",
                             realm_name.c_str(), protocols[i].c_str());
             dcsrv = get_dc_host_from_srv_rr(realm_name, protocols[i]);
-            if (!dcsrv.empty())
+            if (!dcsrv.empty()) {
                 break;
+            }
         }
     }
 
@@ -279,8 +291,9 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     }
 
     VERBOSE("Found DC: %s", dcsrv.c_str());
-    if (no_reverse_lookups)
+    if (no_reverse_lookups) {
         return dcsrv;
+    }
 
     VERBOSE("Canonicalizing DC through forward/reverse lookup...");
     for (i = 0; host->h_addr_list[i]; i++) {

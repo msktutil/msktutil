@@ -41,8 +41,9 @@ static void ldap_print_diagnostics(LDAP *ldap, const char *msg, int err)
 #if HAVE_DECL_LDAP_OPT_DIAGNOSTIC_MESSAGE
     char *opt_message = NULL;
     ldap_get_option(ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, &opt_message);
-    if (opt_message)
+    if (opt_message) {
         fprintf(stderr, "\tadditional info: %s\n", opt_message);
+    }
     ldap_memfree(opt_message);
 #else
     /* Silence compiler warning about unused parameter */
@@ -61,11 +62,15 @@ LDAPConnection::LDAPConnection(const std::string &server) : m_ldap()
 #else
     VERBOSEldap("calling ldap_init");
     m_ldap = ldap_init(flags->server.c_str(), LDAP_PORT);
-    if (m_ldap) ret = LDAP_SUCCESS;
-    else ret = LDAP_OTHER;
+    if (m_ldap) {
+        ret = LDAP_SUCCESS;
+    } else {
+        ret = LDAP_OTHER;
+    }
 #endif
-    if (ret)
+    if (ret) {
         throw LDAPException("ldap_initialize", ret);
+    }
 }
 
 
@@ -102,8 +107,9 @@ class MessageVals {
 public:
     MessageVals(berval **vals) : m_vals(vals) {}
     ~MessageVals() {
-        if (m_vals)
+        if (m_vals) {
             ldap_value_free_len(m_vals);
+        }
     }
     BerValue *&operator *() { return *m_vals; }
     BerValue *&operator [](size_t off) { return m_vals[off]; }
@@ -459,7 +465,9 @@ int ldap_set_userAccountControl_flag(const std::string &dn, int mask, msktutil_v
     unsigned old_userAcctFlags;
 
     /* Skip this value if its not to change */
-    if (value == VALUE_IGNORE) { return 0; }
+    if (value == VALUE_IGNORE) {
+        return 0;
+    }
     new_userAcctFlags = old_userAcctFlags = flags->ad_userAccountControl;
 
     mod_attrs[0] = &attrUserAccountControl;
@@ -656,10 +664,11 @@ void ldap_check_account_strings(msktutil_flags *flags)
     ldap_set_supportedEncryptionTypes(dn, flags);
 
     msktutil_val des_only;
-    if (flags->supportedEncryptionTypes == (MS_KERB_ENCTYPE_DES_CBC_CRC|MS_KERB_ENCTYPE_DES_CBC_MD5))
+    if (flags->supportedEncryptionTypes == (MS_KERB_ENCTYPE_DES_CBC_CRC|MS_KERB_ENCTYPE_DES_CBC_MD5)) {
         des_only = VALUE_ON;
-    else
+    } else {
         des_only = VALUE_OFF;
+    }
 
     ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, des_only, flags);
     // If msDS-supportedEncryptionTypes isn't set, ad_enctypes will be VALUE_OFF. In that case,
@@ -769,8 +778,9 @@ void ldap_check_account(msktutil_flags *flags)
                 std::string upn = flags->ldap->get_one_val(mesg, "userPrincipalName");
                 if(!upn.empty()) {
                     size_t pos = upn.find('@');
-                    if (pos != std::string::npos)
+                    if (pos != std::string::npos) {
                         upn.erase(pos);
+                    }
                     VERBOSE("  Found User Principal: %s", upn.c_str());
                     //update userPrincipalName for salt generation
                     flags->userPrincipalName = upn.c_str();
