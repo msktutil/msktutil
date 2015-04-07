@@ -366,6 +366,7 @@ std::string ldap_get_pwdLastSet(msktutil_flags *flags)
     return pwdLastSet;
 }
 
+
 int ldap_simple_set_attr(LDAPConnection *ldap, const std::string &dn, 
                          const std::string &attrName, const std::string &val, msktutil_flags *flags)
 {
@@ -590,7 +591,9 @@ void ldap_check_account_strings(msktutil_flags *flags)
 
     VERBOSE("Inspecting (and updating) computer account attributes");
 
-    // NOTE: failures to set all the attributes in this function are ignored, for better or worse..
+    // NOTE: failures to set all the attributes in this function are
+    // ignored, for better or worse... But failure to set
+    // userPrincipalName is not ignored
 
     // don't set dnsHostname on service accounts
     if (!flags->use_service_account) {
@@ -606,12 +609,29 @@ void ldap_check_account_strings(msktutil_flags *flags)
 
     if (flags->set_userPrincipalName) {
         std::string userPrincipalName_string = "";
+        std::string upn_found = "";
+        LDAPMessage *mesg;
+        const char *attrs[] = {"userPrincipalName", NULL};
         if (flags->userPrincipalName.find("@") != std::string::npos) {
             userPrincipalName_string = sform("%s", flags->userPrincipalName.c_str());
         } else {
             userPrincipalName_string = sform("%s@%s", flags->userPrincipalName.c_str(), flags->realm_name.c_str());
         }
-        ldap_simple_set_attr(flags->ldap, dn, "userPrincipalName", userPrincipalName_string, flags);
+        // let's see if userPrincipalName is already set to the
+        // desired value in AD...
+        ldap_get_account_attrs(flags, attrs, &mesg);
+        if (ldap_count_entries(flags->ldap->m_ldap, mesg) == 1) {
+            mesg = ldap_first_entry(flags->ldap->m_ldap, mesg);
+            upn_found = flags->ldap->get_one_val(mesg, "userPrincipalName");
+        }
+        ldap_msgfree(mesg);
+        VERBOSE("Found userPrincipalName = %s\n", upn_found.c_str());
+        VERBOSE("userPrincipalName should be%s\n", userPrincipalName_string.c_str());
+        if (upn_found.compare(userPrincipalName_string)) {
+            ldap_simple_set_attr(flags->ldap, dn, "userPrincipalName", userPrincipalName_string, flags);
+        } else {
+            VERBOSE("Nothing to do\n");
+        }
     }
     ldap_set_supportedEncryptionTypes(dn, flags);
 
