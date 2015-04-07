@@ -33,6 +33,7 @@
 #include <sstream>
 #include <iostream>
 
+
 static void ldap_print_diagnostics(LDAP *ldap, const char *msg, int err)
 {
     fprintf(stderr, "Error: %s (%s)\n", msg, ldap_err2string(err));
@@ -41,7 +42,7 @@ static void ldap_print_diagnostics(LDAP *ldap, const char *msg, int err)
     char *opt_message = NULL;
     ldap_get_option(ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, &opt_message);
     if (opt_message)
-        fprintf(stderr, "\tadditional info: %s\n", opt_message );
+        fprintf(stderr, "\tadditional info: %s\n", opt_message);
     ldap_memfree(opt_message);
 #else
     /* Silence compiler warning about unused parameter */
@@ -49,7 +50,9 @@ static void ldap_print_diagnostics(LDAP *ldap, const char *msg, int err)
 #endif
 }
 
-LDAPConnection::LDAPConnection(const std::string &server) : m_ldap() {
+
+LDAPConnection::LDAPConnection(const std::string &server) : m_ldap()
+{
     int ret = 0;
 #ifndef SOLARIS_LDAP_KERBEROS
     std::string ldap_url = "ldap://" + server;
@@ -65,7 +68,9 @@ LDAPConnection::LDAPConnection(const std::string &server) : m_ldap() {
         throw LDAPException("ldap_initialize", ret);
 }
 
-void LDAPConnection::set_option(int option, const void *invalue) {
+
+void LDAPConnection::set_option(int option, const void *invalue)
+{
     int ret = ldap_set_option(m_ldap, option, invalue);
     if (ret) {
         std::stringstream ss;
@@ -74,7 +79,9 @@ void LDAPConnection::set_option(int option, const void *invalue) {
     }
 }
 
-void LDAPConnection::get_option(int option, void *outvalue) {
+
+void LDAPConnection::get_option(int option, void *outvalue)
+{
     int ret = ldap_get_option(m_ldap, option, outvalue);
     if (ret) {
         std::stringstream ss;
@@ -83,7 +90,9 @@ void LDAPConnection::get_option(int option, void *outvalue) {
     }
 }
 
-LDAPConnection::~LDAPConnection() {
+
+LDAPConnection::~LDAPConnection()
+{
     ldap_unbind_ext(m_ldap, NULL, NULL);
 }
 
@@ -102,7 +111,6 @@ public:
 };
 
 
-
 void LDAPConnection::search(LDAPMessage **mesg_p,
                             const std::string &base_dn, int scope, const std::string &filter, const char *attrs[],
                             int attrsonly, LDAPControl **serverctrls, LDAPControl **clientctrls,
@@ -117,7 +125,9 @@ void LDAPConnection::search(LDAPMessage **mesg_p,
     }
 }
 
-std::string LDAPConnection::get_one_val(LDAPMessage *mesg, const char *name) {
+
+std::string LDAPConnection::get_one_val(LDAPMessage *mesg, const char *name)
+{
     MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
     if (vals) {
         if (vals[0]) {
@@ -128,7 +138,9 @@ std::string LDAPConnection::get_one_val(LDAPMessage *mesg, const char *name) {
     return "";
 }
 
-std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg, const char *name) {
+
+std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg, const char *name)
+{
     MessageVals vals = ldap_get_values_len(m_ldap, mesg, name);
     std::vector<std::string> ret;
     if (vals) {
@@ -139,8 +151,8 @@ std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg, const c
         }
     }
     return ret;
-
 }
+
 
 void get_default_ou(msktutil_flags *flags)
 {
@@ -214,6 +226,7 @@ void ldap_get_base_dn(msktutil_flags *flags)
     }
 }
 
+
 LDAPConnection* ldap_connect(const std::string &server,
                                            bool no_reverse_lookups)
 {
@@ -267,6 +280,7 @@ LDAPConnection* ldap_connect(const std::string &server,
     return ldap;
 }
 
+
 void ldap_cleanup(msktutil_flags *flags)
 {
     VERBOSE("Disconnecting from LDAP server");
@@ -274,11 +288,14 @@ void ldap_cleanup(msktutil_flags *flags)
     flags->ldap = NULL;
 }
 
-void ldap_get_account_attrs(msktutil_flags *flags, const char **attrs, LDAPMessage **mesg_p) {
+
+void ldap_get_account_attrs(msktutil_flags *flags, const char **attrs, LDAPMessage **mesg_p)
+{
     std::string filter;
     filter = sform("(&(|(objectCategory=Computer)(objectCategory=User))(sAMAccountName=%s))", flags->samAccountName.c_str());
     flags->ldap->search(mesg_p, flags->base_dn, LDAP_SCOPE_SUBTREE, filter, attrs);
 }
+
 
 int ldap_flush_principals(msktutil_flags *flags)
 {
@@ -320,8 +337,6 @@ int ldap_flush_principals(msktutil_flags *flags)
 
     return 0;
 }
-
-
 
 
 krb5_kvno ldap_get_kvno(msktutil_flags *flags)
@@ -367,7 +382,7 @@ std::string ldap_get_pwdLastSet(msktutil_flags *flags)
 }
 
 
-int ldap_simple_set_attr(LDAPConnection *ldap, const std::string &dn, 
+int ldap_simple_set_attr(LDAPConnection *ldap, const std::string &dn,
                          const std::string &attrName, const std::string &val, msktutil_flags *flags)
 {
     LDAPMod *mod_attrs[2] = {NULL, NULL};
@@ -392,7 +407,7 @@ int ldap_simple_set_attr(LDAPConnection *ldap, const std::string &dn,
         fprintf(stderr, "         Error was: %s\n", ldap_err2string(ret));
         fprintf(stderr, "         --> Do you have enough privileges?\n");
         fprintf(stderr, "         --> You might try re-\"kinit\"ing.\n");
-        if (!flags->user_creds_only) { 
+        if (!flags->user_creds_only) {
             fprintf(stderr, "         --> Maybe you should try again with --user-creds-only?\n");
         }
 
@@ -406,6 +421,8 @@ int ldap_simple_set_attr(LDAPConnection *ldap, const std::string &dn,
 
     return ret;
 }
+
+
 int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *flags)
 {
     int ret;
@@ -430,6 +447,7 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *fla
 
     return ret;
 }
+
 
 int ldap_set_userAccountControl_flag(const std::string &dn, int mask, msktutil_val value, msktutil_flags *flags)
 {
@@ -484,7 +502,6 @@ int ldap_set_userAccountControl_flag(const std::string &dn, int mask, msktutil_v
 }
 
 
-
 int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
 {
     const std::string &dn(flags->ad_computerDn);
@@ -520,7 +537,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
                 fprintf(stderr, "         Error was: %s\n", ldap_err2string(ret));
                 fprintf(stderr, "         --> Do you have enough privileges?\n");
                 fprintf(stderr, "         --> You might try re-\"kinit\"ing.\n");
-                if (!flags->user_creds_only) { 
+                if (!flags->user_creds_only) {
                     fprintf(stderr, "         --> Maybe you should try again with --user-creds-only?\n");
                 }
 
@@ -552,10 +569,13 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     return ret;
 }
 
+
 template<typename T>
-void vec_remove(std::vector<T> vec, const T &val) {
+void vec_remove(std::vector<T> vec, const T &val)
+{
     vec.erase(std::remove(vec.begin(), vec.end(), val), vec.end());
 }
+
 
 int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
 {
@@ -585,6 +605,7 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
     return ret;
 }
 
+
 void ldap_check_account_strings(msktutil_flags *flags)
 {
     const std::string &dn = flags->ad_computerDn;
@@ -605,7 +626,6 @@ void ldap_check_account_strings(msktutil_flags *flags)
     if (flags->set_description) {
         ldap_simple_set_attr(flags->ldap, dn, "description", flags->description, flags);
     }
-
 
     if (flags->set_userPrincipalName) {
         std::string userPrincipalName_string = "";

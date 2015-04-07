@@ -79,6 +79,7 @@ void get_default_keytab(msktutil_flags *flags)
     }
 }
 
+
 int flush_keytab(msktutil_flags *flags)
 {
     VERBOSE("Flushing the keytab");
@@ -115,6 +116,7 @@ int flush_keytab(msktutil_flags *flags)
 
     return ldap_flush_principals(flags);
 }
+
 
 void cleanup_keytab(msktutil_flags *flags)
 {
@@ -283,8 +285,8 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
          * Windows uses realm_name+"host"+samAccountName_nodollar+"."+lower_realm_name
          * for the salt. (note: only for DES/AES; arcfour-hmac-md5 doesn't use salts at all)
          *
-         *     Note (Mark Pr"ohl, 2012-12-11): salt for service accounts is created in a different 
-         *     way: 
+         *     Note (Mark Pr"ohl, 2012-12-11): salt for service accounts is created in a different
+         *     way:
          *     - if userPrincpalName is not set: realm_name+samAccountName
          *     - if userPrincpalName is set: realm_name + first component from userPrincpalName
          *
@@ -306,8 +308,8 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
          * salt that should be used with a given principal, even though it's clearly available in
          * the network protocol.
          *
-         *     Note (Mark Pr"ohl, 2012-12-11): even if the salting string could be fetched from the 
-         *     network protocol, that would only be possible after the password has been set in AD. 
+         *     Note (Mark Pr"ohl, 2012-12-11): even if the salting string could be fetched from the
+         *     network protocol, that would only be possible after the password has been set in AD.
          *     But the keytab entry should be created before that.
          *
          * What we're doing here is very much like MIT kerberos' ktutil addent -password, which also
@@ -331,7 +333,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
                 salt = sform("%s%s", flags->realm_name.c_str(), upnsalt.c_str());
             }
         } else {
-            salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(), 
+            salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(),
                                         flags->lower_realm_name.c_str());
         }
 

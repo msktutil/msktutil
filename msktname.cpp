@@ -131,7 +131,9 @@ static unsigned int msktutil_ns_get16(const unsigned char *src)
     return (unsigned int) (((uint16_t)src[0] << 8) | ((uint16_t)src[1]));
 }
 
-static int compare_priority_weight(const void *a, const void *b) {
+
+static int compare_priority_weight(const void *a, const void *b)
+{
     struct msktutil_dcdata *ia = (struct msktutil_dcdata *)a;
     struct msktutil_dcdata *ib = (struct msktutil_dcdata *)b;
 
@@ -144,6 +146,7 @@ static int compare_priority_weight(const void *a, const void *b) {
     return 0;
 }
 #endif
+
 
 static std::string get_dc_host_from_srv_rr(const std::string &domain, const std::string &protocol)
 {
@@ -228,6 +231,7 @@ static std::string get_dc_host_from_srv_rr(const std::string &domain, const std:
 #endif
     return std::string();
 }
+
 
 std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
                         const bool no_reverse_lookups)

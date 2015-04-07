@@ -95,6 +95,7 @@ int generate_new_password(msktutil_flags *flags)
     return 0;
 }
 
+
 /* Try to set the the new Samba secret to <password>. */
 static int set_samba_secret(const std::string& password)
 {
@@ -122,6 +123,7 @@ static int set_samba_secret(const std::string& password)
 
     return 0;
 }
+
 
 int set_password(msktutil_flags *flags)
 {
@@ -178,7 +180,7 @@ int set_password(msktutil_flags *flags)
         KRB5Creds creds;
         /* Use the machine's credentials */
         if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
-	    flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
+            flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
             flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB ||
             flags->auth_type == AUTH_FROM_HOSTNAME_KEYTAB) {
             std::string princ_name;
@@ -211,7 +213,7 @@ int set_password(msktutil_flags *flags)
         } else // shouldn't happen
             throw Exception("Error: unknown auth_type.");
 
-        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD ) {
+        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
             old_pwdLastSet = ldap_get_pwdLastSet(flags);
         }
 

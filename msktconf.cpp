@@ -38,7 +38,7 @@ std::string create_default_machine_password(const std::string &samaccountname)
 {
     std::string machine_password(samaccountname);
 
-    /* Default machine password after 'reset account' is created with the 
+    /* Default machine password after 'reset account' is created with the
      * following algorithm:
      *
      * 1) Remove trailing $ from sAMAcountName
@@ -47,24 +47,24 @@ std::string create_default_machine_password(const std::string &samaccountname)
      *
      */
 
-    // Remove trailing '$' 
-    if ( machine_password[machine_password.size() - 1] == '$' )
+    // Remove trailing '$'
+    if (machine_password[machine_password.size() - 1] == '$')
     {
         machine_password.resize(machine_password.size() - 1);
     }
 
     // Truncate to first 14 characters
-    if ( machine_password.size() > MAX_DEF_MACH_PASS_LEN )
+    if (machine_password.size() > MAX_DEF_MACH_PASS_LEN)
     {
         machine_password.resize(MAX_DEF_MACH_PASS_LEN);
     }
 
     // Convert all characters to lowercase
-    for ( size_t i = 0; i < machine_password.size(); i++ )
+    for (size_t i = 0; i < machine_password.size(); i++)
     {
         machine_password[i] = std::tolower(machine_password[i]);
     }
-    
+
     VERBOSE("Default machine password for %s is %s", samaccountname.c_str(), machine_password.c_str());
 
     return machine_password;
@@ -75,7 +75,8 @@ std::string create_default_machine_password(const std::string &samaccountname)
 static std::string g_config_filename;
 static std::string g_ccache_filename;
 
-std::string get_tempfile_name(const char *name) {
+std::string get_tempfile_name(const char *name)
+{
     std::string full_template = sform("%s/%s-XXXXXX", TMP_DIR, name);
     char template_arr[full_template.size() + 1];
     memcpy(template_arr, full_template.c_str(), full_template.size() + 1);
@@ -88,6 +89,7 @@ std::string get_tempfile_name(const char *name) {
     close(fd);
     return std::string(template_arr);
 }
+
 
 void create_fake_krb5_conf(msktutil_flags *flags)
 {
@@ -133,7 +135,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
     if (ret)
         throw Exception("setenv failed");
 #else
-    int ret = putenv( strdup((std::string("KRB5_CONFIG=") +  g_config_filename).c_str()));
+    int ret = putenv(strdup((std::string("KRB5_CONFIG=") +  g_config_filename).c_str()));
     if (ret)
         throw Exception("putenv failed");
 #endif
@@ -143,6 +145,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
     g_context.reload();
 }
 
+
 void remove_fake_krb5_conf()
 {
     if (!g_config_filename.empty()) {
@@ -151,12 +154,16 @@ void remove_fake_krb5_conf()
     }
 }
 
-void remove_ccache() {
+
+void remove_ccache()
+{
     if (!g_ccache_filename.empty()) {
         unlink(g_ccache_filename.c_str());
         g_ccache_filename.clear();
     }
 }
+
+
 void switch_default_ccache(const char *ccache_name)
 {
     VERBOSE("Using the local credential cache: %s", ccache_name);
@@ -168,14 +175,16 @@ void switch_default_ccache(const char *ccache_name)
     if (setenv("KRB5CCNAME", ccache_name, 1))
         throw Exception("Error: setenv failed");
 #else
-    if (!putenv( strdup((std::string("KRB5CCNAME=")+ ccache_name).c_str())))
+    if (!putenv(strdup((std::string("KRB5CCNAME=")+ ccache_name).c_str())))
         throw Exception("Error: putenv failed");
 #endif
     krb5_cc_set_default_name(g_context.get(), ccache_name);
 }
 
+
 bool try_machine_keytab_princ(msktutil_flags *flags, const std::string &principal_name,
-                              const char *ccache_name) {
+                              const char *ccache_name)
+{
     try {
         VERBOSE("Trying to authenticate for %s from local keytab...", principal_name.c_str());
         KRB5Keytab keytab(flags->keytab_readname);
@@ -193,7 +202,9 @@ bool try_machine_keytab_princ(msktutil_flags *flags, const std::string &principa
     }
 }
 
-bool try_machine_password(msktutil_flags *flags, const char *ccache_name) {
+
+bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
+{
     try {
         VERBOSE("Trying to authenticate for %s with password.", flags->samAccountName.c_str());
         KRB5Principal principal(flags->samAccountName);
@@ -210,7 +221,9 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name) {
     }
 }
 
-bool try_machine_supplied_password(msktutil_flags *flags, const char *ccache_name) {
+
+bool try_machine_supplied_password(msktutil_flags *flags, const char *ccache_name)
+{
     try {
         VERBOSE("Trying to authenticate for %s with supplied password.", flags->samAccountName.c_str());
         KRB5Principal principal(flags->samAccountName);
@@ -233,7 +246,9 @@ bool try_machine_supplied_password(msktutil_flags *flags, const char *ccache_nam
     }
 }
 
-bool get_creds(msktutil_flags *flags) {
+
+bool get_creds(msktutil_flags *flags)
+{
     g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
     std::string ccache_name = "FILE:" + g_ccache_filename;
     try {
@@ -251,7 +266,9 @@ bool get_creds(msktutil_flags *flags) {
     }
 }
 
-bool try_user_creds() {
+
+bool try_user_creds()
+{
     try {
         VERBOSE("Checking if default ticket cache has tickets...");
         // The following is for the side effect of throwing an exception or not.
@@ -266,16 +283,17 @@ bool try_user_creds() {
     }
 }
 
-int find_working_creds(msktutil_flags *flags) {
 
+int find_working_creds(msktutil_flags *flags)
+{
     /* We try some different ways, in order:
        1) Use principal from keytab. Try both:
          a) samAccountName
          b) host/full-hostname (for compat with older msktutil which didn't write the first).
        2) Use principal samAccountName with default password (samAccountName_nodollar)
        3) Use supplied credentials (--old-account-password)
-          When the supplied password has expired (e.g. because the service account 
-          has been newly created) we cannot find any working credentials here 
+          When the supplied password has expired (e.g. because the service account
+          has been newly created) we cannot find any working credentials here
           and have to return AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD.
           In this case working credentials need to be obtained after changing password
        4) Calling user's existing credentials from their credential cache.
@@ -316,5 +334,3 @@ int find_working_creds(msktutil_flags *flags) {
 
     return AUTH_NONE;
 }
-
-

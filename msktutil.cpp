@@ -40,6 +40,7 @@
 
 int g_verbose = 0;
 
+
 std::string sform(const char* format, ...)
 {
     va_list args;
@@ -49,8 +50,8 @@ std::string sform(const char* format, ...)
 #if !defined(HAVE_VASPRINTF)
 #  ifdef HAVE_VSNPRINTF
     buf = (char *) malloc(10000);
-    memset( buf, 0, 10000);
-    int result =  vsnprintf( buf, 10000-1, format, args);
+    memset(buf, 0, 10000);
+    int result =  vsnprintf(buf, 10000-1, format, args);
 #  else
 #   error need either vasprintf or vsnprintf
 #  endif
@@ -66,10 +67,13 @@ std::string sform(const char* format, ...)
     return outstr;
 }
 
-void remove_files_at_exit() {
+
+void remove_files_at_exit()
+{
     remove_fake_krb5_conf();
     remove_ccache();
 }
+
 
 void catch_int(int)
 {
@@ -77,18 +81,22 @@ void catch_int(int)
     exit(1);
 }
 
+
 void set_supportedEncryptionTypes(msktutil_exec *exec, char * value)
 {
     exec->flags->enctypes = VALUE_ON;
     exec->flags->supportedEncryptionTypes = strtol(value, NULL, 0);
 }
 
+
 void do_verbose()
 {
     g_verbose++; /* allow for ldap debuging */
 }
 
-void qualify_principal_vec(std::vector<std::string> &principals, const std::string &hostname) {
+
+void qualify_principal_vec(std::vector<std::string> &principals, const std::string &hostname)
+{
     for(size_t i = 0; i < principals.size(); ++i) {
         // If no hostname part, add it:
         if (principals[i].find('/') == std::string::npos) {
@@ -101,11 +109,12 @@ void qualify_principal_vec(std::vector<std::string> &principals, const std::stri
     }
 }
 
+
 int finalize_exec(msktutil_exec *exec)
 {
     msktutil_flags *flags = exec->flags;
     int ret;
-    
+
     char *temp_realm;
     if (flags->realm_name.empty()) {
         if (krb5_get_default_realm(g_context.get(), &temp_realm)) {
@@ -222,7 +231,7 @@ int finalize_exec(msktutil_exec *exec)
     VERBOSE("Authenticated using method %d\n", flags->auth_type);
 
     flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
-    
+
     if (!flags->ldap) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         // Print a hint as to the likely cause:
@@ -241,7 +250,9 @@ int finalize_exec(msktutil_exec *exec)
     return 0;
 }
 
-int add_and_remove_principals(msktutil_exec *exec) {
+
+int add_and_remove_principals(msktutil_exec *exec)
+{
     int ret = 0;
     std::vector<std::string> &cur_princs(exec->flags->ad_principals);
 
@@ -277,7 +288,9 @@ int add_and_remove_principals(msktutil_exec *exec) {
     return ret;
 }
 
-void do_help() {
+
+void do_help()
+{
     fprintf(stdout, "Usage: %s [MODE] [OPTIONS]\n", PACKAGE_NAME);
     fprintf(stdout, "\n");
     fprintf(stdout, "Modes: \n");
@@ -382,9 +395,12 @@ void do_help() {
     fprintf(stdout, "  --remove-enctype <int> Removes entries with given enctype.\n");
 }
 
-void do_version() {
+
+void do_version()
+{
     fprintf(stdout, "%s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
 }
+
 
 static int wait_for_new_kvno(msktutil_exec *exec)
 {
@@ -407,11 +423,12 @@ static int wait_for_new_kvno(msktutil_exec *exec)
     }
 }
 
+
 int execute(msktutil_exec *exec)
 {
     int ret = 0;
     msktutil_flags *flags = exec->flags;
-    if( flags->password_from_cmdline ) {
+    if(flags->password_from_cmdline) {
         VERBOSE("Using password from command line");
     } else {
         // Generate a random password and store it.
@@ -519,7 +536,9 @@ int execute(msktutil_exec *exec)
     return 0;
 }
 
-void set_mode(msktutil_exec *exec, msktutil_mode mode) {
+
+void set_mode(msktutil_exec *exec, msktutil_mode mode)
+{
     if (exec->mode != MODE_NONE) {
         fprintf(stderr, "Error: only one mode argument may be provided.\n");
         fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
@@ -557,9 +576,9 @@ int main(int argc, char *argv [])
     }
 
     if (exec->mode == MODE_NONE) {
-      /* compatibility for old command line syntax (e.g. "--create" or
-         "-c" instead of "create") */
-      start_i = 1;
+        /* compatibility for old command line syntax (e.g. "--create" or
+           "-c" instead of "create") */
+        start_i = 1;
     }
 
     for (i = start_i; i < argc; i++) {
@@ -973,10 +992,12 @@ msktutil_flags::msktutil_flags() :
     cleanup_enctypes(VALUE_IGNORE)
 {}
 
-msktutil_flags::~msktutil_flags() {
+msktutil_flags::~msktutil_flags()
+{
     ldap_cleanup(this);
     init_password(this);
 }
+
 
 msktutil_exec::msktutil_exec() :
     mode(MODE_NONE), flags(new msktutil_flags())
@@ -995,7 +1016,9 @@ msktutil_exec::msktutil_exec() :
         flags->server = getenv("MSKTUTIL_SERVER");
 }
 
-msktutil_exec::~msktutil_exec() {
+
+msktutil_exec::~msktutil_exec()
+{
     VERBOSE("Destroying msktutil_exec");
     remove_fake_krb5_conf();
     remove_ccache();
