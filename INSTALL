@@ -26,11 +26,3 @@ configure script expects that an 'include' and 'lib' directory exists in
 each of the base paths with the appropriate headers and libraries.  You
 also can set the LDFLAGS and CPPFLAGS enviroment variables to specify other
 paths for these headers and libraries.
-
- Portability
-
-This code has been tested under Debian Linux "Lenny", using OpenLDAP
-2.4.11 CMU SASL 2.1.22, and MIT Kerberos 1.6 or Heimdal 1.2. I know of
-no reason it should not work with other versions, but I have not
-tested it with them at this point.
-
