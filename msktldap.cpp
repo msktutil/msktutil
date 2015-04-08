@@ -436,8 +436,6 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *fla
     if (flags->ad_supportedEncryptionTypes != flags->supportedEncryptionTypes) {
         std::string supportedEncryptionTypes = sform("%d", flags->supportedEncryptionTypes);
 
-                dn.c_str(), flags->ad_supportedEncryptionTypes, flags->supportedEncryptionTypes);
-
         ret = ldap_simple_set_attr(flags->ldap, dn, "msDs-supportedEncryptionTypes",
                                    supportedEncryptionTypes, flags);
 
