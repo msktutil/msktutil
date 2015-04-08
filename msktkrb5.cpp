@@ -144,26 +144,15 @@ void cleanup_keytab(msktutil_flags *flags)
 
         KRB5Keytab::cursor cursor(keytab);
         while (cursor.next()) {
-            if (flags->cleanup_days > 0) {
-                // newer than cleanup_days
-                if (ttNow - cursor.timestamp() < flags->cleanup_days * 60 * 60 * 24) {
-                    continue;
-                }
-            }
-            // Never delete latest keys
-            if (max_kvno == cursor.kvno()) {
-                continue;
-            }
-            if (flags->cleanup_enctypes != VALUE_IGNORE) {
-                if (cursor.enctype() != flags->cleanup_enctypes) {
-                    continue;
-                }
-            }
-            std::string principal = cursor.principal().name();
-            to_delete.push_back(std::make_pair(std::make_pair(principal, cursor.kvno()),
-                                                               cursor.enctype()));
-        }
 
+            if ((cursor.enctype() == flags->cleanup_enctypes) ||
+                ((ttNow - cursor.timestamp() >= flags->cleanup_days * 60 * 60 * 24) &&
+                 (max_kvno != cursor.kvno()))) {
+                std::string principal = cursor.principal().name();
+                to_delete.push_back(std::make_pair(std::make_pair(principal, cursor.kvno()),
+                                                   cursor.enctype()));
+            }
+        }
 
     } catch (KRB5Exception ex) {
         // Ignore errors reading keytab
