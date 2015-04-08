@@ -146,7 +146,7 @@ int set_password(msktutil_flags *flags)
         VERBOSE("Attempting to reset computer's password");
     }
     if (flags->auth_type == AUTH_FROM_USER_CREDS) {
-        VERBOSE("Try change password using user's ticket cache\n");
+        VERBOSE("Try change password using user's ticket cache");
 
         KRB5CCache ccache(KRB5CCache::defaultName());
         KRB5Principal principal(flags->samAccountName);
@@ -193,21 +193,21 @@ int set_password(msktutil_flags *flags)
             } else {
                 princ_name = "host/" + flags->hostname;
             }
-            VERBOSE("Try using keytab for %s to change password\n", princ_name.c_str());
+            VERBOSE("Try using keytab for %s to change password", princ_name.c_str());
 
             KRB5Keytab keytab(flags->keytab_readname);
             KRB5Principal principal(princ_name);
             KRB5Creds local_creds(principal, keytab, "kadmin/changepw");
             creds.move_from(local_creds);
         } else if (flags->auth_type == AUTH_FROM_PASSWORD) {
-            VERBOSE("Try using default password for %s to change password\n", flags->samAccountName.c_str());
+            VERBOSE("Try using default password for %s to change password", flags->samAccountName.c_str());
 
             KRB5Principal principal(flags->samAccountName);
             KRB5Creds local_creds(principal, create_default_machine_password(flags->samAccountName), "kadmin/changepw");
             creds.move_from(local_creds);
         } else if ((flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) ||
                    (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD)) {
-            VERBOSE("Try using supplied password for %s to change password\n", flags->samAccountName.c_str());
+            VERBOSE("Try using supplied password for %s to change password", flags->samAccountName.c_str());
             KRB5Principal principal(flags->samAccountName);
             KRB5Creds local_creds(principal, flags->old_account_password, "kadmin/changepw");
             creds.move_from(local_creds);

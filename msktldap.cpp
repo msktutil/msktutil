@@ -436,7 +436,6 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *fla
     if (flags->ad_supportedEncryptionTypes != flags->supportedEncryptionTypes) {
         std::string supportedEncryptionTypes = sform("%d", flags->supportedEncryptionTypes);
 
-        VERBOSE("DEE dn=%s old=%d new=%d\n",
                 dn.c_str(), flags->ad_supportedEncryptionTypes, flags->supportedEncryptionTypes);
 
         ret = ldap_simple_set_attr(flags->ldap, dn, "msDs-supportedEncryptionTypes",
@@ -447,7 +446,7 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn, msktutil_flags *fla
             flags->ad_supportedEncryptionTypes = flags->supportedEncryptionTypes;
         }
     } else {
-        VERBOSE("No need to change msDs-supportedEncryptionTypes they are %d\n",flags->ad_supportedEncryptionTypes);
+        VERBOSE("No need to change msDs-supportedEncryptionTypes they are %d",flags->ad_supportedEncryptionTypes);
         ret = LDAP_SUCCESS;
     }
 
@@ -502,7 +501,7 @@ int ldap_set_userAccountControl_flag(const std::string &dn, int mask, msktutil_v
             flags->ad_userAccountControl = new_userAcctFlags;
         }
     } else {
-        VERBOSE("userAccountControl not changed 0x%x\n", new_userAcctFlags);
+        VERBOSE("userAccountControl not changed 0x%x", new_userAcctFlags);
         ret = LDAP_SUCCESS;
     }
 
@@ -653,12 +652,12 @@ void ldap_check_account_strings(msktutil_flags *flags)
             upn_found = flags->ldap->get_one_val(mesg, "userPrincipalName");
         }
         ldap_msgfree(mesg);
-        VERBOSE("Found userPrincipalName = %s\n", upn_found.c_str());
-        VERBOSE("userPrincipalName should be %s\n", userPrincipalName_string.c_str());
+        VERBOSE("Found userPrincipalName = %s", upn_found.c_str());
+        VERBOSE("userPrincipalName should be %s", userPrincipalName_string.c_str());
         if (upn_found.compare(userPrincipalName_string)) {
             ldap_simple_set_attr(flags->ldap, dn, "userPrincipalName", userPrincipalName_string, flags);
         } else {
-            VERBOSE("Nothing to do\n");
+            VERBOSE("Nothing to do");
         }
     }
     ldap_set_supportedEncryptionTypes(dn, flags);
@@ -731,7 +730,7 @@ void ldap_check_account(msktutil_flags *flags)
         std::string uac = flags->ldap->get_one_val(mesg, "userAccountControl");
         if(!uac.empty()) {
             flags->ad_userAccountControl = atoi(uac.c_str());
-            VERBOSE("Found userAccountControl = 0x%x\n",flags->ad_userAccountControl);
+            VERBOSE("Found userAccountControl = 0x%x",flags->ad_userAccountControl);
         }
 
         /* save the current msDs-supportedEncryptionTypes */
@@ -739,7 +738,7 @@ void ldap_check_account(msktutil_flags *flags)
         if (!supportedEncryptionTypes.empty()) {
             flags->ad_supportedEncryptionTypes = atoi(supportedEncryptionTypes.c_str());
             flags->ad_enctypes = VALUE_ON; /* actual value found in AD */
-            VERBOSE("Found supportedEncryptionTypes = %d\n",
+            VERBOSE("Found supportedEncryptionTypes = %d",
                     flags->ad_supportedEncryptionTypes);
         } else {
             /* Not in current LDAP entry set defaults */
@@ -749,14 +748,14 @@ void ldap_check_account(msktutil_flags *flags)
                 flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
             }
             flags->ad_enctypes = VALUE_OFF; /* this is the assumed default */
-            VERBOSE("Found default supportedEncryptionTypes = %d\n",
+            VERBOSE("Found default supportedEncryptionTypes = %d",
                     flags->ad_supportedEncryptionTypes);
         }
 
         if (!flags->use_service_account) {
             // Save current dNSHostName
             flags->ad_dnsHostName = flags->ldap->get_one_val(mesg, "dNSHostName");
-            VERBOSE("Found dNSHostName = %s\n", flags->ad_dnsHostName.c_str());
+            VERBOSE("Found dNSHostName = %s", flags->ad_dnsHostName.c_str());
         }
 
         // Save current servicePrincipalName and userPrincipalName attrs
@@ -769,11 +768,11 @@ void ldap_check_account(msktutil_flags *flags)
                     vals[i].replace(0, 5, "host/");
                 }
                 flags->ad_principals.push_back(vals[i]);
-                VERBOSE("  Found Principal: %s", vals[i].c_str());
+                VERBOSE("Found Principal: %s", vals[i].c_str());
             }
 
             if (flags->set_userPrincipalName) {
-                VERBOSE("  userPrincipal specified on command line");
+                VERBOSE("userPrincipal specified on command line");
             } else {
                 std::string upn = flags->ldap->get_one_val(mesg, "userPrincipalName");
                 if(!upn.empty()) {
@@ -794,10 +793,10 @@ void ldap_check_account(msktutil_flags *flags)
 
         /* No computer account found, so let's add one in the OU specified */
         if (flags->use_service_account) {
-            VERBOSE("Service account not found, create the account\n");
+            VERBOSE("Service account not found, create the account");
             fprintf(stdout, "No service account for %s found, creating a new one.\n", flags->samAccountName.c_str());
         } else {
-            VERBOSE("Computer account not found, create the account\n");
+            VERBOSE("Computer account not found, create the account");
             fprintf(stdout, "No computer account for %s found, creating a new one.\n", flags->samAccountName_nodollar.c_str());
         }
         flags->ad_computerDn = sform("cn=%s,%s", flags->samAccountName_nodollar.c_str(), flags->ldap_ou.c_str());

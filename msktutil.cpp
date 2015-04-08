@@ -229,7 +229,7 @@ int finalize_exec(msktutil_exec *exec)
         }
     }
 
-    VERBOSE("Authenticated using method %d\n", flags->auth_type);
+    VERBOSE("Authenticated using method %d", flags->auth_type);
 
     flags->ldap = ldap_connect(flags->server, flags->no_reverse_lookups);
 
@@ -506,7 +506,7 @@ int execute(msktutil_exec *exec)
         // And add and remove principals to servicePrincipalName in LDAP.
         add_and_remove_principals(exec);
 
-        VERBOSE("Updating all entries for %s in the keytab %s\n", flags->hostname.c_str(),
+        VERBOSE("Updating all entries for %s in the keytab %s", flags->hostname.c_str(),
                 flags->keytab_writename.c_str());
         update_keytab(flags);
         wait_for_new_kvno(exec);
