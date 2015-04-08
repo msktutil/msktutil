@@ -149,10 +149,10 @@ void cleanup_keytab(msktutil_flags *flags)
                 if (ttNow - cursor.timestamp() < flags->cleanup_days * 60 * 60 * 24) {
                     continue;
                 }
-                // Never delete latest keys
-                if (max_kvno == cursor.kvno()) {
-                    continue;
-                }
+            }
+            // Never delete latest keys
+            if (max_kvno == cursor.kvno()) {
+                continue;
             }
             if (flags->cleanup_enctypes != VALUE_IGNORE) {
                 if (cursor.enctype() != flags->cleanup_enctypes) {
