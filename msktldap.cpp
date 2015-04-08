@@ -502,7 +502,7 @@ int ldap_set_userAccountControl_flag(const std::string &dn, int mask, msktutil_v
             flags->ad_userAccountControl = new_userAcctFlags;
         }
     } else {
-        VERBOSE(" userAccountControl not changed 0x%x\n", new_userAcctFlags);
+        VERBOSE("userAccountControl not changed 0x%x\n", new_userAcctFlags);
         ret = LDAP_SUCCESS;
     }
 
