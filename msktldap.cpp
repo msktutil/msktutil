@@ -654,7 +654,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
         }
         ldap_msgfree(mesg);
         VERBOSE("Found userPrincipalName = %s\n", upn_found.c_str());
-        VERBOSE("userPrincipalName should be%s\n", userPrincipalName_string.c_str());
+        VERBOSE("userPrincipalName should be %s\n", userPrincipalName_string.c_str());
         if (upn_found.compare(userPrincipalName_string)) {
             ldap_simple_set_attr(flags->ldap, dn, "userPrincipalName", userPrincipalName_string, flags);
         } else {
