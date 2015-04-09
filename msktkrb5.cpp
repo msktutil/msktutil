@@ -143,6 +143,20 @@ void cleanup_keytab(msktutil_flags *flags)
         }
         KRB5Keytab::cursor cursor(keytab);
         while (cursor.next()) {
+            // (1) clean the current entry if its enctype matches the
+            //     one given by --remove-enctype
+            // (2) clean the entry if its time stamp and the current
+            //     time differ by more than the number of days given by
+            //     --remove-old. But only if --remove-old has been
+            //     given on the command line (i.e. cleanup_days != -1)
+            // (3) don't let a too small number of days given by
+            //     --remove-old clean one of the newest
+            //     entries. Note: the newest entries could have
+            //     slightly different time stamps. Therefore,
+            //     newest_timestamp and cursor.timestamp must not be
+            //     compared directly. As a workaround we clean the
+            //     current entry only if its time stamp and
+            //     newest_timestamp differ by more than 2 seconds.
             if ((cursor.enctype() == flags->cleanup_enctypes) ||
                 ((ttNow - cursor.timestamp() >= flags->cleanup_days * 60 * 60 * 24) &&
                  (flags->cleanup_days != -1) &&

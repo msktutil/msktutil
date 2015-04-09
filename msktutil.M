@@ -263,10 +263,13 @@ $PATH need to include Samba's net command.  Samba needs to be configured appropr
 .SS CLEANUP OPTIONS
 .TP
 --remove-old <number>
-Removes entries from the keytab that are older than <number> days.
+Removes entries from the keytab that are older than <number> days. The newest keytab entries will be kept
+to prevent a total cleanup. I.e. it is not possible to produce an empty keytab with the --remove-old option.
 .TP
 --remove-enctype <int>
-Removes entries from the keytab with given enctype. (See --enctypes for supported encryption types.)
+Removes entries from the keytab with given encryption type. (See --enctypes for supported encryption types.)
+Warning: it is possible to produce empty keytabs with the --remove-empty option by successively removing
+all encryption types.
 .SH NOTES
 .SS PASSWORD EXPIRY
 .PP
