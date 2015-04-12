@@ -911,6 +911,18 @@ int main(int argc, char *argv [])
         goto error;
     }
 
+    // allow --remove-enctype only in cleanup mode
+    if (exec->mode != MODE_CLEANUP && exec->flags->cleanup_enctype != VALUE_IGNORE) {
+        fprintf(stderr, "Error: --remove-enctype can only be used in cleanup mode\n");
+        goto error;
+    }
+
+    // allow --remove-old only in cleanup mode
+    if (exec->mode != MODE_CLEANUP && exec->flags->cleanup_days != -1) {
+        fprintf(stderr, "Error: --remove-old can only be used in cleanup mode\n");
+        goto error;
+    }
+
     if (exec->flags->enctypes == VALUE_ON) {
         unsigned known= MS_KERB_ENCTYPE_DES_CBC_CRC |
                         MS_KERB_ENCTYPE_DES_CBC_MD5 |
