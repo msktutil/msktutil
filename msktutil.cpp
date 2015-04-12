@@ -886,7 +886,7 @@ int main(int argc, char *argv [])
 
         if (!strcmp(argv[i], "--remove-enctype")) {
             if (++i < argc) {
-                exec->flags->cleanup_enctypes = atoi(argv[i]);
+                exec->flags->cleanup_enctype = atoi(argv[i]);
             } else {
                 fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
                 goto error;
@@ -938,7 +938,7 @@ int main(int argc, char *argv [])
 
     if (exec->mode == MODE_CLEANUP &&
         exec->flags->cleanup_days == -1 &&
-        exec->flags->cleanup_enctypes == VALUE_IGNORE) {
+        exec->flags->cleanup_enctype == VALUE_IGNORE) {
             fprintf(stderr, "Error: cleanup mode needs --remove-old or --remove-enctype\n");
             goto error;
     }
@@ -991,7 +991,7 @@ msktutil_flags::msktutil_flags() :
     auto_update_interval(30),
     kvno(0),
     cleanup_days(-1),
-    cleanup_enctypes(VALUE_IGNORE)
+    cleanup_enctype(VALUE_IGNORE)
 {}
 
 msktutil_flags::~msktutil_flags()

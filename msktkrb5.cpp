@@ -157,7 +157,7 @@ void cleanup_keytab(msktutil_flags *flags)
             //     compared directly. As a workaround we clean the
             //     current entry only if its time stamp and
             //     newest_timestamp differ by more than 2 seconds.
-            if ((cursor.enctype() == flags->cleanup_enctypes) ||
+            if ((cursor.enctype() == flags->cleanup_enctype) ||
                 ((ttNow - cursor.timestamp() >= flags->cleanup_days * 60 * 60 * 24) &&
                  (flags->cleanup_days != -1) &&
                  (abs(newest_timestamp - cursor.timestamp()) >= 2))) {

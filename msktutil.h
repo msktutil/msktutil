@@ -206,7 +206,7 @@ struct msktutil_flags {
     int auto_update_interval;
     krb5_kvno kvno;
     int cleanup_days;
-    int cleanup_enctypes;
+    int cleanup_enctype;
     msktutil_flags();
     ~msktutil_flags();
 };
