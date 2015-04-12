@@ -133,20 +133,29 @@ int finalize_exec(msktutil_exec *exec)
     for(std::string::iterator it = flags->lower_realm_name.begin();
         it != flags->lower_realm_name.end(); ++it)
         *it = std::tolower(*it);
-
-    if (flags->server.empty()) {
-        flags->server = get_dc_host(flags->realm_name,flags->site,
-                                    flags->no_reverse_lookups);
+    if (exec->mode == MODE_CLEANUP) {
+        VERBOSE("cleanup mode: don't need AD server");
+        flags->server = "dummy";
+    } else {
         if (flags->server.empty()) {
-            fprintf(stderr, "Error: get_dc_host failed\n");
-            exit(1);
+            flags->server = get_dc_host(flags->realm_name,flags->site,
+                                        flags->no_reverse_lookups);
+            if (flags->server.empty()) {
+                fprintf(stderr, "Error: get_dc_host failed\n");
+                exit(1);
+            }
         }
     }
-    get_default_keytab(flags);
 
+    get_default_keytab(flags);
     signal(SIGINT, catch_int);
     atexit(remove_files_at_exit);
     create_fake_krb5_conf(flags);
+
+    if (exec->mode == MODE_CLEANUP) {
+        VERBOSE("cleanup mode: nothing more to do");
+        return (0);
+    }
 
     if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
         /* Don't set a default hostname if none provided in precreate mode. */
@@ -431,6 +440,8 @@ int execute(msktutil_exec *exec)
     msktutil_flags *flags = exec->flags;
     if(flags->password_from_cmdline) {
         VERBOSE("Using password from command line");
+    } else if (exec->mode == MODE_CLEANUP) {
+        VERBOSE("cleanup mode: don't need a new password");
     } else {
         // Generate a random password and store it.
         ret = generate_new_password(flags);
