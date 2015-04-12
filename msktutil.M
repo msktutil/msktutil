@@ -269,7 +269,7 @@ to prevent a total cleanup. I.e. it is not possible to produce an empty keytab w
 --remove-enctype <int>
 Removes entries from the keytab with given encryption type. (See --enctypes for supported encryption types.)
 Warning: it is possible to produce empty keytabs with the --remove-empty option by successively removing
-all encryption types.
+all encryption types. Supported enctype strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128 and aes256.
 .SH NOTES
 .SS PASSWORD EXPIRY
 .PP

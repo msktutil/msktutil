@@ -88,6 +88,43 @@ void set_supportedEncryptionTypes(msktutil_exec *exec, char * value)
     exec->flags->supportedEncryptionTypes = strtol(value, NULL, 0);
 }
 
+void set_cleanup_enctype(msktutil_exec *exec, char * value)
+{
+    int enctype = -1;
+    if (sform(value).compare(sform("des-cbc-crc")) == 0) {
+        enctype = 1;
+    } else if (sform(value).compare(sform("des-cbc-md5")) == 0) {
+        enctype = 3;
+    } else if ((sform(value).compare(sform("arcfour-hmac-md5")) == 0) ||
+               (sform(value).compare(sform("arcfour-hmac")) == 0) ||
+               (sform(value).compare(sform("arcfour")) == 0) ||
+               (sform(value).compare(sform("rc4-hmac-md5")) == 0) ||
+               (sform(value).compare(sform("rc4-hmac")) == 0) ||
+               (sform(value).compare(sform("rc4")) == 0)) {
+        enctype = 23;
+    } else if ((sform(value).compare(sform("aes128-cts-hmac-sha1-96")) == 0) ||
+               (sform(value).compare(sform("aes128-cts-hmac-sha1")) == 0) ||
+               (sform(value).compare(sform("aes128-cts-hmac")) == 0) ||
+               (sform(value).compare(sform("aes128-cts")) == 0) ||
+               (sform(value).compare(sform("aes128")) == 0)) {
+        enctype = 17;
+    } else if ((sform(value).compare(sform("aes256-cts-hmac-sha1-96")) == 0) ||
+               (sform(value).compare(sform("aes256-cts-hmac-sha1")) == 0) ||
+               (sform(value).compare(sform("aes256-cts-hmac")) == 0) ||
+               (sform(value).compare(sform("aes256-cts")) == 0) ||
+               (sform(value).compare(sform("aes256")) == 0)) {
+        enctype = 18;
+    } else {
+        fprintf(stderr, "Error: enctype = %s not supported. Supported enctype strings are\n", value);
+        fprintf(stderr, "  des-cbc-crc\n");
+        fprintf(stderr, "  des-cbc-md5\n");
+        fprintf(stderr, "  arcfour\n");
+        fprintf(stderr, "  aes128\n");
+        fprintf(stderr, "  aes256\n");
+        exit(1);
+    }
+    exec->flags->cleanup_enctype = enctype;
+}
 
 void do_verbose()
 {
@@ -402,7 +439,10 @@ void do_help()
     fprintf(stdout, "\n");
     fprintf(stdout, "Cleanup options:\n");
     fprintf(stdout, "  --remove-old <number>  Removes entries older than <number> days\n");
-    fprintf(stdout, "  --remove-enctype <int> Removes entries with given enctype.\n");
+    fprintf(stdout, "  --remove-enctype <enctype>\n");
+    fprintf(stdout, "                         Removes entries with given <enctype>. Supported enctype\n");
+    fprintf(stdout, "                         strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128\n");
+    fprintf(stdout, "                         and aes256\n");
 }
 
 
@@ -897,7 +937,7 @@ int main(int argc, char *argv [])
 
         if (!strcmp(argv[i], "--remove-enctype")) {
             if (++i < argc) {
-                exec->flags->cleanup_enctype = atoi(argv[i]);
+                set_cleanup_enctype(exec.get(), argv[i]);
             } else {
                 fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
                 goto error;
