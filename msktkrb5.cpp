@@ -182,7 +182,7 @@ void cleanup_keytab(msktutil_flags *flags)
 
 void update_keytab(msktutil_flags *flags)
 {
-    VERBOSE("Updating all entires for %s", flags->samAccountName.c_str());
+    VERBOSE("Updating all entries for %s", flags->samAccountName.c_str());
     //    krb5_kvno kvno = ldap_get_kvno(flags);
     add_principal_keytab(flags->samAccountName, flags);
     if (!flags->use_service_account) {
@@ -197,7 +197,12 @@ void update_keytab(msktutil_flags *flags)
         add_principal_keytab("host/" + flags->samAccountName_nodollar, flags);
     }
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
-        add_principal_keytab(flags->ad_principals[i], flags);
+        if ((flags->userPrincipalName.empty()) ||
+            flags->userPrincipalName.compare(flags->ad_principals[i]) != 0) {
+            add_principal_keytab(flags->ad_principals[i], flags);
+        } else {
+            VERBOSE("Entries for SPN %s have already been added. Skipping ...", flags->ad_principals[i].c_str());
+        }
     }
 }
 
