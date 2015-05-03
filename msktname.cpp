@@ -50,7 +50,7 @@ std::string complete_hostname(const std::string &hostname, bool no_canonical_nam
     krb5_principal temp_princ_raw = NULL;
 
     // do not canonicalize, use supplied hostname
-    if(no_canonical_name) { type = KRB5_NT_UNKNOWN; }
+    if (no_canonical_name) { type = KRB5_NT_UNKNOWN; }
 
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), hostname.c_str(), "host",
@@ -88,7 +88,7 @@ std::string get_default_hostname(bool no_canonical_name)
     krb5_principal temp_princ_raw;
 
     // do not canonicalize, use supplied hostname
-    if(no_canonical_name) { type = KRB5_NT_UNKNOWN; }
+    if (no_canonical_name) { type = KRB5_NT_UNKNOWN; }
 
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), NULL, "host", type, &temp_princ_raw);

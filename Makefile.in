@@ -20,7 +20,7 @@ MKDIR=@MKDIR@
 WARNFLAGS=-Wall -Wextra -Wno-write-strings
 MAN=$(PROG).1
 
-objects = krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o strtoll.o
+objects = krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o strtoll.o ldapconnection.o
 
 all: $(PROG) $(MAN)
 
@@ -28,7 +28,7 @@ $(PROG) : $(objects)
 	@$(ECHO) "Assembling $(PROG)"
 	$(CXX) $(LDFLAGS) $(objects) $(LIBS) -o $(PROG)
 
-%.o : %.cpp msktutil.h krb5wrap.h config.h
+%.o : %.cpp msktutil.h krb5wrap.h config.h ldapconnection.h
 	@$(ECHO) "Compiling $<"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
