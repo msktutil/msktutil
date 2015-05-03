@@ -1,3 +1,28 @@
+Release 1.0rc1:
+
+- New cleanup mode: remove old keytab entries based on time stamp or
+  encryption type [Ticket #32]
+- New command line syntax: modes (i.e. create, update, ..)  can be
+  given on the command line without leading dashes (--create, --update
+  is still working).
+- New option "-n": disable reverse lookups on client hostname [Ticket
+  #50]
+- Restructured manual page
+- set LDAP_OPT_X_SASL_SSF_MIN to 56 [Ticket #36]
+- Restore compatibility with OpenLDAP 2.3 [Ticket #38]
+- disable LDAPS [Ticket #46]
+- Re-factor msktldap.cpp [Ticket #53]
+- AIX does not compile std::lower [Ticket #42]
+- Compiler Error on AIX com_err.h needs extern "C" [Ticket #35]
+- Add support for udns dns resolver library (--with-udns)
+- Many fixes for memory management
+- New work flow for keytab updates
+- Avoid endless recursion in set_password due to slow replication
+  [Ticket #40]
+- fixed permission problems with --upn [Ticket #47]
+- Add compatibility for keytabs that have been created by other tools
+  [Ticket #48]
+	
 Release 0.5.1:
 
 - Add --keytab-auth-as option (thanks Andrew Deason)
