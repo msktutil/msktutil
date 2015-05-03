@@ -145,7 +145,7 @@ looked up in DNS from the realm name.
 .TP
 --server-behind-nat
 When the server is behind a firewall that performs Network Address Translation, KRB-PRIV messages
-fail validation.  This is because the IP adddress in the encrypted part of the message cannot be
+fail validation.  This is because the IP address in the encrypted part of the message cannot be
 rewritten in the NAT process.  This option ignores the resulting error for the password change
 process, allowing systems outside the NAT firewall to join the domain managed by servers inside
 the NAT firewall.
@@ -310,7 +310,7 @@ as valid account names to kinit as.
 .PP
 REPLACE_PROGNAME will use kerberized LDAP operations to talk to domain controllers.  To obtain a LDAP service
 ticket, the DNS service will be used to construct the domain controllers LDAP principal name.  If DNS is
-mis-configured, this construction may fail.  To work around this issue,  you may specify the fully
+misconfigured, this construction may fail.  To work around this issue,  you may specify the fully
 qualified DNS name of your domain controller with the --server option and additionally use the
 --no-reverse-lookups option.
 .PP
@@ -382,7 +382,7 @@ This will create a computer account in Active Directory that is compatible with 
 a new password, write out a new keytab, and ensure that it includes both "host/hostname" and "host/hostname.example.com"
 as service principals (which is equivalent to what setspn.exe -R would do on windows).  The new computer
 password will be stored in Samba's secrets.tdb database to provide interoperability with Samba.
-As Samba (version 3) only supports arcfour-encrypted Kerberos tickets the --enctypes option must be used
+As Samba (version 3) only supports arcfour encrypted Kerberos tickets the --enctypes option must be used
 to select only that encryption type.
 .PP
 .nf
