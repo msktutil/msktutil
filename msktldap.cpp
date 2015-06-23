@@ -428,11 +428,9 @@ void ldap_check_account(msktutil_flags *flags)
 {
     LDAPMessage *mesg;
     const char *machine_attrs[] = {"distinguishedName", "dNSHostName", "msDs-supportedEncryptionTypes",
-                      "userAccountControl", "servicePrincipalName", "userPrincipalName"};
+                      "userAccountControl", "servicePrincipalName", "userPrincipalName", NULL};
     const char *user_attrs[] = {"distinguishedName", "msDs-supportedEncryptionTypes",
-                      "userAccountControl", "servicePrincipalName", "userPrincipalName", "unicodePwd"};
-    std::vector<std::string> v_machine_attrs(machine_attrs, myend(machine_attrs));
-    std::vector<std::string> v_user_attrs(user_attrs, myend(user_attrs));
+                      "userAccountControl", "servicePrincipalName", "userPrincipalName", "unicodePwd", NULL};
 
     std::string dn;
 
