@@ -270,6 +270,16 @@ to prevent a total cleanup. I.e. it is not possible to produce an empty keytab w
 Removes entries from the keytab with given encryption type. (See --enctypes for supported encryption types.)
 Warning: it is possible to produce empty keytabs with the --remove-empty option by successively removing
 all encryption types. Supported enctype strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128 and aes256.
+.TP
+--check-replication
+Wait until the password change is reflected in LDAP.  By default, msktutil exits once a password update is
+successful and the new keytab is written.  However, due to replication delays, LDAP queries might still
+return an older key version number.  If --check-replication is given, msktutil waits until the key version
+number is updated on the queried LDAP server as well.  Note that this is just a sanity check: The new
+password is supposed to be accepted on all domain controllers once the update succeeds, even if LDAP is
+not yet in sync.  Turning on this option might substantially increase the runtime of msktutil in some
+environments due to replication delays (eg. 15 to 30 minutes for common AD configurations).  The default
+is not to check LDAP replication.
 .SH NOTES
 .SS PASSWORD EXPIRY
 .PP

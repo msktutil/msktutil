@@ -435,6 +435,7 @@ void do_help()
     fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
     fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
     fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
+    fprintf(stdout, "  --check-replication    Wait until password change is reflected in LDAP.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Cleanup options:\n");
     fprintf(stdout, "  --remove-old <number>  Removes entries older than <number> days\n");
@@ -453,6 +454,9 @@ void do_version()
 
 static int wait_for_new_kvno(msktutil_flags *flags)
 {
+    if (!flags->check_replication)
+        return 0;
+
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
         return 0;
@@ -944,6 +948,12 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* wait for LDAP replication */
+        if (!strcmp(argv[i], "--check-replication")) {
+            flags->check_replication = true;
+            continue;
+        }
+
         /* Display Verbose Messages */
         if (!strcmp(argv[i], "--verbose")) {
             do_verbose();
@@ -1051,6 +1061,7 @@ msktutil_flags::msktutil_flags() :
     no_canonical_name(false),
     server_behind_nat(false),
     set_samba_secret(false),
+    check_replication(false),
     dont_expire_password(VALUE_IGNORE),
     no_pac(VALUE_IGNORE),
     delegate(VALUE_IGNORE),
