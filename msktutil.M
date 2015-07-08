@@ -260,16 +260,6 @@ This operation requires administrator privileges.
 --set-samba-secret
 Use Samba's net changesecretpw command to locally set the machine account password in Samba's secrets.tdb.
 $PATH need to include Samba's net command.  Samba needs to be configured appropriately.
-.SS CLEANUP OPTIONS
-.TP
---remove-old <number>
-Removes entries from the keytab that are older than <number> days. The newest keytab entries will be kept
-to prevent a total cleanup. I.e. it is not possible to produce an empty keytab with the --remove-old option.
-.TP
---remove-enctype <int>
-Removes entries from the keytab with given encryption type. (See --enctypes for supported encryption types.)
-Warning: it is possible to produce empty keytabs with the --remove-empty option by successively removing
-all encryption types. Supported enctype strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128 and aes256.
 .TP
 --check-replication
 Wait until the password change is reflected in LDAP.  By default, msktutil exits once a password update is
@@ -280,6 +270,16 @@ password is supposed to be accepted on all domain controllers once the update su
 not yet in sync.  Turning on this option might substantially increase the runtime of msktutil in some
 environments due to replication delays (eg. 15 to 30 minutes for common AD configurations).  The default
 is not to check LDAP replication.
+.SS CLEANUP OPTIONS
+.TP
+--remove-old <number>
+Removes entries from the keytab that are older than <number> days. The newest keytab entries will be kept
+to prevent a total cleanup. I.e. it is not possible to produce an empty keytab with the --remove-old option.
+.TP
+--remove-enctype <int>
+Removes entries from the keytab with given encryption type. (See --enctypes for supported encryption types.)
+Warning: it is possible to produce empty keytabs with the --remove-empty option by successively removing
+all encryption types. Supported enctype strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128 and aes256.
 .SH NOTES
 .SS PASSWORD EXPIRY
 .PP
