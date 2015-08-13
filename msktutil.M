@@ -116,6 +116,11 @@ to create or update the keytab
 Specify the new account password instead of generating a random one. Consider the password policy settings
 when defining the string.
 .TP
+--dontchangepw
+Use provided password directly to create keytab entries. (REPLACE_PROGNAME's default would be to create a new
+password for that purpose). --dontchangepw depends on --old-account-password and is mutually exclusive with
+--password.
+.TP
 -h, --hostname <name>
 Overrides the current hostname to be used to be <name>.  If this is not specified, the local host
 name will be used.  Note that the local name lookup service will be to qualify and resolve names

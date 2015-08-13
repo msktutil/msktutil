@@ -385,6 +385,10 @@ void do_help()
     fprintf(stdout, "                         Specify the new account password instead of generating\n");
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
     fprintf(stdout, "                         defining the string.\n");
+    fprintf(stdout, "  --dontchangepw         Use provided password directly to create keytab entries.\n");
+    fprintf(stdout, "                         (Msktutil's default would be to create a new password for that\n");
+    fprintf(stdout, "                         purpose). --dontchangepw depends on --old-account-password\n");
+    fprintf(stdout, "                         and is mutually exclusive with --password\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");
@@ -482,6 +486,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
     int ret = 0;
     if (flags->password_from_cmdline) {
         VERBOSE("Using password from command line");
+    } else if (flags->dontchangepw) {
+        VERBOSE("Using old-account-password from command line without change");
     } else if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need a new password");
     } else {
@@ -535,11 +541,13 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
 
         // We retrieve the kvno _before_ the password change and increment it.
         flags->kvno = ldap_get_kvno(flags);
-        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+        if ((flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) &&
+            (!(flags->dontchangepw))) {
             flags->kvno++;
         }
 
-        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+        if ((flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) &&
+            (!(flags->dontchangepw))) {
             // Set the password.
             ret = set_password(flags);
             if (ret) {
@@ -738,6 +746,12 @@ int main(int argc, char *argv [])
                 fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
                 goto error;
             }
+            continue;
+        }
+
+        /* do not change the provided password */
+        if (!strcmp(argv[i], "--dontchangepw")) {
+            flags->dontchangepw = true;
             continue;
         }
 
@@ -971,6 +985,17 @@ int main(int argc, char *argv [])
         goto error;
     }
 
+    // make --password and --dont_expire_password  mutually exclusive:
+    if (strlen(flags->password.c_str()) && flags->dontchangepw) {
+        fprintf(stderr, "Error: --password and --dontchangepw are mutually exclusive\n");
+        goto error;
+    }
+
+    // let --dontchangepw depend on --old_account_password
+    if (!strlen(flags->old_account_password.c_str()) && flags->dontchangepw) {
+        fprintf(stderr, "Error: --dontchangepw depends on --old-account-password\n");
+        goto error;
+    }
     // allow --remove-enctype only in cleanup mode
     if (exec->mode != MODE_CLEANUP && flags->cleanup_enctype != VALUE_IGNORE) {
         fprintf(stderr, "Error: --remove-enctype can only be used in cleanup mode\n");
@@ -1062,6 +1087,7 @@ msktutil_flags::msktutil_flags() :
     server_behind_nat(false),
     set_samba_secret(false),
     check_replication(false),
+    dontchangepw(false),
     dont_expire_password(VALUE_IGNORE),
     no_pac(VALUE_IGNORE),
     delegate(VALUE_IGNORE),
