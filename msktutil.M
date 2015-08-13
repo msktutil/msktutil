@@ -260,6 +260,16 @@ This operation requires administrator privileges.
 --set-samba-secret
 Use Samba's net changesecretpw command to locally set the machine account password in Samba's secrets.tdb.
 $PATH need to include Samba's net command.  Samba needs to be configured appropriately.
+.TP
+--check-replication
+Wait until the password change is reflected in LDAP.  By default, msktutil exits once a password update is
+successful and the new keytab is written.  However, due to replication delays, LDAP queries might still
+return an older key version number.  If --check-replication is given, msktutil waits until the key version
+number is updated on the queried LDAP server as well.  Note that this is just a sanity check: The new
+password is supposed to be accepted on all domain controllers once the update succeeds, even if LDAP is
+not yet in sync.  Turning on this option might substantially increase the runtime of msktutil in some
+environments due to replication delays (eg. 15 to 30 minutes for common AD configurations).  The default
+is not to check LDAP replication.
 .SS CLEANUP OPTIONS
 .TP
 --remove-old <number>

@@ -185,6 +185,7 @@ public:
     bool no_canonical_name;
     bool server_behind_nat;
     bool set_samba_secret;
+    bool check_replication;
 
     msktutil_val dont_expire_password;
     msktutil_val no_pac;
