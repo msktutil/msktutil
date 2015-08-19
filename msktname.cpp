@@ -41,7 +41,7 @@
 #define NS_MAXMSG 65535
 #endif
 #endif
-
+#include <netinet/in.h>
 #include <cctype>
 std::string complete_hostname(const std::string &hostname, bool no_canonical_name)
 {
