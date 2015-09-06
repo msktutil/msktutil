@@ -56,8 +56,7 @@ LDAPConnection::LDAPConnection(const std::string &server,
         bool no_reverse_lookups) :
         m_ldap() {
     int ret = 0;
-
-#ifndef SOLARIS_LDAP_KERBEROS
+#ifdef HAVE_LDAP_INITIALIZE
     std::string ldap_url = "ldap://" + server;
     VERBOSEldap("calling ldap_initialize");
     ret = ldap_initialize(&m_ldap, ldap_url.c_str());
@@ -70,7 +69,7 @@ LDAPConnection::LDAPConnection(const std::string &server,
     if (ret)
         throw LDAPException("ldap_initialize", ret);
 
-#ifndef SOLARIS_LDAP_KERBEROS
+#ifdef LDAP_OPT_DEBUG_LEVEL
     int debug = 0xffffff;
     if (g_verbose > 1)
         ldap_set_option(NULL, LDAP_OPT_DEBUG_LEVEL, &debug);
@@ -105,7 +104,7 @@ LDAPConnection::LDAPConnection(const std::string &server,
     VERBOSEldap("calling ldap_sasl_interactive_bind_s");
 
     ret = ldap_sasl_interactive_bind_s(m_ldap, NULL, "GSSAPI", NULL, NULL,
-#ifndef SOLARIS_LDAP_KERBEROS
+#ifdef LDAP_SASL_QUIET
             g_verbose ? 0 : LDAP_SASL_QUIET,
 #else
             0,

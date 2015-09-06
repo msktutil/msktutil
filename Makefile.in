@@ -6,6 +6,7 @@ prefix=@prefix@
 sbindir=$(prefix)/sbin
 mandir=@mandir@
 CXX=@CXX@
+CC=@CC@
 CPPFLAGS=-I. @CPPFLAGS@
 CXXFLAGS=@CXXFLAGS@ $(WARNFLAGS)
 LDFLAGS=@LDFLAGS@
