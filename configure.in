@@ -11,6 +11,7 @@ AC_SUBST(PACKAGE_AUTHOR)
 
 
 # Checks for programs.
+AC_PROG_CC
 AC_PROG_CXX
 AC_LANG(C++)
 AC_PATH_PROGS(INSTALL, install)
@@ -243,9 +244,14 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 	AC_MSG_RESULT([no]))
 fi
 
+# Solaris support, http://stackoverflow.com/questions/1630225/what-is-the-canonical-way-to-make-autoconf-link-in-solaris-network-libraries
+AC_SEARCH_LIBS([gethostbyname], [nsl])
+AC_SEARCH_LIBS([socket], [socket], [], [
+               AC_CHECK_LIB([socket], [socket], [LIBS="-lsocket -lnsl $LIBS"],
+              [], [-lnsl])])
 # Checks for libraries.
 AC_CHECK_LIB([krb5], [krb5_init_context], , [AC_MSG_ERROR([libkrb5 not found])])
-AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
+AC_CHECK_LIB([ldap], [ldap_search_ext_s], , [AC_MSG_ERROR([libldap not found])])
 #
 # OpenLDAP's LDAP_OPT_ON macro uses ber_pvt_opt_on. In newer OpenLDAP
 # versions, we have to explicitly link with lber.
@@ -254,7 +260,7 @@ AC_CHECK_LIB([ldap], [ldap_initialize], , [AC_MSG_ERROR([libldap not found])])
 # Since OpenLDAP libldap depends on it anyway, no additional dependency added.
 #
 AC_CHECK_LIB([lber], [ber_alloc], , [AC_MSG_WARN([liblber not found])])
-AC_CHECK_LIB([com_err], [error_message], , [AC_MSG_ERROR([libcom_err not found])])
+#AC_CHECK_LIB([com_err], [error_message], , [AC_MSG_ERROR([libcom_err not found])])
 #
 # LDAP_OPT_DIAGNOSTIC_MESSAGE is present from OpenLDAP 2.4 upwards, only.
 AC_CHECK_DECLS([LDAP_OPT_DIAGNOSTIC_MESSAGE], [], [], [[#include <ldap.h>]])
@@ -288,7 +294,7 @@ fi
 fi
 
 # Check for functions
-AC_CHECK_FUNCS(vasprintf vsnprintf setenv strtoll)
+AC_CHECK_FUNCS(vasprintf vsnprintf setenv strtoll ldap_initialize)
 
 # Check that the AES enctypes are found
 AC_CHECK_DECLS([ENCTYPE_AES256_CTS_HMAC_SHA1_96, ENCTYPE_AES128_CTS_HMAC_SHA1_96], [], [], [[#include <krb5.h>]])
