@@ -1,3 +1,10 @@
+Release 1.0rc2:
+
+- New co-maintainer, Daniel Kobras
+- Skip LDAP replication check by default
+- Fix segfault
+- rewrite ldap_check_account()
+
 Release 1.0rc1:
 
 - New cleanup mode: remove old keytab entries based on time stamp or
@@ -22,7 +29,7 @@ Release 1.0rc1:
 - fixed permission problems with --upn [Ticket #47]
 - Add compatibility for keytabs that have been created by other tools
   [Ticket #48]
-	
+
 Release 0.5.1:
 
 - Add --keytab-auth-as option (thanks Andrew Deason)

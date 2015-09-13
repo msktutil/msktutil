@@ -1,11 +1,11 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT(msktutil, 1.0rc1)
+AC_INIT(msktutil, 1.0rc2)
 AC_CONFIG_HEADER([config.h])
 
-PACKAGE_DATE="October 11, 2013"
-PACKAGE_AUTHOR="Ken Dreyer, Mark Pröhl, Olaf Flebbe"
+PACKAGE_DATE="September 10, 2015"
+PACKAGE_AUTHOR="Mark Pröhl, Olaf Flebbe, Daniel Kobras"
 AC_SUBST(PACKAGE_DATE)
 AC_SUBST(PACKAGE_AUTHOR)
 
