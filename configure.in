@@ -64,8 +64,6 @@ if test -x "$krb5config"; then
   KRB5_CPPFLAGS=`$krb5config --cflags 2>/dev/null`
   KRB5_LIBS=`$krb5config --libs 2>/dev/null`
   CPPFLAGS="$CPPFLAGS $KRB5_CPPFLAGS"
-  # We check for -lkrb5 later with AC_CHECK_LIB, so remove that one here.
-  KRB5_LIBS=`echo "$KRB5_LIBS" | sed 's%-lkrb5 %%'`
   LIBS="$LIBS $KRB5_LIBS"
 else
   AC_MSG_WARN([Could not find a krb5-config program.])
@@ -250,7 +248,6 @@ AC_SEARCH_LIBS([socket], [socket], [], [
                AC_CHECK_LIB([socket], [socket], [LIBS="-lsocket -lnsl $LIBS"],
               [], [-lnsl])])
 # Checks for libraries.
-AC_CHECK_LIB([krb5], [krb5_init_context], , [AC_MSG_ERROR([libkrb5 not found])])
 AC_CHECK_LIB([ldap], [ldap_search_ext_s], , [AC_MSG_ERROR([libldap not found])])
 #
 # OpenLDAP's LDAP_OPT_ON macro uses ber_pvt_opt_on. In newer OpenLDAP
