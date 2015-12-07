@@ -571,7 +571,9 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         // Change account password to default value:
         flags->password = create_default_machine_password(flags->samAccountName);
         // Check if computer account exists, update if so, create if not.
-        ldap_check_account(flags);
+        if (! ldap_check_account(flags)) {
+            ldap_create_account(flags);
+        }
 
         // Set the password.
         ret = set_password(flags);
