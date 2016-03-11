@@ -36,7 +36,7 @@ many computers to the domain.
 To pre-create a computer account, you may use the Active Directory Users and Computers GUI, select
 "new computer" from the right click menu, and type the short DNS name, then right click on the newly
 created object and select "Reset account" to set the password to the default value.  Another
-alternative is to run REPLACE_PROGNAME in the precreate mode.  Both methods accomplish the
+alternative is to run REPLACE_PROGNAME in the pre-create mode.  Both methods accomplish the
 same thing.
 .PP
 To pre-create a service account, you may use the Active Directory Users and Computers GUI, select
@@ -62,7 +62,7 @@ after resetting the account in AD).  Otherwise, exits without doing anything (ev
 options are given).  This option is intended for use from a daily crontab to ensure that the password
 is rotated regularly.
 .TP
-.B precreate
+.B pre-create
 Pre-create (or update) an account for the given host with default password.  Does not use or update
 local keytab.  Requires -h or --computer-name argument.  Implies --user-creds-only.  Generally
 requires administrator credentials.
@@ -366,7 +366,7 @@ This will create a computer account in Active Directory with a new password, wri
 and ensure that it has both "host" and "HTTP" service principals are on it for the hostname.
 .PP
 .nf
-REPLACE_PROGNAME precreate --host computer1.example.com
+REPLACE_PROGNAME pre-create --host computer1.example.com
 .fi
 .PP
 This will pre-create an account for computer1 with the default password using your credentials.  This

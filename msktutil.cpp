@@ -193,9 +193,9 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     }
 
     if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
-        /* Don't set a default hostname if none provided in precreate mode. */
+        /* Don't set a default hostname if none provided in pre-create mode. */
         if (flags->samAccountName.empty()) {
-            fprintf(stderr, "Error: You must supply either --computer-name or --hostname when using precreate mode.\n");
+            fprintf(stderr, "Error: You must supply either --computer-name or --hostname when using pre-create mode.\n");
             exit(1);
         }
     } else if (flags->hostname.empty()) {
@@ -354,7 +354,7 @@ void do_help()
     fprintf(stdout, "                         the last password change was more than 30 days ago\n");
     fprintf(stdout, "                         (see --auto-update-interval). Useful to run from a daily cron job.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  precreate              Pre-create an account for the given host with default password\n");
+    fprintf(stdout, "  pre-create             Pre-create an account for the given host with default password\n");
     fprintf(stdout, "                         but do not update local keytab.\n");
     fprintf(stdout, "                         Requires -h or --computer-name argument.\n");
     fprintf(stdout, "                         Implies --user-creds-only.\n");
