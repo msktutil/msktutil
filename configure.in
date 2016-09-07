@@ -26,6 +26,11 @@ AC_ARG_WITH(mandir,
 [  --with-mandir=DIR       Where to put man pages ($mandir)],
 [ mandir="$withval" ])
 
+AC_ARG_WITH(krb5,
+[  --with-krb5=<auto/mit/heimdal>
+                          Which krb5 implementation to use (default: auto-detect)],
+[ krb5="$withval" ], [ krb5="auto" ] )
+
 AC_ARG_WITH(krb5dir,
 [  --with-krb5dir=DIR      Where to find the Kerberos 5 includes and libraries],
 [ krb5dir="$withval" ])
@@ -115,7 +120,7 @@ case "$udns" in
     ;;
 esac
 
-AC_CHECK_HEADERS([krb5.h com_err.h heim_err.h])
+AC_CHECK_HEADERS([krb5.h com_err.h])
 if test "$ac_cv_header_krb5_h" = "no"; then
   AC_MSG_ERROR([This program cannot be built without krb5.h])
 fi
@@ -127,22 +132,21 @@ if test "$ac_cv_header_et_com_err_h" = "yes"; then
    AC_DEFINE(HAVE_COM_ERR_H, 1)
 fi
 
-# Detect Kerberos flavour
-if test -x "$krb5config"; then
-  if $krb5config --version 2>/dev/null | grep -i heimdal; then
-    AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])
-  fi
-else
-  # if there is no krb5-config we fall back to heimdal detection via
-  # heim_err.h
-  if test "$ac_cv_header_heim_err_h" = "no"; then
-    AC_CHECK_HEADERS([heimdal/heim_err.h])
-    if test "$ac_cv_header_heimdal_heim_err_h" = "yes"; then
-      AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])    
-    fi
-  else
-    AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])
-  fi
+# We only ever directly include krb5.h, so the only reason to check for
+# Heimdal-specific heim_err.h is to distinguish which implementation we use.
+# We can entirely skip this check if the krb5 implementation has bee given
+# explicitly, ie. krb5 is set to anything but "auto".
+case "$krb5" in
+mit|heimdal) ;;
+auto) krb5="mit"; AC_CHECK_HEADERS([heim_err.h heimdal/heim_err.h], [krb5="heimdal"; break]) ;;
+*) AC_MSG_ERROR([invalid parameter for --with-krb5]) ;;
+esac
+
+AC_MSG_CHECKING([krb5 implementation])
+AC_MSG_RESULT([$krb5])
+
+if test "$krb5" = "heimdal"; then
+    AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])    
 fi
 
 AC_CHECK_HEADERS([sasl.h])
