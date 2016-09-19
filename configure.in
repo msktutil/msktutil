@@ -146,7 +146,7 @@ AC_MSG_CHECKING([krb5 implementation])
 AC_MSG_RESULT([$krb5])
 
 if test "$krb5" = "heimdal"; then
-    AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])    
+    AC_DEFINE(HEIMDAL, 1, [defined if the kerberos is heimdal])
 fi
 
 AC_CHECK_HEADERS([sasl.h])
