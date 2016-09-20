@@ -531,28 +531,31 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         }
 
         // Check if computer account exists, update if so, create if not.
-        ldap_check_account(flags);
+        if (! ldap_check_account(flags)) {
+            ldap_create_account(flags);
+            flags->kvno = ldap_get_kvno(flags);
+        } else {
+            // We retrieve the kvno _before_ the password change and increment it.
+            flags->kvno = ldap_get_kvno(flags);
+            if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+                flags->kvno++;
+            }
 
-        // We retrieve the kvno _before_ the password change and increment it.
-        flags->kvno = ldap_get_kvno(flags);
-        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
-            flags->kvno++;
-        }
-
-        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
-            // Set the password.
-            ret = set_password(flags);
-            if (ret) {
-                fprintf(stderr, "Error: set_password failed\n");
-                if (flags->use_service_account) {
-                    fprintf(stderr, "Hint: Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
-                    fprintf(stderr, "      For example, there could be a \"Minimum password age\" policy preventing\n");
-                    fprintf(stderr, "      passwords from being changed too frequently. If so, you can reset the\n");
-                    fprintf(stderr, "      password instead of changing it using the --user-creds-only option.\n");
-                    fprintf(stderr, "      Be aware that you need a ticket of a user with administrative privileges\n");
-                    fprintf(stderr, "      for that.\n");
+            if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+                // Set the password.
+                ret = set_password(flags);
+                if (ret) {
+                    fprintf(stderr, "Error: set_password failed\n");
+                    if (flags->use_service_account) {
+                        fprintf(stderr, "Hint: Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
+                        fprintf(stderr, "      For example, there could be a \"Minimum password age\" policy preventing\n");
+                        fprintf(stderr, "      passwords from being changed too frequently. If so, you can reset the\n");
+                        fprintf(stderr, "      password instead of changing it using the --user-creds-only option.\n");
+                        fprintf(stderr, "      Be aware that you need a ticket of a user with administrative privileges\n");
+                        fprintf(stderr, "      for that.\n");
+                    }
+                    return ret;
                 }
-                return ret;
             }
         }
 
@@ -568,7 +571,9 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         // Change account password to default value:
         flags->password = create_default_machine_password(flags->samAccountName);
         // Check if computer account exists, update if so, create if not.
-        ldap_check_account(flags);
+        if (! ldap_check_account(flags)) {
+            ldap_create_account(flags);
+        }
 
         // Set the password.
         ret = set_password(flags);

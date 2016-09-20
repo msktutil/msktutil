@@ -1,11 +1,11 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT(msktutil, 1.0rc1)
+AC_INIT(msktutil, 1.0rc2)
 AC_CONFIG_HEADER([config.h])
 
-PACKAGE_DATE="October 11, 2013"
-PACKAGE_AUTHOR="Ken Dreyer, Mark Pröhl, Olaf Flebbe"
+PACKAGE_DATE="September 10, 2015"
+PACKAGE_AUTHOR="Mark Pröhl, Olaf Flebbe, Daniel Kobras"
 AC_SUBST(PACKAGE_DATE)
 AC_SUBST(PACKAGE_AUTHOR)
 
@@ -69,8 +69,6 @@ if test -x "$krb5config"; then
   KRB5_CPPFLAGS=`$krb5config --cflags 2>/dev/null`
   KRB5_LIBS=`$krb5config --libs 2>/dev/null`
   CPPFLAGS="$CPPFLAGS $KRB5_CPPFLAGS"
-  # We check for -lkrb5 later with AC_CHECK_LIB, so remove that one here.
-  KRB5_LIBS=`echo "$KRB5_LIBS" | sed 's%-lkrb5 %%'`
   LIBS="$LIBS $KRB5_LIBS"
 else
   AC_MSG_WARN([Could not find a krb5-config program.])
@@ -263,7 +261,6 @@ AC_SEARCH_LIBS([socket], [socket], [], [
                AC_CHECK_LIB([socket], [socket], [LIBS="-lsocket -lnsl $LIBS"],
               [], [-lnsl])])
 # Checks for libraries.
-AC_CHECK_LIB([krb5], [krb5_init_context], , [AC_MSG_ERROR([libkrb5 not found])])
 AC_CHECK_LIB([ldap], [ldap_search_ext_s], , [AC_MSG_ERROR([libldap not found])])
 #
 # OpenLDAP's LDAP_OPT_ON macro uses ber_pvt_opt_on. In newer OpenLDAP
