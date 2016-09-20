@@ -27,7 +27,7 @@ AC_ARG_WITH(mandir,
 [ mandir="$withval" ])
 
 AC_ARG_WITH(krb5,
-[  -with-krb5=<auto/mit/heimdal>
+[  --with-krb5=<auto/mit/heimdal>
                            Which krb5 implementation to use (default: auto-detect)],
 [ krb5="$withval" ], [ krb5="auto" ] )
 
