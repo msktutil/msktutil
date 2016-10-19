@@ -282,8 +282,6 @@ int generate_new_password(msktutil_flags *flags);
 #define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }
 
 
-#endif
-
 // printf into a C++ string.
 std::string sform(const char* format, ...);
 
@@ -339,4 +337,6 @@ class LDAPException : public Exception
 #include "ldapconnection.h"
 
 
+
+#endif
 
