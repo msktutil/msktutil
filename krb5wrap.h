@@ -32,7 +32,7 @@ class noncopyable {
 protected:
     noncopyable() {}
     ~noncopyable() {}
-private:  // emphasize the following members are private
+private:  /* emphasize the following members are private */
     noncopyable(const noncopyable&);
     const noncopyable& operator=(const noncopyable&);
 };
@@ -84,7 +84,7 @@ public:
     ~KRB5Keytab() {
         krb5_error_code ret = krb5_kt_close(g_context.get(), m_keytab);
         if (ret)
-            // FIXME: shouldn't throw from destructor...
+            /* FIXME: shouldn't throw from destructor... */
             throw KRB5Exception("krb5_kt_close", ret);
     }
 
@@ -93,7 +93,7 @@ public:
 
     krb5_keytab get() { return m_keytab; }
 
-    // Defined below...
+    /* Defined below... */
     class cursor;
 };
 
@@ -183,7 +183,7 @@ class KRB5Keytab::cursor : noncopyable {
     krb5_kt_cursor m_cursor;
     krb5_keytab_entry m_entry;
 
-    // Duplicates part of entry, but oh well.
+    /* Duplicates part of entry, but oh well. */
     KRB5Principal m_princ;
 
 public:

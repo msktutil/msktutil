@@ -134,8 +134,9 @@ int set_password(msktutil_flags *flags)
     int response = 0;
     std::string old_pwdLastSet;
 
-    // Zero out these data structures, because we attempt to free them below, and sometimes, upon
-    // error conditions, the called API hasn't set them itself.
+    /* Zero out these data structures, because we attempt to free them
+       below, and sometimes, upon error conditions, the called API
+       hasn't set them itself. */
     resp_string.data = NULL;
     resp_string.length = 0;
     resp_code_string.data = NULL;
@@ -212,7 +213,7 @@ int set_password(msktutil_flags *flags)
             KRB5Principal principal(flags->samAccountName);
             KRB5Creds local_creds(principal, flags->old_account_password, "kadmin/changepw");
             creds.move_from(local_creds);
-        } else // shouldn't happen
+        } else /* shouldn't happen */
             throw Exception("Error: unknown auth_type.");
 
         if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {

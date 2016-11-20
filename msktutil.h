@@ -103,7 +103,7 @@
 #define MS_KERB_ENCTYPE_DES_CBC_MD5             0x02
 #define MS_KERB_ENCTYPE_RC4_HMAC_MD5            0x04
 
-// Define these if the system supports them, otherwise define to 0.
+/* Define these if the system supports them, otherwise define to 0. */
 #if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
 #define MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 0x08
 #else
@@ -283,7 +283,7 @@ int generate_new_password(msktutil_flags *flags);
 #define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }
 
 
-// printf into a C++ string.
+/* printf into a C++ string. */
 std::string sform(const char* format, ...);
 
 class Exception : public std::exception
@@ -291,13 +291,13 @@ class Exception : public std::exception
   protected:
     std::string m_message;
 
-    // Prohibit assignment
+    /* Prohibit assignment */
     Exception& operator=(const Exception&);
 
   public:
-    // Constructors
+    /* Constructors */
 
-    // Default construction with no message uses "Exception"
+    /* Default construction with no message uses "Exception" */
     Exception() : m_message("Exception") { }
     explicit Exception(char const * simple_string) : m_message(simple_string) {}
     explicit Exception(const std::string &str) : m_message(str) {}

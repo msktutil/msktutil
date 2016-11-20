@@ -355,11 +355,13 @@ void ldap_check_account_strings(msktutil_flags *flags)
 
     VERBOSE("Inspecting (and updating) computer account attributes");
 
-    // NOTE: failures to set all the attributes in this function are
-    // ignored, for better or worse... But failure to set
-    // userPrincipalName is not ignored
+    /*
+     * NOTE: failures to set all the attributes in this function are
+     *  ignored, for better or worse... But failure to set
+     *  userPrincipalName is not ignored
+     */
 
-    // don't set dnsHostname on service accounts
+    /* don't set dnsHostname on service accounts */
     if (!flags->use_service_account) {
         if (!flags->hostname.empty() && flags->hostname != flags->ad_dnsHostName) {
             ldap_simple_set_attr(dn, "dNSHostName", flags->hostname, flags);
@@ -379,8 +381,8 @@ void ldap_check_account_strings(msktutil_flags *flags)
         } else {
             userPrincipalName_string = sform("%s@%s", flags->userPrincipalName.c_str(), flags->realm_name.c_str());
         }
-        // let's see if userPrincipalName is already set to the
-        // desired value in AD...
+        /* let's see if userPrincipalName is already set to the
+           desired value in AD... */
         LDAPMessage *mesg = ldap_get_account_attrs(flags, attrs);
         if (ldap->count_entries(mesg) == 1) {
             mesg = ldap->first_entry(mesg);
@@ -405,8 +407,9 @@ void ldap_check_account_strings(msktutil_flags *flags)
     }
 
     ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, des_only, flags);
-    // If msDS-supportedEncryptionTypes isn't set, ad_enctypes will be VALUE_OFF. In that case,
-    // reset ad_supportedEncryptionTypes according to the DES flag, in case we changed it.
+    /* If msDS-supportedEncryptionTypes isn't set, ad_enctypes will be
+       VALUE_OFF. In that case, reset ad_supportedEncryptionTypes
+       according to the DES flag, in case we changed it. */
     if (flags->ad_enctypes == VALUE_OFF) {
         flags->ad_supportedEncryptionTypes =
             MS_KERB_ENCTYPE_DES_CBC_CRC|MS_KERB_ENCTYPE_DES_CBC_MD5;
@@ -490,17 +493,18 @@ bool ldap_check_account(msktutil_flags *flags)
     }
 
     if (!flags->use_service_account) {
-        // Save current dNSHostName
+        /* Save current dNSHostName */
         flags->ad_dnsHostName = ldap->get_one_val(mesg, "dNSHostName");
         VERBOSE("Found dNSHostName = %s", flags->ad_dnsHostName.c_str());
     }
 
-    // Save current servicePrincipalName and userPrincipalName attrs
+    /* Save current servicePrincipalName and userPrincipalName
+       attrs */
     if (ldap->count_entries(mesg) == 1) {
-        mesg = ldap->first_entry(mesg);  // TODO Why first_entry ?? already at first entry!
+        mesg = ldap->first_entry(mesg);  /* TODO Why first_entry ?? already at first entry! */
         std::vector<std::string> vals = ldap->get_all_vals(mesg, "servicePrincipalName");
         for (size_t i = 0; i < vals.size(); ++i) {
-            // translate HOST/ to host/
+            /* translate HOST/ to host/ */
             if (vals[i].compare(0, 5, "HOST/") == 0) {
                 vals[i].replace(0, 5, "host/");
             }
@@ -518,7 +522,7 @@ bool ldap_check_account(msktutil_flags *flags)
                     upn.erase(pos);
                 }
                 VERBOSE("  Found User Principal: %s", upn.c_str());
-                //update userPrincipalName for salt generation
+                /* update userPrincipalName for salt generation */
                 flags->userPrincipalName = upn.c_str();
             }
         }
@@ -568,7 +572,7 @@ void ldap_create_account(msktutil_flags *flags)
     mod_attrs.add("unicodePwd", "\"" + flags->password  + "\"", true);
     ldap->add(flags->ad_computerDn, mod_attrs);
 
-    // Defaults, will attempt to reset later
+    /* Defaults, will attempt to reset later */
     flags->ad_supportedEncryptionTypes = MS_KERB_ENCTYPE_DES_CBC_CRC | MS_KERB_ENCTYPE_DES_CBC_MD5 |
         MS_KERB_ENCTYPE_RC4_HMAC_MD5;
     flags->ad_enctypes = VALUE_OFF;

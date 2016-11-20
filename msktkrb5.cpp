@@ -88,7 +88,7 @@ int flush_keytab(msktutil_flags *flags)
     VERBOSE("Flushing the keytab");
     KRB5Keytab keytab(flags->keytab_writename);
 
-    // Delete all entries for this host
+    /* Delete all entries for this host */
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
     to_delete_t to_delete;
 
@@ -106,7 +106,7 @@ int flush_keytab(msktutil_flags *flags)
             }
         }
     } catch (KRB5Exception ex) {
-        // Ignore errors reading keytab
+        /* Ignore errors reading keytab *7
     }
 
     for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {
@@ -126,9 +126,9 @@ void cleanup_keytab(msktutil_flags *flags)
     VERBOSE("Cleaning the keytab");
     KRB5Keytab keytab(flags->keytab_writename);
 
-    // Determine timestamp of newest entries:
+    /* Determine timestamp of newest entries: */
     time_t newest_timestamp;
-    // Delete all entries for this host
+    /* Delete all entries for this host */
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
     to_delete_t to_delete;
     time_t ttNow = time(NULL);
@@ -144,20 +144,22 @@ void cleanup_keytab(msktutil_flags *flags)
         }
         KRB5Keytab::cursor cursor(keytab);
         while (cursor.next()) {
-            // (1) clean the current entry if its enctype matches the
-            //     one given by --remove-enctype
-            // (2) clean the entry if its time stamp and the current
-            //     time differ by more than the number of days given by
-            //     --remove-old. But only if --remove-old has been
-            //     given on the command line (i.e. cleanup_days != -1)
-            // (3) don't let a too small number of days given by
-            //     --remove-old clean one of the newest
-            //     entries. Note: the newest entries could have
-            //     slightly different time stamps. Therefore,
-            //     newest_timestamp and cursor.timestamp must not be
-            //     compared directly. As a workaround we clean the
-            //     current entry only if its time stamp and
-            //     newest_timestamp differ by more than 2 seconds.
+            /*
+             * (1) clean the current entry if its enctype matches the
+             *     one given by --remove-enctype
+             * (2) clean the entry if its time stamp and the current
+             *     time differ by more than the number of days given by
+             *     --remove-old. But only if --remove-old has been
+             *     given on the command line (i.e. cleanup_days != -1)
+             * (3) don't let a too small number of days given by
+             *     --remove-old clean one of the newest
+             *     entries. Note: the newest entries could have
+             *     slightly different time stamps. Therefore,
+             *     newest_timestamp and cursor.timestamp must not be
+             *     compared directly. As a workaround we clean the
+             *     current entry only if its time stamp and
+             *     newest_timestamp differ by more than 2 seconds.
+             */
             if ((cursor.enctype() == flags->cleanup_enctype) ||
                 ((ttNow - cursor.timestamp() >= flags->cleanup_days * 60 * 60 * 24) &&
                  (flags->cleanup_days != -1) &&
@@ -168,7 +170,7 @@ void cleanup_keytab(msktutil_flags *flags)
             }
         }
     } catch (KRB5Exception ex) {
-        // Ignore errors reading keytab
+        /* Ignore errors reading keytab */
     }
 
     for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {
@@ -184,16 +186,15 @@ void cleanup_keytab(msktutil_flags *flags)
 void update_keytab(msktutil_flags *flags)
 {
     VERBOSE("Updating all entries for %s", flags->samAccountName.c_str());
-    //    krb5_kvno kvno = ldap_get_kvno(flags);
     add_principal_keytab(flags->samAccountName, flags);
     if (!flags->use_service_account) {
         add_principal_keytab(flags->samAccountName_uppercase, flags);
     }
-    //add upn
+    /* add upn */
     if (!flags->userPrincipalName.empty()) {
         add_principal_keytab(flags->userPrincipalName, flags);
     }
-    //add host/sAMAccountNAme
+    /* add host/sAMAccountName */
     if (!flags->use_service_account) {
         add_principal_keytab("host/" + flags->samAccountName_nodollar, flags);
     }
@@ -225,14 +226,18 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
     to_delete_t to_delete;
 
-    // Delete entries with obsolete kvnos.
-
-    // Keep all old keys with smaller kvnos which could've been used in the last week (a
-    // conservative guess for reasonable maximum ticket lifetimes).  That is: if kvno 3 has
-    // timestamp Jan 1, 2010, kvno 4 has timestamp Jan 20, 2010, and it is currently Jan 20, 2010,
-    // then keep both kvno 3 and 4, while writing out a new kvno 5. This is needed so that users who
-    // already have a valid service ticket in their credential cache can continue using it to
-    // connect to the server.
+    /*
+     * Delete entries with obsolete kvnos.
+     *
+     * Keep all old keys with smaller kvnos which could've been used
+     * in the last week (a conservative guess for reasonable maximum
+     * ticket lifetimes).  That is: if kvno 3 has timestamp Jan 1,
+     * 2010, kvno 4 has timestamp Jan 20, 2010, and it is currently
+     * Jan 20, 2010, then keep both kvno 3 and 4, while writing out a
+     * new kvno 5. This is needed so that users who already have a
+     * valid service ticket in their credential cache can continue
+     * using it to connect to the server.
+     */
     try {
         krb5_kvno earliest_kvno_to_keep = 0;
         {
@@ -263,7 +268,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
             }
         }
     } catch (KRB5Exception ex) {
-        // Ignore errors reading keytab
+        /* Ignore errors reading keytab */
     }
 
     for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {

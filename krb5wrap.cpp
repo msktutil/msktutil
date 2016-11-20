@@ -219,11 +219,11 @@ KRB5Keytab::cursor::~cursor()
 {
     krb5_free_keytab_entry_contents(g_context.get(), &m_entry);
     memset(&m_entry, 0, sizeof(m_entry));
-    // Tell m_princ to not free its contents!
+    /* Tell m_princ to not free its contents! */
     m_princ.reset_no_free(NULL);
     krb5_error_code ret = krb5_kt_end_seq_get(g_context.get(), m_keytab.m_keytab, &m_cursor);
     if (ret) {
-        // FIXME: shouldn't throw from destructor...
+        /* FIXME: shouldn't throw from destructor... */
         throw KRB5Exception("krb5_kt_end_seq_get", ret);
     }
 }
@@ -238,5 +238,5 @@ bool KRB5Keytab::cursor::next()
     return ret == 0;
 }
 
-// GLOBAL:
+/* GLOBAL: */
 KRB5Context g_context;

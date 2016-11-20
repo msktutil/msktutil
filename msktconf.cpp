@@ -48,17 +48,17 @@ std::string create_default_machine_password(const std::string &samaccountname)
      *
      */
 
-    // Remove trailing '$'
+    /* Remove trailing '$' */
     if (machine_password[machine_password.size() - 1] == '$') {
         machine_password.resize(machine_password.size() - 1);
     }
 
-    // Truncate to first 14 characters
+    /* Truncate to first 14 characters */
     if (machine_password.size() > MAX_DEF_MACH_PASS_LEN) {
         machine_password.resize(MAX_DEF_MACH_PASS_LEN);
     }
 
-    // Convert all characters to lowercase
+    /* Convert all characters to lowercase */
     for (size_t i = 0; i < machine_password.size(); i++) {
         machine_password[i] = std::tolower(machine_password[i]);
     }
@@ -84,7 +84,7 @@ std::string get_tempfile_name(const char *name)
         throw Exception(sform("Error: mkstemp failed: %d", errno));
     }
 
-    // Didn't need an fd, just to have the filename created securely.
+    /* Didn't need an fd, just to have the filename created securely. */
     close(fd);
     return std::string(template_arr);
 }
@@ -175,9 +175,10 @@ void switch_default_ccache(const char *ccache_name)
 {
     VERBOSE("Using the local credential cache: %s", ccache_name);
 
-    // Is this setenv really necessary given krb5_cc_set_default_name?
-    // ...answer: YES, because ldap's sasl won't be using our context object,
-    // and may in fact be using a different implementation of kerberos entirely!
+    /* Is this setenv really necessary given krb5_cc_set_default_name?
+       ...answer: YES, because ldap's sasl won't be using our context
+       object, and may in fact be using a different implementation of
+       kerberos entirely! */
 #ifdef HAVE_SETENV
     if (setenv("KRB5CCNAME", ccache_name, 1)) {
         throw Exception("Error: setenv failed");
@@ -280,7 +281,8 @@ bool try_user_creds()
 {
     try {
         VERBOSE("Checking if default ticket cache has tickets...");
-        // The following is for the side effect of throwing an exception or not.
+        /* The following is for the side effect of throwing an
+           exception or not. */
         KRB5CCache ccache(KRB5CCache::defaultName());
         KRB5Principal princ(ccache);
 
@@ -310,12 +312,15 @@ int find_working_creds(msktutil_flags *flags)
 
     if (!flags->user_creds_only) {
         std::string host_princ = "host/" + flags->hostname;
-
-        // NOTE: we have to use an actual file for the credential cache, and not a MEMORY: type,
-        // because libsasl may be using heimdal, while this program may be compiled against MIT
-        // kerberos. So, while it's all in the same process and you'd think an in-mem ccache would
-        // be the right thing, the two kerberos implementations cannot share an in-memory ccache, so
-        // we have to use a file. Sigh.
+        /*
+         * NOTE: we have to use an actual file for the credential
+         * cache, and not a MEMORY: type, because libsasl may be using
+         * heimdal, while this program may be compiled against MIT
+         * kerberos. So, while it's all in the same process and you'd
+         * think an in-mem ccache would be the right thing, the two
+         * kerberos implementations cannot share an in-memory ccache,
+         * so we have to use a file. Sigh.
+         */
         g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
         std::string ccache_name = "FILE:" + g_ccache_filename;
 

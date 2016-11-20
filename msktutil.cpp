@@ -37,7 +37,7 @@
 #include <memory>
 #include <algorithm>
 
-// GLOBALS
+/* GLOBALS */
 
 int g_verbose = 0;
 
@@ -135,7 +135,7 @@ void do_verbose()
 void qualify_principal_vec(std::vector<std::string> &principals, const std::string &hostname)
 {
     for(size_t i = 0; i < principals.size(); ++i) {
-        // If no hostname part, add it:
+        /* If no hostname part, add it: */
         if (principals[i].find('/') == std::string::npos) {
             if (hostname.empty()) {
                 fprintf(stderr, "Error: default hostname unspecified, and service argument missing hostname.\n");
@@ -246,7 +246,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     qualify_principal_vec(exec->add_principals, flags->hostname);
     qualify_principal_vec(exec->remove_principals, flags->hostname);
 
-    // Now, try to get kerberos credentials in order to connect to LDAP.
+    /* Now, try to get kerberos credentials in order to connect to LDAP. */
     flags->auth_type = find_working_creds(flags);
     if (flags->auth_type == AUTH_NONE) {
         fprintf(stderr, "Error: could not find any credentials to authenticate with. Neither keytab,\n\
@@ -257,8 +257,8 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
         exit(1);
     }
 
-    // If we didn't get kerberos credentials because the old passord has expired
-    // we need to change it now
+    /* If we didn't get kerberos credentials because the old passord
+       has expired we need to change it now  */
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Account password expired, changing it now...");
         ret = set_password(flags);
@@ -266,8 +266,6 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
             fprintf(stderr, "Error: failed to change password\n");
             exit(1);
         }
-        //        VERBOSE("Waiting 3 seconds before trying to get kerberos credentials...");
-        //        sleep(3);
         if (!get_creds(flags)) {
             fprintf(stderr, "Error: failed to get kerberos credentials\n");
             exit(1);
@@ -280,7 +278,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     if (!flags->ldap->is_connected()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
-        // Print a hint as to the likely cause:
+        /* Print a hint as to the likely cause: */
         if (flags->auth_type == AUTH_FROM_USER_CREDS) {
             fprintf(stderr, "--> Is your kerberos ticket expired? You might try re-\"kinit\"ing.\n");
         }
@@ -306,7 +304,7 @@ int add_and_remove_principals(msktutil_exec *exec)
     for (size_t i = 0; i < exec->add_principals.size(); ++i) {
         std::string principal = exec->add_principals[i];
         if (std::find(cur_princs.begin(), cur_princs.end(), principal) == cur_princs.end()) {
-            // Not already in the list, so add it.
+            /* Not already in the list, so add it. */
             int loc_ret = ldap_add_principal(principal, Globals::flags());
             if (loc_ret) {
                 fprintf(stderr, "Error: ldap_add_principal failed\n");
@@ -486,7 +484,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
     } else if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need a new password");
     } else {
-        // Generate a random password and store it.
+        /* Generate a random password and store it. */
         ret = generate_new_password(flags);
         if (ret) {
             fprintf(stderr, "Error: generate_new_password failed\n");
@@ -506,15 +504,16 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         return ret;
     } else if (exec->mode == MODE_CREATE || exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
         if (exec->mode == MODE_AUTO_UPDATE) {
-            // Don't bother doing anything if the auth was from the keytab (and not e.g. default password), and the
             if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
                 flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
                 flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
                 std::string pwdLastSet = ldap_get_pwdLastSet(flags);
-                // Windows timestamp is in 100-nanoseconds-since-1601. (or, tenths of microseconds)
+                /* Windows timestamp is in
+                   100-nanoseconds-since-1601. (or, tenths of
+                   microseconds) */
                 long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);
                 long long epoch_bias_1601_to_1970 = 116444736000000000LL;
-                // Unix timestamp is seconds since 1970.
+                /* Unix timestamp is seconds since 1970. */
                 long long unix_timestamp;
                 if (windows_timestamp < epoch_bias_1601_to_1970) {
                     unix_timestamp = 0;
@@ -531,19 +530,21 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
             }
         }
 
-        // Check if computer account exists, update if so, create if not.
+        /* Check if computer account exists, update if so, create if
+           not. */
         if (! ldap_check_account(flags)) {
             ldap_create_account(flags);
             flags->kvno = ldap_get_kvno(flags);
         } else {
-            // We retrieve the kvno _before_ the password change and increment it.
+            /* We retrieve the kvno _before_ the password change and
+               increment it. */
             flags->kvno = ldap_get_kvno(flags);
             if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
                 flags->kvno++;
             }
 
             if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
-                // Set the password.
+                /* Set the password. */
                 ret = set_password(flags);
                 if (ret) {
                     fprintf(stderr, "Error: set_password failed\n");
@@ -560,7 +561,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
             }
         }
 
-        // And add and remove principals to servicePrincipalName in LDAP.
+        /* And add and remove principals to servicePrincipalName in
+           LDAP.*/
         add_and_remove_principals(exec);
 
         VERBOSE("Updating all entries for %s in the keytab %s", flags->hostname.c_str(),
@@ -569,21 +571,23 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         wait_for_new_kvno(flags);
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
-        // Change account password to default value:
+        /* Change account password to default value: */
         flags->password = create_default_machine_password(flags->samAccountName);
-        // Check if computer account exists, update if so, create if not.
+        /* Check if computer account exists, update if so, create if
+           not. */
         if (! ldap_check_account(flags)) {
             ldap_create_account(flags);
         }
 
-        // Set the password.
+        /* Set the password. */
         ret = set_password(flags);
         if (ret) {
             fprintf(stderr, "Error: set_password failed\n");
             return ret;
         }
 
-        // And add and remove principals to servicePrincipalName in LDAP.
+        /* And add and remove principals to servicePrincipalName in
+           LDAP. */
         add_and_remove_principals(exec);
         wait_for_new_kvno(flags);
         return ret;
@@ -611,7 +615,7 @@ Globals *Globals::instance;
 
 int main(int argc, char *argv [])
 {
-    // unbuffer stdout.
+    /* unbuffer stdout. */
     setbuf(stdout, NULL);
 
     int i;
@@ -971,19 +975,20 @@ int main(int argc, char *argv [])
         goto error;
     }
 
-    // make --old-account-password and --user-creds-only  mutually exclusive:
+    /* make --old-account-password and --user-creds-only mutually
+       exclusive: */
     if (strlen(flags->old_account_password.c_str()) && flags->user_creds_only) {
         fprintf(stderr, "Error: --old-account-password and --user-creds-only are mutually exclusive\n");
         goto error;
     }
 
-    // allow --remove-enctype only in cleanup mode
+    /* allow --remove-enctype only in cleanup mode */
     if (exec->mode != MODE_CLEANUP && flags->cleanup_enctype != VALUE_IGNORE) {
         fprintf(stderr, "Error: --remove-enctype can only be used in cleanup mode\n");
         goto error;
     }
 
-    // allow --remove-old only in cleanup mode
+    /* allow --remove-old only in cleanup mode */
     if (exec->mode != MODE_CLEANUP && flags->cleanup_days != -1) {
         fprintf(stderr, "Error: --remove-old can only be used in cleanup mode\n");
         goto error;
