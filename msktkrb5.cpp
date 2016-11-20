@@ -106,7 +106,7 @@ int flush_keytab(msktutil_flags *flags)
             }
         }
     } catch (KRB5Exception ex) {
-        /* Ignore errors reading keytab *7
+        /* Ignore errors reading keytab */
     }
 
     for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {
