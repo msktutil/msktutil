@@ -451,7 +451,7 @@ bool ldap_check_account(msktutil_flags *flags)
     }
 
     if (ldap->count_entries(mesg) == 0) {
-      return false;
+        return false;
     }
 
     /* Account already exists */
