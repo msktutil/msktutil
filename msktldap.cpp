@@ -351,7 +351,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
 {
     const std::string &dn = flags->ad_computerDn;
     LDAPConnection *ldap = flags->ldap;
-    
+
     VERBOSE("Inspecting (and updating) computer account attributes");
 
     // NOTE: failures to set all the attributes in this function are

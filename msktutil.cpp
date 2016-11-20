@@ -276,7 +276,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     VERBOSE("Authenticated using method %d", flags->auth_type);
 
     flags->ldap = new LDAPConnection(flags->server, flags->no_reverse_lookups);
-    
+
     if (!flags->ldap->is_connected()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         // Print a hint as to the likely cause:
@@ -1113,7 +1113,6 @@ msktutil_flags::~msktutil_flags()
 msktutil_exec::msktutil_exec() :
     mode(MODE_NONE)
 {
-    
 }
 
 
