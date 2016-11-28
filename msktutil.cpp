@@ -429,6 +429,8 @@ void do_help()
     fprintf(stdout, "                         Specify the new account password instead of generating\n");
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
     fprintf(stdout, "                         defining the string.\n");
+    fprintf(stdout, "  --dontchangepw         (EXPERIMENTAL) Do not create a new random password and try to keep\n");
+    fprintf(stdout, "                         existing keys.\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");
@@ -530,6 +532,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
     int ret = 0;
     if (flags->password_from_cmdline) {
         VERBOSE("Using password from command line");
+    } else if (flags->dontchangepw) {
+        VERBOSE("Skipping creation of new password");
     } else if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need a new password");
     } else {
@@ -597,11 +601,13 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
             /* We retrieve the kvno _before_ the password change and
              * increment it. */
             flags->kvno = ldap_get_kvno(flags);
-            if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+            if ((flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) &&
+                (!flags->dontchangepw)) {
                 flags->kvno++;
             }
 
-            if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
+            if ((flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) &&
+                (!flags->dontchangepw)) {
                 /* Set the password. */
                 ret = set_password(flags);
                 if (ret) {
@@ -839,6 +845,12 @@ int main(int argc, char *argv [])
                     );
                 goto error;
             }
+            continue;
+        }
+
+        /* do not change the password */
+        if (!strcmp(argv[i], "--dontchangepw")) {
+            flags->dontchangepw = true;
             continue;
         }
 
@@ -1220,6 +1232,7 @@ msktutil_flags::msktutil_flags() :
     server_behind_nat(false),
     set_samba_secret(false),
     check_replication(false),
+    dontchangepw(false),
     dont_expire_password(VALUE_IGNORE),
     no_pac(VALUE_IGNORE),
     delegate(VALUE_IGNORE),
