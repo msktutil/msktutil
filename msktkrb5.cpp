@@ -387,8 +387,9 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
          */
         std::string lower_accountname = flags->samAccountName_nodollar;
         for(std::string::iterator it = lower_accountname.begin();
-            it != lower_accountname.end(); ++it)
+            it != lower_accountname.end(); ++it) {
             *it = std::tolower(*it);
+        }
 
         if (flags->use_service_account) {
 
