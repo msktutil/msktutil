@@ -33,17 +33,6 @@
 #include <cctype>
 #include <algorithm>
 
-
-std::string get_user_principal()
-{
-    VERBOSE("Obtaining Principal for the executing user");
-    KRB5CCache ccache(KRB5CCache::defaultName());
-    KRB5Principal principal(ccache);
-
-    return principal.name();
-}
-
-
 void get_default_keytab(msktutil_flags *flags)
 {
     char keytab_name[MAX_KEYTAB_NAME_LEN];
