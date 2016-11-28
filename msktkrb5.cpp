@@ -79,6 +79,41 @@ void get_default_keytab(msktutil_flags *flags)
     }
 }
 
+/* Salt creation -- see windows-salt.txt */
+std::string get_salt(msktutil_flags *flags)
+{
+    std::string salt;
+    std::string lower_accountname = flags->samAccountName_nodollar;
+    for(std::string::iterator it = lower_accountname.begin();
+        it != lower_accountname.end(); ++it) {
+        *it = std::tolower(*it);
+    }
+
+    if (flags->use_service_account) {
+        if (flags->userPrincipalName.empty()) {
+            salt = sform("%s%s",
+                         flags->realm_name.c_str(),
+                         lower_accountname.c_str());
+        } else {
+            std::string upnsalt = flags->userPrincipalName;
+            upnsalt.erase(std::remove(upnsalt.begin(),
+                                      upnsalt.end(),
+                                      '/'),
+                          upnsalt.end());
+            salt = sform("%s%s",
+                         flags->realm_name.c_str(),
+                         upnsalt.c_str());
+        }
+    } else {
+        salt = sform("%shost%s.%s",
+                     flags->realm_name.c_str(),
+                     lower_accountname.c_str(),
+                     flags->lower_realm_name.c_str());
+    }
+    VERBOSE("Using salt of %s", salt.c_str());
+    return(salt);
+}
+
 
 int flush_keytab(msktutil_flags *flags)
 {
@@ -223,7 +258,6 @@ void update_keytab(msktutil_flags *flags)
     }
 }
 
-
 void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 {
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
@@ -330,45 +364,11 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     }
 #endif
 
-    std::string salt;
-
     for(size_t i = 0; i < enc_types.size(); ++i) {
-        /* Salt creation -- see windows-salt.txt */
-        std::string lower_accountname = flags->samAccountName_nodollar;
-        for(std::string::iterator it = lower_accountname.begin();
-            it != lower_accountname.end(); ++it) {
-            *it = std::tolower(*it);
-        }
-
-        if (flags->use_service_account) {
-
-            if (flags->userPrincipalName.empty()) {
-                salt = sform("%s%s",
-                             flags->realm_name.c_str(),
-                             lower_accountname.c_str());
-            } else {
-                std::string upnsalt = flags->userPrincipalName;
-                upnsalt.erase(std::remove(upnsalt.begin(),
-                                          upnsalt.end(),
-                                          '/'),
-                              upnsalt.end());
-                salt = sform("%s%s",
-                             flags->realm_name.c_str(),
-                             upnsalt.c_str());
-            }
-        } else {
-            salt = sform("%shost%s.%s",
-                         flags->realm_name.c_str(),
-                         lower_accountname.c_str(),
-                         flags->lower_realm_name.c_str());
-        }
-
-        VERBOSE("    Using salt of %s", salt.c_str());
         KRB5Keyblock keyblock;
-
         keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]),
                              flags->password,
-                             salt);
+                             get_salt(flags));
 
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
         keytab.addEntry(princ, flags->kvno, keyblock);
