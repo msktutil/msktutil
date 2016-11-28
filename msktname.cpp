@@ -52,7 +52,9 @@ std::string complete_hostname(const std::string &hostname, bool no_canonical_nam
     krb5_principal temp_princ_raw = NULL;
 
     /* do not canonicalize, use supplied hostname */
-    if (no_canonical_name) { type = KRB5_NT_UNKNOWN; }
+    if (no_canonical_name) {
+        type = KRB5_NT_UNKNOWN;
+    }
 
     krb5_error_code ret =
         krb5_sname_to_principal(g_context.get(), hostname.c_str(), "host",
@@ -355,8 +357,9 @@ std::string get_short_hostname(msktutil_flags *flags)
     std::string long_hostname = flags->hostname;
 
     for(std::string::iterator it = long_hostname.begin();
-        it != long_hostname.end(); ++it)
+        it != long_hostname.end(); ++it) {
         *it = std::tolower(*it);
+    }
 
     std::string short_hostname = long_hostname;
 

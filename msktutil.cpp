@@ -167,8 +167,9 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     flags->lower_realm_name = flags->realm_name;
     for(std::string::iterator it = flags->lower_realm_name.begin();
-        it != flags->lower_realm_name.end(); ++it)
-        *it = std::tolower(*it);
+        it != flags->lower_realm_name.end(); ++it) {
+            *it = std::tolower(*it);
+    }
     if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need AD server");
         flags->server = "dummy";
@@ -453,8 +454,9 @@ void do_version()
 
 static int wait_for_new_kvno(msktutil_flags *flags)
 {
-    if (!flags->check_replication)
+    if (!flags->check_replication) {
         return 0;
+    }
 
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
@@ -1096,16 +1098,21 @@ msktutil_flags::msktutil_flags() :
 {
     /* Check for environment variables as well.  These variables will be overriden
      * By command line arguments. */
-    if (getenv("MSKTUTIL_KEYTAB"))
+    if (getenv("MSKTUTIL_KEYTAB")) {
         keytab_file = getenv("MSKTUTIL_KEYTAB");
-    if (getenv("MSKTUTIL_NO_PAC"))
+    }
+    if (getenv("MSKTUTIL_NO_PAC")) {
         no_pac = VALUE_ON;
-    if (getenv("MSKTUTIL_DELEGATION"))
+    }
+    if (getenv("MSKTUTIL_DELEGATION")) {
         delegate = VALUE_ON;
-    if (getenv("MSKTUTIL_LDAP_BASE"))
+    }
+    if (getenv("MSKTUTIL_LDAP_BASE")) {
         ldap_ou = getenv("MSKTUTIL_LDAP_BASE");
-    if (getenv("MSKTUTIL_SERVER"))
+    }
+    if (getenv("MSKTUTIL_SERVER")) {
         server = getenv("MSKTUTIL_SERVER");
+    }
 }
 
 

@@ -41,7 +41,8 @@
 #define VERBOSEldap(text...) if (g_verbose > 1) { fprintf(stderr, " ###### %s: ", __FUNCTION__); fprintf(stderr, ## text); fprintf(stderr, "\n"); }
 
 static int sasl_interact(ATTRUNUSED LDAP *ld, ATTRUNUSED unsigned flags,
-        ATTRUNUSED void *defaults, void *in) {
+        ATTRUNUSED void *defaults, void *in)
+{
     char *dflt = NULL;
     sasl_interact_t *interact = (sasl_interact_t *) in;
     while (interact->id != SASL_CB_LIST_END) {
@@ -55,7 +56,8 @@ static int sasl_interact(ATTRUNUSED LDAP *ld, ATTRUNUSED unsigned flags,
 
 LDAPConnection::LDAPConnection(const std::string &server,
         bool no_reverse_lookups) :
-        m_ldap() {
+        m_ldap()
+{
     int ret = 0;
 #ifdef HAVE_LDAP_INITIALIZE
     std::string ldap_url = "ldap://" + server;
@@ -64,16 +66,21 @@ LDAPConnection::LDAPConnection(const std::string &server,
 #else
     VERBOSEldap("calling ldap_init");
     m_ldap = ldap_init(server.c_str(), LDAP_PORT);
-    if (m_ldap) ret = LDAP_SUCCESS;
-    else ret = LDAP_OTHER;
+    if (m_ldap) {
+        ret = LDAP_SUCCESS;
+    }  else {
+        ret = LDAP_OTHER;
+    }
 #endif
-    if (ret)
+    if (ret) {
         throw LDAPException("ldap_initialize", ret);
+    }
 
 #ifdef LDAP_OPT_DEBUG_LEVEL
     int debug = 0xffffff;
-    if (g_verbose > 1)
+    if (g_verbose > 1) {
         ldap_set_option(NULL, LDAP_OPT_DEBUG_LEVEL, &debug);
+    }
 #endif
 
     int version = LDAP_VERSION3;
@@ -86,20 +93,15 @@ LDAPConnection::LDAPConnection(const std::string &server,
     set_option(LDAP_OPT_X_SASL_SSF_MIN, &sasl_gssapi_minssf);
 
 #ifdef LDAP_OPT_X_SASL_NOCANON
-    if (no_reverse_lookups)
-    {
-        try
-        {
+    if (no_reverse_lookups) {
+        try {
             set_option(LDAP_OPT_X_SASL_NOCANON, LDAP_OPT_ON);
-        }
-        catch (LDAPException &e)
-        {
+        } catch (LDAPException &e) {
             VERBOSE("Could not disable reverse lookups in LDAP");
         }
     }
 #else
-    VERBOSE(
-            "Your LDAP version does not support the option to disable reverse lookups");
+    VERBOSE("Your LDAP version does not support the option to disable reverse lookups");
 #endif
 
     VERBOSEldap("calling ldap_sasl_interactive_bind_s");
@@ -118,19 +120,22 @@ LDAPConnection::LDAPConnection(const std::string &server,
     }
 }
 
-void LDAPConnection::print_diagnostics(const char *msg, int err) {
+void LDAPConnection::print_diagnostics(const char *msg, int err)
+{
     fprintf(stderr, "Error: %s (%s)\n", msg, ldap_err2string(err));
 
 #if HAVE_DECL_LDAP_OPT_DIAGNOSTIC_MESSAGE
     char *opt_message = NULL;
     ldap_get_option(m_ldap, LDAP_OPT_DIAGNOSTIC_MESSAGE, &opt_message);
-    if (opt_message)
+    if (opt_message) {
         fprintf(stderr, "\tadditional info: %s\n", opt_message);
+    }
     ldap_memfree(opt_message);
 #endif
 }
 
-void LDAPConnection::set_option(int option, const void *invalue) {
+void LDAPConnection::set_option(int option, const void *invalue)
+{
     int ret = ldap_set_option(m_ldap, option, invalue);
     if (ret) {
         std::stringstream ss;
@@ -139,7 +144,8 @@ void LDAPConnection::set_option(int option, const void *invalue) {
     }
 }
 
-void LDAPConnection::get_option(int option, void *outvalue) {
+void LDAPConnection::get_option(int option, void *outvalue)
+{
     int ret = ldap_get_option(m_ldap, option, outvalue);
     if (ret) {
         std::stringstream ss;
@@ -152,7 +158,8 @@ LDAPConnection::~LDAPConnection() {
     ldap_unbind_ext(m_ldap, NULL, NULL);
 }
 
-class MessageVals {
+class MessageVals
+{
     berval** m_vals;
 public:
     MessageVals(berval **vals) :
@@ -177,14 +184,16 @@ public:
 
 LDAPMessage *
 LDAPConnection::search(const std::string &base_dn, int scope,
-        const std::string &filter, const std::string& attr) {
+        const std::string &filter, const std::string& attr)
+{
     const char *attrs[] = { attr.c_str(), NULL };
     return search(base_dn, scope, filter, attrs);
 }
 
 LDAPMessage *
 LDAPConnection::search(const std::string &base_dn, int scope,
-        const std::string &filter, const std::vector<std::string>& attr) {
+        const std::string &filter, const std::vector<std::string>& attr)
+{
 
     std::vector<char *> v_chptr;
     for (unsigned int i = 0; i < attr.size(); i++) {
@@ -198,7 +207,8 @@ LDAPConnection::search(const std::string &base_dn, int scope,
 
 LDAPMessage *
 LDAPConnection::search(const std::string &base_dn, int scope,
-        const std::string &filter, const char *attrs[]) {
+        const std::string &filter, const char *attrs[])
+{
     LDAPMessage * mesg;
 
     VERBOSEldap("calling ldap_search_ext_s");
@@ -214,12 +224,14 @@ LDAPConnection::search(const std::string &base_dn, int scope,
     return mesg;
 }
 
-LDAPMessage *LDAPConnection::first_entry(LDAPMessage *mesg) {
+LDAPMessage *LDAPConnection::first_entry(LDAPMessage *mesg)
+{
     return mesg = ldap_first_entry(m_ldap, mesg);
 }
 
 std::string LDAPConnection::get_one_val(LDAPMessage *mesg,
-        const std::string& name) {
+        const std::string& name)
+{
     MessageVals vals = ldap_get_values_len(m_ldap, mesg, name.c_str());
     if (vals) {
         if (vals[0]) {
@@ -231,7 +243,8 @@ std::string LDAPConnection::get_one_val(LDAPMessage *mesg,
 }
 
 std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg,
-        const std::string& name) {
+        const std::string& name)
+{
     MessageVals vals = ldap_get_values_len(m_ldap, mesg, name.c_str());
     std::vector < std::string > ret;
     if (vals) {
@@ -244,13 +257,14 @@ std::vector<std::string> LDAPConnection::get_all_vals(LDAPMessage *mesg,
     return ret;
 }
 
-int LDAPConnection::count_entries(LDAPMessage *mesg) {
+int LDAPConnection::count_entries(LDAPMessage *mesg)
+{
     return ldap_count_entries(m_ldap, mesg);
 }
 
 int LDAPConnection::modify_ext(const std::string &dn, const std::string& type,
-        char *vals[], int op, bool check) {
-
+        char *vals[], int op, bool check)
+{
     LDAPMod *mod_attrs[2];
     LDAPMod attr;
 
@@ -271,33 +285,38 @@ int LDAPConnection::modify_ext(const std::string &dn, const std::string& type,
 }
 
 int LDAPConnection::remove_attr(const std::string &dn, const std::string& type,
-        const std::string& val) {
+        const std::string& val)
+{
     char *vals_name[] = { NULL, NULL };
     vals_name[0] = const_cast<char *>(val.c_str());
     return modify_ext(dn, type, vals_name, LDAP_MOD_DELETE, true);
 }
 
 int LDAPConnection::add_attr(const std::string &dn, const std::string& type,
-        const std::string& val) {
+        const std::string& val)
+{
     char *vals_name[] = { NULL, NULL };
     vals_name[0] = const_cast<char *>(val.c_str());
     return modify_ext(dn, type, vals_name, LDAP_MOD_ADD, true);
 }
 
 int LDAPConnection::simple_set_attr(const std::string &dn,
-        const std::string &type, const std::string &val) {
+        const std::string &type, const std::string &val)
+{
     char *vals_name[] = { NULL, NULL };
     vals_name[0] = const_cast<char *>(val.c_str());
     return modify_ext(dn, type, vals_name, LDAP_MOD_REPLACE, true);
 }
 
 int LDAPConnection::flush_attr_no_check(const std::string &dn,
-        const std::string &type) {
+        const std::string &type)
+{
     char *vals[] = { NULL };
     return modify_ext(dn, type, vals, LDAP_MOD_REPLACE, false);
 }
 
-int LDAPConnection::add(const std::string &dn, const LDAP_mod& mod) {
+int LDAPConnection::add(const std::string &dn, const LDAP_mod& mod)
+{
     std::vector<LDAPMod*> tmp = mod.get();
     tmp.push_back(NULL);
 
@@ -310,7 +329,8 @@ int LDAPConnection::add(const std::string &dn, const LDAP_mod& mod) {
 }
 
 void LDAP_mod::add(const std::string& type, const std::string& val,
-        bool ucs) {
+        bool ucs)
+{
     LDAPMod *lm = new LDAPMod;
     lm->mod_type = strdup(type.c_str());
     if (ucs == false) {
@@ -336,7 +356,8 @@ void LDAP_mod::add(const std::string& type, const std::string& val,
 }
 
 void LDAP_mod::add(const std::string& type,
-        const std::vector<std::string>& val) {
+        const std::vector<std::string>& val)
+{
     LDAPMod *lm = new LDAPMod;
     lm->mod_op = LDAP_MOD_ADD;
     lm->mod_type = strdup(type.c_str());
@@ -350,7 +371,8 @@ void LDAP_mod::add(const std::string& type,
     attrs.push_back(lm);
 }
 
-LDAP_mod::~LDAP_mod() {
+LDAP_mod::~LDAP_mod()
+{
     for (std::vector<LDAPMod*>::iterator ptr = attrs.begin();
             ptr != attrs.end(); ptr++) {
         if (*ptr) {
@@ -377,7 +399,7 @@ LDAP_mod::~LDAP_mod() {
 }
 
 std::vector<LDAPMod *>
-LDAP_mod::get() const {
-
+LDAP_mod::get() const
+{
     return attrs;
 }
