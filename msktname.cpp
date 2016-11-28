@@ -44,10 +44,11 @@
 #endif
 #include <netinet/in.h>
 #include <cctype>
-std::string complete_hostname(const std::string &hostname, bool no_canonical_name)
+std::string complete_hostname(const std::string &hostname,
+                              bool no_canonical_name)
 {
-    /* Ask the kerberos lib to canonicalize the hostname, and then pull
-       it out of the principal. */
+    /* Ask the kerberos lib to canonicalize the hostname, and then
+     * pull it out of the principal. */
     int32_t type = KRB5_NT_SRV_HST;
     krb5_principal temp_princ_raw = NULL;
 
@@ -56,25 +57,39 @@ std::string complete_hostname(const std::string &hostname, bool no_canonical_nam
         type = KRB5_NT_UNKNOWN;
     }
 
-    krb5_error_code ret =
-        krb5_sname_to_principal(g_context.get(), hostname.c_str(), "host",
-                                type, &temp_princ_raw);
+    krb5_error_code ret = krb5_sname_to_principal(g_context.get(),
+                                                  hostname.c_str(),
+                                                  "host",
+                                                  type,
+                                                  &temp_princ_raw);
     if (ret != 0) {
-        fprintf(stderr, "Warning: hostname canonicalization for %s failed (%s)\n",
-                hostname.c_str(), error_message(ret));
+        fprintf(stderr,
+                "Warning: hostname canonicalization for %s failed (%s)\n",
+                hostname.c_str(),
+                error_message(ret)
+            );
         return hostname;
     }
 
     KRB5Principal temp_princ(temp_princ_raw);
 
 #ifdef HEIMDAL
-    const char *comp = krb5_principal_get_comp_string(g_context.get(), temp_princ.get(), 1);
+    const char *comp = krb5_principal_get_comp_string(g_context.get(),
+                                                      temp_princ.get(),
+                                                      1);
 #else
-    krb5_data *comp = krb5_princ_component(g_context.get(), temp_princ.get(), 1);
+    krb5_data *comp = krb5_princ_component(g_context.get(),
+                                           temp_princ.get(),
+                                           1);
 #endif
     if (comp == NULL) {
         std::string name(temp_princ.name());
-        fprintf(stderr, "Warning: hostname canonicalization for %s failed: returned unexpected principal %s\n", hostname.c_str(), name.c_str());
+        fprintf(stderr,
+                "Warning: hostname canonicalization for %s failed: returned "
+                "unexpected principal %s\n",
+                hostname.c_str(),
+                name.c_str()
+            );
         return hostname;
     }
 #ifdef HEIMDAL
@@ -88,28 +103,38 @@ std::string complete_hostname(const std::string &hostname, bool no_canonical_nam
 std::string get_default_hostname(bool no_canonical_name)
 {
     /* Ask the kerberos lib to canonicalize the hostname, and then
-       pull it out of the principal. */
+     * pull it out of the principal. */
     int32_t type = KRB5_NT_SRV_HST;
     krb5_principal temp_princ_raw;
 
     /* do not canonicalize, use supplied hostname */
     if (no_canonical_name) { type = KRB5_NT_UNKNOWN; }
 
-    krb5_error_code ret =
-        krb5_sname_to_principal(g_context.get(), NULL, "host", type, &temp_princ_raw);
+    krb5_error_code ret = krb5_sname_to_principal(g_context.get(),
+                                                  NULL,
+                                                  "host",
+                                                  type,
+                                                  &temp_princ_raw);
 
     if (ret != 0) {
-        throw KRB5Exception("krb5_sname_to_principal (get_default_hostname)", ret);
+        throw KRB5Exception("krb5_sname_to_principal (get_default_hostname)",
+                            ret);
     }
     KRB5Principal temp_princ(temp_princ_raw);
 
 #ifdef HEIMDAL
-    const char *comp = krb5_principal_get_comp_string(g_context.get(), temp_princ.get(), 1);
+    const char *comp = krb5_principal_get_comp_string(g_context.get(),
+                                                      temp_princ.get(),
+                                                      1);
 #else
-    krb5_data *comp = krb5_princ_component(g_context.get(), temp_princ.get(), 1);
+    krb5_data *comp = krb5_princ_component(g_context.get(),
+                                           temp_princ.get(),
+                                           1);
 #endif
     if (comp == NULL) {
-        throw Exception("Error: get_default_hostname: couldn't determine hostname, strange value from krb5_sname_to_principal.");
+        throw Exception("Error: get_default_hostname: couldn't determine "
+                        "hostname, strange value from "
+                        "krb5_sname_to_principal.");
     }
 #ifdef HEIMDAL
     return std::string(comp);
@@ -126,11 +151,11 @@ struct msktutil_dcdata {
     unsigned int port;
 };
 
-/* A quirk in glibc < 2.9 makes us pick up a symbol marked GLIBC_PRIVATE
- * if we use ns_get16 from libresolv, leading to a broken RPM
- * that can only be installed with --nodeps. As a workaround,
- * use a private version of ns_get16--it's simple enough.
- */
+/* A quirk in glibc < 2.9 makes us pick up a symbol marked
+ * GLIBC_PRIVATE if we use ns_get16 from libresolv, leading to a
+ * broken RPM that can only be installed with --nodeps. As a
+ * workaround, use a private version of ns_get16--it's simple
+ * enough. */
 static unsigned int msktutil_ns_get16(const unsigned char *src)
 {
     return (unsigned int) (((uint16_t)src[0] << 8) | ((uint16_t)src[1]));
@@ -163,7 +188,8 @@ static int compare_priority_weight(const void *a, const void *b)
 #endif
 
 
-static std::string get_dc_host_from_srv_rr(const std::string &domain, const std::string &protocol)
+static std::string get_dc_host_from_srv_rr(const std::string &domain,
+                                           const std::string &protocol)
 {
 #if defined(HAVE_LIBUDNS)
     struct dns_ctx *nsctx = NULL;
@@ -174,17 +200,20 @@ static std::string get_dc_host_from_srv_rr(const std::string &domain, const std:
         if (dns_init(nsctx, 1) >= 0) {
             struct dns_rr_srv *srv;
 
-            if ((srv = dns_resolve_srv(nsctx, domain.c_str(), "kerberos",
-                                            protocol.c_str(), DNS_NOSRCH)) != NULL) {
-                /* determine preferred dc in a really, really pedestrian
-                 * fashion to avoid mucking about with separate dcdata
-                 * structure, qsort and comparison function */
+            if ((srv = dns_resolve_srv(nsctx, domain.c_str(),
+                                       "kerberos",
+                                       protocol.c_str(),
+                                       DNS_NOSRCH)) != NULL) {
+                /* determine preferred dc in a really, really
+                 * pedestrian fashion to avoid mucking about with
+                 * separate dcdata structure, qsort and comparison
+                 * function */
                 struct dns_srv *bestdc = srv->dnssrv_srv;
                 int i;
 
                 for (i = 1; i < srv->dnssrv_nrr; i++) {
-                    /* dc ist "better" if priority is lower or for equal
-                     * priority if weight is higher */
+                    /* dc ist "better" if priority is lower or for
+                     * equal priority if weight is higher */
                     if (srv->dnssrv_srv[i].priority < bestdc->priority ||
                         (srv->dnssrv_srv[i].priority == bestdc->priority &&
                          srv->dnssrv_srv[i].weight > bestdc->weight)) {
@@ -207,31 +236,42 @@ static std::string get_dc_host_from_srv_rr(const std::string &domain, const std:
     unsigned char response[NS_MAXMSG];
     int len;
     int i;
-    int j=0; /* my not so smart compiler warns me about: 'j' may be used uninitialized in this function ... */
+    int j=0; /* my not so smart compiler warns me about: 'j' may be
+              * used uninitialized in this function ... */
     ns_msg reshandle;
     ns_rr rr;
     struct msktutil_dcdata alldcs[MAX_DOMAIN_CONTROLLERS];
     const std::string krbdnsquery = "_kerberos._" + protocol + "." + domain;
 
-    if ((len=res_search(krbdnsquery.c_str(), ns_c_in, ns_t_srv, response, sizeof(response))) > 0) {
-        if (ns_initparse(response,len,&reshandle) >= 0) {
-            if ((len=ns_msg_count(reshandle,ns_s_an)) > 0) {
-                for (i=0,j=0;i<len && j<MAX_DOMAIN_CONTROLLERS; i++) {
-                    if (ns_parserr(&reshandle,ns_s_an,i,&rr)) {
-                        /* Ignore records we cannot parse, this is non fatal. */
+    if ((len=res_search(krbdnsquery.c_str(),
+                        ns_c_in,
+                        ns_t_srv,
+                        response,
+                        sizeof(response))) > 0) {
+        if (ns_initparse(response, len, &reshandle) >= 0) {
+            if ((len=ns_msg_count(reshandle, ns_s_an)) > 0) {
+                for (i=0, j=0; i<len && j<MAX_DOMAIN_CONTROLLERS; i++) {
+                    if (ns_parserr(&reshandle, ns_s_an, i, &rr)) {
+                        /* Ignore records we cannot parse, this is non
+                         * fatal. */
                         continue;
                     }
-                    if (ns_rr_class(rr) == ns_c_in && ns_rr_type(rr) == ns_t_srv) {
+                    if (ns_rr_class(rr) == ns_c_in &&
+                        ns_rr_type(rr) == ns_t_srv) {
 
                         /*
-                         * Process DNS SRV RR
-                         * TTL Class Type Priority Weight Port Target
-                         *  _kerberos._tcp.my.realm. 600 IN    SRV  0        10000  88   dcserverXX.my.realm.
+                         * Process DNS SRV
+                         *
+                         * RR                        TTL Class Type Priority Weight Port Target
+                         *  _kerberos._tcp.my.realm. 600 IN    SRV         0  10000   88 dcserverXX.my.realm.
                          */
                         alldcs[j].priority = msktutil_ns_get16(ns_rr_rdata(rr));
-                        alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr) +   NS_INT16SZ);
-                        alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr) + 2*NS_INT16SZ); /* we do not really need it... */
-                        dn_expand(ns_msg_base(reshandle),ns_msg_base(reshandle)+ns_msg_size(reshandle),
+                        alldcs[j].weight   = msktutil_ns_get16(ns_rr_rdata(rr)
+                                                               + NS_INT16SZ);
+                        alldcs[j].port     = msktutil_ns_get16(ns_rr_rdata(rr)
+                                                               + 2*NS_INT16SZ); /* we do not really need it... */
+                        dn_expand(ns_msg_base(reshandle),
+                                  ns_msg_base(reshandle)+ns_msg_size(reshandle),
                                   ns_rr_rdata(rr) + 3*NS_INT16SZ,
                                   alldcs[j].srvname, sizeof(char)*NS_MAXDNAME);
                         j++;
@@ -243,15 +283,19 @@ static std::string get_dc_host_from_srv_rr(const std::string &domain, const std:
 
     if (j) {
         /* and get the 'top' one from the list. */
-        qsort(&alldcs,j,sizeof(struct msktutil_dcdata),compare_priority_weight);
-        return std::string(alldcs[0].srvname,strlen(alldcs[0].srvname));
+        qsort(&alldcs,
+              j,
+              sizeof(struct msktutil_dcdata),
+              compare_priority_weight);
+        return std::string(alldcs[0].srvname, strlen(alldcs[0].srvname));
     }
 #endif
     return std::string();
 }
 
 
-std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
+std::string get_dc_host(const std::string &realm_name,
+                        const std::string &site_name,
                         const bool no_reverse_lookups)
 {
     std::string dc;
@@ -265,10 +309,14 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
 
     if (!site_name.empty()) {
         for (i = 0; i < (int)(sizeof(protocols) / sizeof(protocols[0])); i++) {
-            VERBOSE("Attempting to find site-specific Domain Controller to use via "
-                            "DNS SRV record in domain %s for site %s and procotol %s",
-                            realm_name.c_str(), site_name.c_str(), protocols[i].c_str());
-            dcsrv = get_dc_host_from_srv_rr(site_name + "._sites." + realm_name, protocols[i]);
+            VERBOSE("Attempting to find site-specific Domain Controller "
+                    "to use via DNS SRV record in domain %s for site %s and "
+                    "procotol %s",
+                    realm_name.c_str(),
+                    site_name.c_str(),
+                    protocols[i].c_str());
+            dcsrv = get_dc_host_from_srv_rr(
+                site_name + "._sites." + realm_name, protocols[i]);
             if (!dcsrv.empty()) {
                 break;
             }
@@ -306,21 +354,26 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     VERBOSE("Canonicalizing DC through forward/reverse lookup...");
     for (i = 0; host->h_addr_list[i]; i++) {
         memcpy(&(addr.sin_addr.s_addr), host->h_addr_list[i], host->h_length);
-        hp = gethostbyaddr((char *) &addr.sin_addr.s_addr, sizeof(addr.sin_addr.s_addr), AF_INET);
+        hp = gethostbyaddr((char *) &addr.sin_addr.s_addr,
+                           sizeof(addr.sin_addr.s_addr),
+                           AF_INET);
         if (!hp) {
             fprintf(stderr, "Error: gethostbyaddr failed \n");
             continue;
         }
 
-        /* Now let's try and open and close a socket to see if the domain controller is up or not */
+        /* Now let's try and open and close a socket to see if the
+         * domain controller is up or not */
         addr.sin_family = AF_INET;
         addr.sin_port = htons(LDAP_PORT);
         sock = socket(AF_INET, SOCK_STREAM, 0);
         connect(sock, (struct sockaddr *) &addr, 2);
         if (sock) {
             close(sock);
-            /* See if this is the 'lowest' domain controller name... the idea is to always try to
-             * use the same domain controller.   Things may become inconsitent otherwise */
+            /* See if this is the 'lowest' domain controller
+             * name... the idea is to always try to use the same
+             * domain controller.  Things may become inconsitent
+             * otherwise */
             if (dc.empty()) {
                 dc = std::string(hp->h_name);
             } else {
@@ -365,7 +418,9 @@ std::string get_short_hostname(msktutil_flags *flags)
 
     size_t dot = std::string::npos;
     while ((dot = long_hostname.find('.', dot + 1)) != std::string::npos) {
-        if (long_hostname.compare(dot + 1, std::string::npos, flags->lower_realm_name) == 0) {
+        if (long_hostname.compare(dot + 1,
+                                  std::string::npos,
+                                  flags->lower_realm_name) == 0) {
             short_hostname = long_hostname.substr(0, dot);
             break;
         }

@@ -51,16 +51,23 @@ void get_default_keytab(msktutil_flags *flags)
     if (flags->keytab_file.empty()) {
         /* Only set the field to a default if it's empty */
 
-        krb5_error_code ret = krb5_kt_default_name(g_context.get(), keytab_name, MAX_KEYTAB_NAME_LEN);
+        krb5_error_code ret = krb5_kt_default_name(g_context.get(),
+                                                   keytab_name,
+                                                   MAX_KEYTAB_NAME_LEN);
         if (ret) {
-            throw KRB5Exception("krb5_kt_default_name (get_default_keytab)", ret);
+            throw KRB5Exception("krb5_kt_default_name (get_default_keytab)",
+                                ret);
         }
         flags->keytab_readname = std::string(keytab_name);
 
 #ifdef HEIMDAL
-        ret = krb5_kt_default_modify_name(g_context.get(), keytab_name, MAX_KEYTAB_NAME_LEN);
+        ret = krb5_kt_default_modify_name(g_context.get(),
+                                          keytab_name,
+                                          MAX_KEYTAB_NAME_LEN);
         if (ret) {
-            throw KRB5Exception("krb5_kt_default_modify_name (get_default_keytab)", ret);
+            throw KRB5Exception("krb5_kt_default_modify_name "
+                                "(get_default_keytab)",
+                                ret);
         }
         flags->keytab_writename = std::string(keytab_name);
 #else
@@ -75,7 +82,8 @@ void get_default_keytab(msktutil_flags *flags)
             flags->keytab_writename = "WRFILE:" + std::string(keytab_name);
         }
 #endif
-        VERBOSE("Obtaining the default keytab name: %s", flags->keytab_readname.c_str());
+        VERBOSE("Obtaining the default keytab name: %s",
+                flags->keytab_readname.c_str());
     } else {
         flags->keytab_writename = "WRFILE:" + flags->keytab_file;
         flags->keytab_readname = "FILE:" + flags->keytab_file;
@@ -99,9 +107,12 @@ int flush_keytab(msktutil_flags *flags)
             size_t first_chr = principal.find('/') + 1;
             size_t last_chr = principal.rfind('@');
 
-            std::string host = principal.substr(first_chr, last_chr - first_chr);
+            std::string host = principal.substr(first_chr,
+                                                last_chr - first_chr);
             if (host == flags->hostname) {
-                to_delete.push_back(std::make_pair(std::make_pair(principal, cursor.kvno()),
+                to_delete.push_back(std::make_pair(std::make_pair(
+                                                       principal,
+                                                       cursor.kvno()),
                                                    cursor.enctype()));
             }
         }
@@ -109,11 +120,17 @@ int flush_keytab(msktutil_flags *flags)
         /* Ignore errors reading keytab */
     }
 
-    for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {
+    for(to_delete_t::const_iterator it = to_delete.begin();
+        it != to_delete.end();
+        ++it) {
         KRB5Principal princ(it->first.first);
         krb5_kvno kvno = it->first.second;
         krb5_enctype enctype = it->second;
-        VERBOSE("Deleting %s kvno=%d, enctype=%d", it->first.first.c_str(), kvno, enctype);
+        VERBOSE("Deleting %s kvno=%d, enctype=%d",
+                it->first.first.c_str(),
+                kvno,
+                enctype
+            );
         keytab.removeEntry(princ, kvno, enctype);
     }
 
@@ -165,7 +182,9 @@ void cleanup_keytab(msktutil_flags *flags)
                  (flags->cleanup_days != -1) &&
                  (abs(newest_timestamp - cursor.timestamp()) >= 2))) {
                 std::string principal = cursor.principal().name();
-                to_delete.push_back(std::make_pair(std::make_pair(principal, cursor.kvno()),
+                to_delete.push_back(std::make_pair(std::make_pair(
+                                                       principal,
+                                                       cursor.kvno()),
                                                    cursor.enctype()));
             }
         }
@@ -173,11 +192,16 @@ void cleanup_keytab(msktutil_flags *flags)
         /* Ignore errors reading keytab */
     }
 
-    for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {
+    for(to_delete_t::const_iterator it = to_delete.begin();
+        it != to_delete.end();
+        ++it) {
             KRB5Principal princ(it->first.first);
             krb5_kvno kvno = it->first.second;
             krb5_enctype enctype = it->second;
-            VERBOSE("Deleting %s kvno=%d, enctype=%d", it->first.first.c_str(), kvno, enctype);
+            VERBOSE("Deleting %s kvno=%d, enctype=%d",
+                    it->first.first.c_str(),
+                    kvno,
+                    enctype);
             keytab.removeEntry(princ, kvno, enctype);
     }
 }
@@ -203,7 +227,9 @@ void update_keytab(msktutil_flags *flags)
             flags->userPrincipalName.compare(flags->ad_principals[i]) != 0) {
             add_principal_keytab(flags->ad_principals[i], flags);
         } else {
-            VERBOSE("Entries for SPN %s have already been added. Skipping ...", flags->ad_principals[i].c_str());
+            VERBOSE("Entries for SPN %s have already been added. Skipping ...",
+                    flags->ad_principals[i].c_str()
+                );
         }
     }
 }
@@ -219,7 +245,9 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     if (principal.find("@") != std::string::npos) {
         principal_string = sform("%s", principal.c_str());
     } else {
-        principal_string = sform("%s@%s", principal.c_str(), flags->realm_name.c_str());
+        principal_string = sform("%s@%s",
+                                 principal.c_str(),
+                                 flags->realm_name.c_str());
     }
     KRB5Principal princ(principal_string);
 
@@ -249,7 +277,9 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
                 if (curr_principal == principal_string) {
                     if (cursor.kvno() < flags->kvno) {
                         if (cursor.timestamp() < min_keep_timestamp) {
-                            earliest_kvno_to_keep = std::max(earliest_kvno_to_keep, cursor.kvno());
+                            earliest_kvno_to_keep = std::max(
+                                earliest_kvno_to_keep,
+                                cursor.kvno());
                         }
                     }
                 }
@@ -261,9 +291,13 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
             while (cursor.next()) {
                 std::string curr_principal = cursor.principal().name();
                 if (curr_principal == principal_string &&
-                    (cursor.kvno() >= flags->kvno || cursor.kvno() < earliest_kvno_to_keep)) {
-                    to_delete.push_back(std::make_pair(std::make_pair(curr_principal, cursor.kvno()),
-                                                       cursor.enctype()));
+                    (cursor.kvno() >= flags->kvno ||
+                     cursor.kvno() < earliest_kvno_to_keep)) {
+                    to_delete.push_back(std::make_pair(
+                                            std::make_pair(
+                                                curr_principal,
+                                                cursor.kvno()),
+                                            cursor.enctype()));
                 }
             }
         }
@@ -271,11 +305,16 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
         /* Ignore errors reading keytab */
     }
 
-    for(to_delete_t::const_iterator it = to_delete.begin(); it != to_delete.end(); ++it) {
+    for(to_delete_t::const_iterator it = to_delete.begin();
+        it != to_delete.end();
+        ++it) {
         KRB5Principal princ(it->first.first);
         krb5_kvno kvno = it->first.second;
         krb5_enctype enctype = it->second;
-        VERBOSE("Deleting %s kvno=%d, enctype=%d", it->first.first.c_str(), kvno, enctype);
+        VERBOSE("Deleting %s kvno=%d, enctype=%d",
+                it->first.first.c_str(),
+                kvno,
+                enctype);
         keytab.removeEntry(princ, kvno, enctype);
     }
 
@@ -290,12 +329,14 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
         enc_types.push_back(ENCTYPE_ARCFOUR_HMAC);
     }
 #if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96) {
+    if (flags->ad_supportedEncryptionTypes &
+        MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96) {
         enc_types.push_back(ENCTYPE_AES128_CTS_HMAC_SHA1_96);
     }
 #endif
 #if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
+    if (flags->ad_supportedEncryptionTypes &
+        MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
         enc_types.push_back(ENCTYPE_AES256_CTS_HMAC_SHA1_96);
     }
 #endif
@@ -304,41 +345,56 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 
     for(size_t i = 0; i < enc_types.size(); ++i) {
         /*
-         * Windows uses realm_name+"host"+samAccountName_nodollar+"."+lower_realm_name
-         * for the salt. (note: only for DES/AES; arcfour-hmac-md5 doesn't use salts at all)
+         * Windows uses
+         * realm_name+"host"+samAccountName_nodollar+"."+lower_realm_name
+         * for the salt. (note: only for DES/AES; arcfour-hmac-md5
+         * doesn't use salts at all)
          *
-         *     Note (Mark Pr"ohl, 2012-12-11): salt for service accounts is created in a different
-         *     way:
-         *     - if userPrincpalName is not set: realm_name+samAccountName
-         *     - if userPrincpalName is set: realm_name + first component from userPrincpalName
+         *     Note (Mark Pr"ohl, 2012-12-11): salt for service
+         *     accounts is created in a different way:
+         *       - if userPrincpalName is not set:
+         *         realm_name+samAccountName
+         *       - if userPrincpalName is set:
+         *         realm_name + first component from userPrincpalName
          *
-         * Windows 2000 may have used something different, but who cares.
+         * Windows 2000 may have used something different, but who
+         * cares.
          *
-         * FIXME: this is stupid, and not future proof. The salt is supposed to be an implementation
-         * detail that the server can set to whatever it feels like (so long as it doesn't change it
-         * except when the password changes). A future version of windows may change the salting
-         * algorithm to something else, or may even start using random salts.
+         * FIXME: this is stupid, and not future proof. The salt is
+         * supposed to be an implementation detail that the server can
+         * set to whatever it feels like (so long as it doesn't change
+         * it except when the password changes). A future version of
+         * windows may change the salting algorithm to something else,
+         * or may even start using random salts.
          *
-         * In the normal authentication path, the client asks the KDC what salt to use when
-         * encrypting the password for the account, and then uses that. And for the creation of a
-         * keytab in MIT kerberos (in the suual case), you use the kadmin protocol to download the
-         * already salted key block.
+         * In the normal authentication path, the client asks the KDC
+         * what salt to use when encrypting the password for the
+         * account, and then uses that. And for the creation of a
+         * keytab in MIT kerberos (in the suual case), you use the
+         * kadmin protocol to download the already salted key block.
          *
-         * But, here, we need to take a password and encrypt it the same way the server is going to,
-         * in order to store it in the keytab. All we need is to ask the server what salt it wants
-         * to use...But, as far as I can tell, there exists no API in libkrb5 that can retrieve the
-         * salt that should be used with a given principal, even though it's clearly available in
-         * the network protocol.
+         * But, here, we need to take a password and encrypt it the
+         * same way the server is going to, in order to store it in
+         * the keytab. All we need is to ask the server what salt it
+         * wants to use...But, as far as I can tell, there exists no
+         * API in libkrb5 that can retrieve the salt that should be
+         * used with a given principal, even though it's clearly
+         * available in the network protocol.
          *
-         *     Note (Mark Pr"ohl, 2012-12-11): even if the salting string could be fetched from the
-         *     network protocol, that would only be possible after the password has been set in AD.
-         *     But the keytab entry should be created before that.
+         *     Note (Mark Pr"ohl, 2012-12-11): even if the salting
+         *     string could be fetched from the network protocol, that
+         *     would only be possible after the password has been set
+         *     in AD.  But the keytab entry should be created before
+         *     that.
          *
-         * What we're doing here is very much like MIT kerberos' ktutil addent -password, which also
-         * assumes the server uses a particular salt. And that is also broken. Given this email
-         * thread: <http://mailman.mit.edu/pipermail/krbdev/2009-July/007835.html>, I hope libkrb5
-         * will provide the proper API before MS switches to start using randomized salts in some
-         * future AD release.
+         * What we're doing here is very much like MIT kerberos'
+         * ktutil addent -password, which also assumes the server uses
+         * a particular salt. And that is also broken. Given this
+         * email thread:
+         * <http://mailman.mit.edu/pipermail/krbdev/2009-July/007835.html>,
+         * I hope libkrb5 will provide the proper API before MS
+         * switches to start using randomized salts in some future AD
+         * release.
          */
         std::string lower_accountname = flags->samAccountName_nodollar;
         for(std::string::iterator it = lower_accountname.begin();
@@ -348,21 +404,32 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
         if (flags->use_service_account) {
 
             if (flags->userPrincipalName.empty()) {
-                salt = sform("%s%s", flags->realm_name.c_str(), lower_accountname.c_str());
+                salt = sform("%s%s",
+                             flags->realm_name.c_str(),
+                             lower_accountname.c_str());
             } else {
                 std::string upnsalt = flags->userPrincipalName;
-                upnsalt.erase(std::remove(upnsalt.begin(), upnsalt.end(), '/'),upnsalt.end());
-                salt = sform("%s%s", flags->realm_name.c_str(), upnsalt.c_str());
+                upnsalt.erase(std::remove(upnsalt.begin(),
+                                          upnsalt.end(),
+                                          '/'),
+                              upnsalt.end());
+                salt = sform("%s%s",
+                             flags->realm_name.c_str(),
+                             upnsalt.c_str());
             }
         } else {
-            salt = sform("%shost%s.%s", flags->realm_name.c_str(), lower_accountname.c_str(),
-                                        flags->lower_realm_name.c_str());
+            salt = sform("%shost%s.%s",
+                         flags->realm_name.c_str(),
+                         lower_accountname.c_str(),
+                         flags->lower_realm_name.c_str());
         }
 
         VERBOSE("    Using salt of %s", salt.c_str());
         KRB5Keyblock keyblock;
 
-        keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]), flags->password, salt);
+        keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]),
+                             flags->password,
+                             salt);
 
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
         keytab.addEntry(princ, flags->kvno, keyblock);

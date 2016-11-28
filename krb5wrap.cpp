@@ -31,12 +31,15 @@
 #include "msktutil.h"
 
 #ifdef HEIMDAL
-krb5_error_code krb5_free_keytab_entry_contents(krb5_context context, krb5_keytab_entry *entry)
+krb5_error_code krb5_free_keytab_entry_contents(krb5_context context,
+                                                krb5_keytab_entry *entry)
 {
     if (entry) {
         krb5_free_principal(context, entry->principal);
         if (entry->keyblock.keyvalue.data) {
-            memset(entry->keyblock.keyvalue.data, 0, entry->keyblock.keyvalue.length);
+            memset(entry->keyblock.keyvalue.data,
+                   0,
+                   entry->keyblock.keyvalue.length);
             free(entry->keyblock.keyvalue.data);
         }
         return 0;
@@ -74,7 +77,9 @@ void KRB5Context::reload()
 }
 
 
-void KRB5Keyblock::from_string(krb5_enctype enctype, const std::string &password, const std::string &salt)
+void KRB5Keyblock::from_string(krb5_enctype enctype,
+                               const std::string &password,
+                               const std::string &salt)
 {
 #ifdef HEIMDAL
     krb5_data pass_data;
@@ -87,8 +92,11 @@ void KRB5Keyblock::from_string(krb5_enctype enctype, const std::string &password
     pass_data.data = const_cast<char *>(password.c_str());
     pass_data.length = password.length();
 
-    krb5_error_code ret = krb5_string_to_key_data_salt(g_context.get(), enctype,
-                                                       pass_data, salt_data, &m_keyblock);
+    krb5_error_code ret = krb5_string_to_key_data_salt(g_context.get(),
+                                                       enctype,
+                                                       pass_data,
+                                                       salt_data,
+                                                       &m_keyblock);
     if (ret) {
         throw KRB5Exception("krb5_string_to_key_data_salt", ret);
     }
@@ -100,8 +108,11 @@ void KRB5Keyblock::from_string(krb5_enctype enctype, const std::string &password
     pass_data.data = const_cast<char *>(password.c_str());
     pass_data.length = password.length();
 
-    krb5_error_code ret = krb5_c_string_to_key(g_context.get(), enctype,
-                                               &pass_data, &salt_data, &m_keyblock);
+    krb5_error_code ret = krb5_c_string_to_key(g_context.get(),
+                                               enctype,
+                                               &pass_data,
+                                               &salt_data,
+                                               &m_keyblock);
     if (ret) {
         throw KRB5Exception("krb5_c_string_to_key", ret);
     }
@@ -111,7 +122,9 @@ void KRB5Keyblock::from_string(krb5_enctype enctype, const std::string &password
 
 void KRB5CCache::initialize(KRB5Principal &principal)
 {
-    krb5_error_code ret = krb5_cc_initialize(g_context.get(), m_ccache, principal.get());
+    krb5_error_code ret = krb5_cc_initialize(g_context.get(),
+                                             m_ccache,
+                                             principal.get());
     if (ret) {
         throw KRB5Exception("krb5_cc_initialize", ret);
     }
@@ -120,29 +133,46 @@ void KRB5CCache::initialize(KRB5Principal &principal)
 
 void KRB5CCache::store(KRB5Creds &creds)
 {
-    krb5_error_code ret = krb5_cc_store_cred(g_context.get(), m_ccache, creds.get());
+    krb5_error_code ret = krb5_cc_store_cred(g_context.get(),
+                                             m_ccache,
+                                             creds.get());
     if (ret) {
         throw KRB5Exception("krb5_cc_store_cred", ret);
     }
 }
 
 
-KRB5Creds::KRB5Creds(KRB5Principal &principal, KRB5Keytab &keytab, const char *tkt_service) : m_creds()
+KRB5Creds::KRB5Creds(KRB5Principal &principal,
+                     KRB5Keytab &keytab,
+                     const char *tkt_service) : m_creds()
 {
     krb5_error_code ret =
-        krb5_get_init_creds_keytab(g_context.get(), &m_creds, principal.get(), keytab.get(), 0, const_cast<char*>(tkt_service), NULL);
+        krb5_get_init_creds_keytab(g_context.get(),
+                                   &m_creds,
+                                   principal.get(),
+                                   keytab.get(),
+                                   0,
+                                   const_cast<char*>(tkt_service), NULL);
     if (ret) {
         throw KRB5Exception("krb5_get_init_creds_keytab", ret);
     }
 }
 
 
-KRB5Creds::KRB5Creds(KRB5Principal &principal, const std::string &password, const char *tkt_service) : m_creds()
+KRB5Creds::KRB5Creds(KRB5Principal &principal,
+                     const std::string &password,
+                     const char *tkt_service) : m_creds()
 {
     krb5_error_code ret =
-        krb5_get_init_creds_password(g_context.get(), &m_creds, principal.get(),
-                                     const_cast<char*>(password.c_str()), NULL, NULL,
-                                     0, const_cast<char*>(tkt_service), NULL);
+        krb5_get_init_creds_password(g_context.get(),
+                                     &m_creds,
+                                     principal.get(),
+                                     const_cast<char*>(password.c_str()),
+                                     NULL,
+                                     NULL,
+                                     0,
+                                     const_cast<char*>(tkt_service),
+                                     NULL);
     if (ret) {
         throw KRB5Exception("krb5_get_init_creds_keytab", ret);
     }
@@ -152,7 +182,9 @@ KRB5Creds::KRB5Creds(KRB5Principal &principal, const std::string &password, cons
 std::string KRB5Principal::name()
 {
     char *principal_string;
-    krb5_error_code ret = krb5_unparse_name(g_context.get(), m_princ, &principal_string);
+    krb5_error_code ret = krb5_unparse_name(g_context.get(),
+                                            m_princ,
+                                            &principal_string);
     if (ret) {
         throw KRB5Exception("krb5_unparse_name", ret);
     }
@@ -169,7 +201,9 @@ std::string KRB5Principal::name()
 }
 
 
-void KRB5Keytab::addEntry(KRB5Principal &princ, krb5_kvno kvno, KRB5Keyblock &keyblock)
+void KRB5Keytab::addEntry(KRB5Principal &princ,
+                          krb5_kvno kvno,
+                          KRB5Keyblock &keyblock)
 {
     krb5_keytab_entry entry;
 
@@ -180,14 +214,18 @@ void KRB5Keytab::addEntry(KRB5Principal &princ, krb5_kvno kvno, KRB5Keyblock &ke
 #else
     entry.key = keyblock.get();
 #endif
-    krb5_error_code ret = krb5_kt_add_entry(g_context.get(), m_keytab, &entry);
+    krb5_error_code ret = krb5_kt_add_entry(g_context.get(),
+                                            m_keytab,
+                                            &entry);
     if (ret) {
         throw KRB5Exception("krb5_kt_add_entry", ret);
     }
 }
 
 
-void KRB5Keytab::removeEntry(KRB5Principal &princ, krb5_kvno kvno, krb5_enctype enctype)
+void KRB5Keytab::removeEntry(KRB5Principal &princ,
+                             krb5_kvno kvno,
+                             krb5_enctype enctype)
 {
     krb5_keytab_entry entry;
 
@@ -199,16 +237,23 @@ void KRB5Keytab::removeEntry(KRB5Principal &princ, krb5_kvno kvno, krb5_enctype 
     entry.key.enctype = enctype;
 #endif
 
-    krb5_error_code ret = krb5_kt_remove_entry(g_context.get(), m_keytab, &entry);
+    krb5_error_code ret = krb5_kt_remove_entry(g_context.get(),
+                                               m_keytab,
+                                               &entry);
     if (ret) {
         throw KRB5Exception("krb5_kt_remove_entry", ret);
     }
 }
 
 
-KRB5Keytab::cursor::cursor(KRB5Keytab &keytab) : m_keytab(keytab), m_cursor(), m_entry(), m_princ()
+KRB5Keytab::cursor::cursor(KRB5Keytab &keytab) : m_keytab(keytab),
+                                                 m_cursor(),
+                                                 m_entry(),
+                                                 m_princ()
 {
-    krb5_error_code ret = krb5_kt_start_seq_get(g_context.get(), m_keytab.m_keytab, &m_cursor);
+    krb5_error_code ret = krb5_kt_start_seq_get(g_context.get(),
+                                                m_keytab.m_keytab,
+                                                &m_cursor);
     if (ret) {
         throw KRB5Exception("krb5_kt_start_seq_get", ret);
     }
@@ -221,7 +266,9 @@ KRB5Keytab::cursor::~cursor()
     memset(&m_entry, 0, sizeof(m_entry));
     /* Tell m_princ to not free its contents! */
     m_princ.reset_no_free(NULL);
-    krb5_error_code ret = krb5_kt_end_seq_get(g_context.get(), m_keytab.m_keytab, &m_cursor);
+    krb5_error_code ret = krb5_kt_end_seq_get(g_context.get(),
+                                              m_keytab.m_keytab,
+                                              &m_cursor);
     if (ret) {
         /* FIXME: shouldn't throw from destructor... */
         throw KRB5Exception("krb5_kt_end_seq_get", ret);
@@ -233,7 +280,10 @@ bool KRB5Keytab::cursor::next()
 {
     krb5_free_keytab_entry_contents(g_context.get(), &m_entry);
     memset(&m_entry, 0, sizeof(m_entry));
-    krb5_error_code ret = krb5_kt_next_entry(g_context.get(), m_keytab.m_keytab, &m_entry, &m_cursor);
+    krb5_error_code ret = krb5_kt_next_entry(g_context.get(),
+                                             m_keytab.m_keytab,
+                                             &m_entry,
+                                             &m_cursor);
     m_princ.reset_no_free(m_entry.principal);
     return ret == 0;
 }

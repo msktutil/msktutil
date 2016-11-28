@@ -58,9 +58,9 @@ int generate_new_password(msktutil_flags *flags)
     init_password(flags);
     flags->password.resize(PASSWORD_LEN);
 
-    fd = open("/dev/urandom",O_RDONLY);
+    fd = open("/dev/urandom", O_RDONLY);
     if (fd < 0) {
-        fprintf(stderr,"ERROR: failed to open /dev/urandom\n");
+        fprintf(stderr, "ERROR: failed to open /dev/urandom\n");
         return -1;
     }
 
@@ -92,7 +92,7 @@ int generate_new_password(msktutil_flags *flags)
         }
     }
     close(fd);
-    VERBOSE(" Characters read from /dev/urandom = %d",chars_used);
+    VERBOSE(" Characters read from /dev/urandom = %d", chars_used);
     return 0;
 }
 
@@ -110,13 +110,18 @@ static int set_samba_secret(const std::string& password)
 
     size_t len = password.length();
     if (fwrite(password.c_str(), sizeof(char), len, pipe) != len) {
-        fprintf(stdout, "Write error putting password to samba net command\n");
+        fprintf(stdout,
+                "Write error putting password to samba net command\n"
+            );
         return 1;
     }
 
     int rc = pclose(pipe);
     if (rc != 0) {
-        fprintf(stdout, "Setting samba secret failed with error code %d\n", rc);
+        fprintf(stdout,
+                "Setting samba secret failed with error code %d\n",
+                rc
+            );
         return 1;
     }
 
@@ -135,8 +140,8 @@ int set_password(msktutil_flags *flags)
     std::string old_pwdLastSet;
 
     /* Zero out these data structures, because we attempt to free them
-       below, and sometimes, upon error conditions, the called API
-       hasn't set them itself. */
+     * below, and sometimes, upon error conditions, the called API
+     * hasn't set them itself. */
     resp_string.data = NULL;
     resp_string.length = 0;
     resp_code_string.data = NULL;
@@ -154,27 +159,43 @@ int set_password(msktutil_flags *flags)
         KRB5Principal principal(flags->samAccountName);
 
         old_pwdLastSet = ldap_get_pwdLastSet(flags);
-        ret = krb5_set_password_using_ccache(g_context.get(), ccache.get(),
+        ret = krb5_set_password_using_ccache(g_context.get(),
+                                             ccache.get(),
                                              const_cast<char*>(flags->password.c_str()),
-                                             principal.get(), &response, &resp_code_string, &resp_string);
+                                             principal.get(),
+                                             &response,
+                                             &resp_code_string,
+                                             &resp_string);
         krb5_free_data_contents(g_context.get(), &resp_string);
 
         if (!ret && response) {
-            fprintf(stderr, "Error: Unable to set machine password for %s: (%d) %s\n",
-                    flags->samAccountName.c_str(), response, (char *) resp_code_string.data);
+            fprintf(stderr,
+                    "Error: Unable to set machine password for %s: (%d) %s\n",
+                    flags->samAccountName.c_str(),
+                    response,
+                    (char *) resp_code_string.data);
             krb5_free_data_contents(g_context.get(), &resp_code_string);
             return response;
         }
         krb5_free_data_contents(g_context.get(), &resp_code_string);
         if (ret) {
             if (!response && ret == KRB5KRB_AP_ERR_BADADDR) {
-                VERBOSE("krb5_set_password_using_ccache: password changed successfully, but sender IP in KRB-PRIV failed validation");
+                VERBOSE("krb5_set_password_using_ccache: password changed "
+                        "successfully, but sender IP in KRB-PRIV failed "
+                        "validation");
                 if (!flags->server_behind_nat) {
-                    fprintf(stderr, "Error: krb5_set_password_using_ccache failed (%s)\n", error_message(ret));
+                    fprintf(stderr,
+                            "Error: krb5_set_password_using_ccache "
+                            "failed (%s)\n",
+                            error_message(ret)
+                        );
                     return ret;
                 }
             } else {
-                fprintf(stderr, "Error: krb5_set_password_using_ccache failed (%s)\n", error_message(ret));
+                fprintf(stderr,
+                        "Error: krb5_set_password_using_ccache failed (%s)\n",
+                        error_message(ret)
+                    );
                 return ret;
             }
         }
@@ -195,23 +216,31 @@ int set_password(msktutil_flags *flags)
             } else {
                 princ_name = "host/" + flags->hostname;
             }
-            VERBOSE("Try using keytab for %s to change password", princ_name.c_str());
+            VERBOSE("Try using keytab for %s to change password",
+                    princ_name.c_str());
 
             KRB5Keytab keytab(flags->keytab_readname);
             KRB5Principal principal(princ_name);
             KRB5Creds local_creds(principal, keytab, "kadmin/changepw");
             creds.move_from(local_creds);
         } else if (flags->auth_type == AUTH_FROM_PASSWORD) {
-            VERBOSE("Try using default password for %s to change password", flags->samAccountName.c_str());
+            VERBOSE("Try using default password for %s to change password",
+                    flags->samAccountName.c_str());
 
             KRB5Principal principal(flags->samAccountName);
-            KRB5Creds local_creds(principal, create_default_machine_password(flags->samAccountName), "kadmin/changepw");
+            KRB5Creds local_creds(principal,
+                                  create_default_machine_password(
+                                      flags->samAccountName),
+                                  "kadmin/changepw");
             creds.move_from(local_creds);
         } else if ((flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) ||
                    (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD)) {
-            VERBOSE("Try using supplied password for %s to change password", flags->samAccountName.c_str());
+            VERBOSE("Try using supplied password for %s to change password",
+                    flags->samAccountName.c_str());
             KRB5Principal principal(flags->samAccountName);
-            KRB5Creds local_creds(principal, flags->old_account_password, "kadmin/changepw");
+            KRB5Creds local_creds(principal,
+                                  flags->old_account_password,
+                                  "kadmin/changepw");
             creds.move_from(local_creds);
         } else /* shouldn't happen */
             throw Exception("Error: unknown auth_type.");
@@ -220,25 +249,39 @@ int set_password(msktutil_flags *flags)
             old_pwdLastSet = ldap_get_pwdLastSet(flags);
         }
 
-        ret = krb5_change_password(g_context.get(), creds.get(), const_cast<char*>(flags->password.c_str()),
-                                   &response, &resp_code_string, &resp_string);
+        ret = krb5_change_password(g_context.get(),
+                                   creds.get(),
+                                   const_cast<char*>(flags->password.c_str()),
+                                   &response,
+                                   &resp_code_string,
+                                   &resp_string);
         krb5_free_data_contents(g_context.get(), &resp_string);
 
         if (response) {
-            VERBOSE("krb5_change_password failed using keytab: (%d) %s", response, (char *) resp_code_string.data);
+            VERBOSE("krb5_change_password failed using keytab: (%d) %s",
+                    response,
+                    (char *) resp_code_string.data);
             krb5_free_data_contents(g_context.get(), &resp_code_string);
             return response;
         }
         krb5_free_data_contents(g_context.get(), &resp_code_string);
         if (ret) {
             if (!response && ret == KRB5KRB_AP_ERR_BADADDR) {
-                VERBOSE("krb5_change_password: password changed successfully, but sender IP in KRB-PRIV failed validation");
+                VERBOSE("krb5_change_password: password changed "
+                        "successfully, but sender IP in KRB-PRIV "
+                        "failed validation");
                 if (!flags->server_behind_nat) {
-                    fprintf(stderr, "Error: krb5_change_password failed (%s)\n", error_message(ret));
+                    fprintf(stderr,
+                            "Error: krb5_change_password failed (%s)\n",
+                            error_message(ret)
+                        );
                     return ret;
                 }
             } else {
-                fprintf(stderr, "Error: krb5_change_password failed (%s)\n", error_message(ret));
+                fprintf(stderr,
+                        "Error: krb5_change_password failed (%s)\n",
+                        error_message(ret)
+                    );
                 return ret;
             }
         }

@@ -101,7 +101,8 @@ LDAPConnection::LDAPConnection(const std::string &server,
         }
     }
 #else
-    VERBOSE("Your LDAP version does not support the option to disable reverse lookups");
+    VERBOSE("Your LDAP version does not support the option to disable "
+            "reverse lookups");
 #endif
 
     VERBOSEldap("calling ldap_sasl_interactive_bind_s");
@@ -320,7 +321,10 @@ int LDAPConnection::add(const std::string &dn, const LDAP_mod& mod)
     std::vector<LDAPMod*> tmp = mod.get();
     tmp.push_back(NULL);
 
-    int ret = ldap_add_ext_s(m_ldap, dn.c_str(), const_cast<LDAPMod **>(&tmp[0]), NULL, NULL);
+    int ret = ldap_add_ext_s(m_ldap, dn.c_str(),
+                             const_cast<LDAPMod **>(&tmp[0]),
+                             NULL,
+                             NULL);
     if (ret) {
         print_diagnostics("ldap_add_ext_s failed", ret);
         throw LDAPException("ldap_add_ext_s", ret);

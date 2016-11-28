@@ -63,7 +63,9 @@ std::string create_default_machine_password(const std::string &samaccountname)
         machine_password[i] = std::tolower(machine_password[i]);
     }
 
-    VERBOSE("Default machine password for %s is %s", samaccountname.c_str(), machine_password.c_str());
+    VERBOSE("Default machine password for %s is %s",
+            samaccountname.c_str(),
+            machine_password.c_str());
 
     return machine_password;
 }
@@ -176,9 +178,9 @@ void switch_default_ccache(const char *ccache_name)
     VERBOSE("Using the local credential cache: %s", ccache_name);
 
     /* Is this setenv really necessary given krb5_cc_set_default_name?
-       ...answer: YES, because ldap's sasl won't be using our context
-       object, and may in fact be using a different implementation of
-       kerberos entirely! */
+     * ...answer: YES, because ldap's sasl won't be using our context
+     * object, and may in fact be using a different implementation of
+     * kerberos entirely! */
 #ifdef HAVE_SETENV
     if (setenv("KRB5CCNAME", ccache_name, 1)) {
         throw Exception("Error: setenv failed");
@@ -192,11 +194,13 @@ void switch_default_ccache(const char *ccache_name)
 }
 
 
-bool try_machine_keytab_princ(msktutil_flags *flags, const std::string &principal_name,
+bool try_machine_keytab_princ(msktutil_flags *flags,
+                              const std::string &principal_name,
                               const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s from local keytab...", principal_name.c_str());
+        VERBOSE("Trying to authenticate for %s from local keytab...",
+                principal_name.c_str());
         KRB5Keytab keytab(flags->keytab_readname);
         KRB5Principal principal(principal_name);
         KRB5Creds creds(principal, keytab);
@@ -216,9 +220,12 @@ bool try_machine_keytab_princ(msktutil_flags *flags, const std::string &principa
 bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s with password.", flags->samAccountName.c_str());
+        VERBOSE("Trying to authenticate for %s with password.",
+                flags->samAccountName.c_str());
         KRB5Principal principal(flags->samAccountName);
-        KRB5Creds creds(principal, /*password:*/ create_default_machine_password(flags->samAccountName));
+        KRB5Creds creds(principal,
+                        /*password:*/
+                        create_default_machine_password(flags->samAccountName));
         KRB5CCache ccache(ccache_name);
         ccache.initialize(principal);
         ccache.store(creds);
@@ -232,10 +239,12 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
 }
 
 
-bool try_machine_supplied_password(msktutil_flags *flags, const char *ccache_name)
+bool try_machine_supplied_password(msktutil_flags *flags,
+                                   const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s with supplied password.", flags->samAccountName.c_str());
+        VERBOSE("Trying to authenticate for %s with supplied password.",
+                flags->samAccountName.c_str());
         KRB5Principal principal(flags->samAccountName);
         KRB5Creds creds(principal, /*password:*/ flags->old_account_password);
         KRB5CCache ccache(ccache_name);
@@ -282,7 +291,7 @@ bool try_user_creds()
     try {
         VERBOSE("Checking if default ticket cache has tickets...");
         /* The following is for the side effect of throwing an
-           exception or not. */
+         * exception or not. */
         KRB5CCache ccache(KRB5CCache::defaultName());
         KRB5Principal princ(ccache);
 
@@ -298,18 +307,22 @@ bool try_user_creds()
 int find_working_creds(msktutil_flags *flags)
 {
     /* We try some different ways, in order:
-       1) Use principal from keytab. Try both:
-         a) samAccountName
-         b) host/full-hostname (for compat with older msktutil which didn't write the first).
-       2) Use principal samAccountName with default password (samAccountName_nodollar)
-       3) Use supplied credentials (--old-account-password)
-          When the supplied password has expired (e.g. because the service account
-          has been newly created) we cannot find any working credentials here
-          and have to return AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD.
-          In this case working credentials need to be obtained after changing password
-       4) Calling user's existing credentials from their credential cache.
+     * 1) Use principal from keytab. Try both:
+     *    a) samAccountName
+     *    b) host/full-hostname (for compat with older msktutil which
+     *       didn't write the first).
+     * 2) Use principal samAccountName with default password
+     *    (samAccountName_nodollar)
+     * 3) Use supplied credentials (--old-account-password)
+     *    When the supplied password has expired (e.g. because
+     *    the service account has been newly created) we cannot find
+     *    any working credentials here and have to return
+     *    AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD.
+     *    In this case working credentials need to be obtained
+     *    after changing password
+     * 4) Calling user's existing credentials from their credential
+     *    cache.
     */
-
     if (!flags->user_creds_only) {
         std::string host_princ = "host/" + flags->hostname;
         /*
@@ -324,13 +337,20 @@ int find_working_creds(msktutil_flags *flags)
         g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
         std::string ccache_name = "FILE:" + g_ccache_filename;
 
-        if (!flags->keytab_auth_princ.empty() && try_machine_keytab_princ(flags, flags->keytab_auth_princ, ccache_name.c_str())) {
+        if (!flags->keytab_auth_princ.empty() &&
+            try_machine_keytab_princ(flags,
+                                     flags->keytab_auth_princ,
+                                     ccache_name.c_str())) {
             return AUTH_FROM_EXPLICIT_KEYTAB;
         }
-        if (try_machine_keytab_princ(flags, flags->samAccountName, ccache_name.c_str())) {
+        if (try_machine_keytab_princ(flags,
+                                     flags->samAccountName,
+                                     ccache_name.c_str())) {
             return AUTH_FROM_SAM_KEYTAB;
         }
-        if (try_machine_keytab_princ(flags, flags->samAccountName_uppercase, ccache_name.c_str())) {
+        if (try_machine_keytab_princ(flags,
+                                     flags->samAccountName_uppercase,
+                                     ccache_name.c_str())) {
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
         }
         if (try_machine_keytab_princ(flags, host_princ, ccache_name.c_str())) {

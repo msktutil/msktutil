@@ -115,7 +115,10 @@ void set_cleanup_enctype(msktutil_flags *flags, char * value)
                (sform(value).compare(sform("aes256")) == 0)) {
         enctype = 18;
     } else {
-        fprintf(stderr, "Error: enctype = %s not supported. Supported enctype strings are\n", value);
+        fprintf(stderr,
+                "Error: enctype = %s not supported. "
+                "Supported enctype strings are\n", value
+            );
         fprintf(stderr, "  des-cbc-crc\n");
         fprintf(stderr, "  des-cbc-md5\n");
         fprintf(stderr, "  arcfour\n");
@@ -132,13 +135,17 @@ void do_verbose()
 }
 
 
-void qualify_principal_vec(std::vector<std::string> &principals, const std::string &hostname)
+void qualify_principal_vec(std::vector<std::string> &principals,
+                           const std::string &hostname)
 {
     for(size_t i = 0; i < principals.size(); ++i) {
         /* If no hostname part, add it: */
         if (principals[i].find('/') == std::string::npos) {
             if (hostname.empty()) {
-                fprintf(stderr, "Error: default hostname unspecified, and service argument missing hostname.\n");
+                fprintf(stderr,
+                        "Error: default hostname unspecified, "
+                        "and service argument missing hostname.\n"
+                    );
                 exit(1);
             }
             principals[i].append("/").append(hostname);
@@ -175,7 +182,8 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
         flags->server = "dummy";
     } else {
         if (flags->server.empty()) {
-            flags->server = get_dc_host(flags->realm_name,flags->site,
+            flags->server = get_dc_host(flags->realm_name,
+                                        flags->site,
                                         flags->no_reverse_lookups);
             if (flags->server.empty()) {
                 fprintf(stderr, "Error: get_dc_host failed\n");
@@ -195,9 +203,13 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     }
 
     if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
-        /* Don't set a default hostname if none provided in pre-create mode. */
+        /* Don't set a default hostname if none provided in pre-create
+         * mode. */
         if (flags->samAccountName.empty()) {
-            fprintf(stderr, "Error: You must supply either --computer-name or --hostname when using pre-create mode.\n");
+            fprintf(stderr,
+                    "Error: You must supply either --computer-name "
+                    "or --hostname when using pre-create mode.\n"
+                );
             exit(1);
         }
     } else if (flags->hostname.empty()) {
@@ -210,7 +222,10 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     /* Determine the samAccountName, if not set */
     if (flags->samAccountName.empty()) {
         if (flags->use_service_account) {
-            fprintf(stderr, "Error: You must supply --account-name when using --use-service-account.\n");
+            fprintf(stderr,
+                    "Error: You must supply --account-name "
+                    "when using --use-service-account.\n"
+                );
             exit(1);
         } else {
             flags->samAccountName = get_short_hostname(flags)  + "$";
@@ -219,26 +234,39 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     /* Determine samAccountName_nodollar */
     flags->samAccountName_nodollar = flags->samAccountName;
-    if (flags->samAccountName_nodollar[flags->samAccountName_nodollar.size()-1] == '$') {
-        flags->samAccountName_nodollar.erase(flags->samAccountName_nodollar.size()-1);
+    if (flags->samAccountName_nodollar[
+            flags->samAccountName_nodollar.size()-1] == '$') {
+        flags->samAccountName_nodollar.erase(
+            flags->samAccountName_nodollar.size()-1);
     }
 
     /* Add a "$" to machine accounts */
-    if ((!flags->use_service_account) && (flags->samAccountName[flags->samAccountName.size()-1] != '$')) {
+    if ((!flags->use_service_account)
+        && (flags->samAccountName[flags->samAccountName.size()-1] != '$')) {
         flags->samAccountName += "$";
     }
 
     /* Determine uppercase version of sAMAccountName */
     flags->samAccountName_uppercase = flags->samAccountName;
-    for (std::string::size_type i=0; i<flags->samAccountName_uppercase.length(); ++i) {
-        flags->samAccountName_uppercase[i] = toupper(flags->samAccountName_uppercase[i]);
+    for (std::string::size_type i=0;
+         i<flags->samAccountName_uppercase.length();
+         ++i) {
+        flags->samAccountName_uppercase[i]
+            = toupper(flags->samAccountName_uppercase[i]);
     }
 
-    /* The samAccountName will cause win 9x, NT problems if longer than MAX_SAM_ACCOUNT_LEN characters */
+    /* The samAccountName will cause win 9x, NT problems if longer
+     * than MAX_SAM_ACCOUNT_LEN characters */
     if (flags->samAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
-        fprintf(stderr, "Error: The SAM name (%s) for this host is longer than the maximum of MAX_SAM_ACCOUNT_LEN characters\n",
-                flags->samAccountName.c_str());
-        fprintf(stderr, "Error: You can specify a shorter name using --computer-name\n");
+        fprintf(stderr,
+                "Error: The SAM name (%s) for this host is longer "
+                "than the maximum of MAX_SAM_ACCOUNT_LEN characters\n",
+                flags->samAccountName.c_str()
+            );
+        fprintf(stderr,
+                "Error: You can specify a shorter name using "
+                "--computer-name\n"
+            );
         exit(1);
     }
     VERBOSE("SAM Account Name is: %s", flags->samAccountName.c_str());
@@ -247,19 +275,23 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     qualify_principal_vec(exec->add_principals, flags->hostname);
     qualify_principal_vec(exec->remove_principals, flags->hostname);
 
-    /* Now, try to get kerberos credentials in order to connect to LDAP. */
+    /* Now, try to get kerberos credentials in order to connect to
+     * LDAP. */
     flags->auth_type = find_working_creds(flags);
     if (flags->auth_type == AUTH_NONE) {
-        fprintf(stderr, "Error: could not find any credentials to authenticate with. Neither keytab,\n\
-     default machine password, nor calling user's tickets worked. Try\n\
-     \"kinit\"ing yourself some tickets with permission to create computer\n\
-     objects, or pre-creating the computer object in AD and selecting\n\
-     'reset account'.\n");
+        fprintf(stderr,
+                "Error: could not find any credentials to authenticate with. "
+                "Neither keytab,\n"
+                "default machine password, nor calling user's tickets worked. "
+                "Try\n\"kinit\"ing yourself some tickets with permission to "
+                "create computer\nobjects, or pre-creating the computer "
+                "object in AD and selecting\n'reset account'.\n"
+            );
         exit(1);
     }
 
     /* If we didn't get kerberos credentials because the old passord
-       has expired we need to change it now  */
+     * has expired we need to change it now */
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Account password expired, changing it now...");
         ret = set_password(flags);
@@ -275,17 +307,22 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     VERBOSE("Authenticated using method %d", flags->auth_type);
 
-    flags->ldap = new LDAPConnection(flags->server, flags->no_reverse_lookups);
+    flags->ldap = new LDAPConnection(flags->server,
+                                     flags->no_reverse_lookups);
 
     if (!flags->ldap->is_connected()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         /* Print a hint as to the likely cause: */
         if (flags->auth_type == AUTH_FROM_USER_CREDS) {
-            fprintf(stderr, "--> Is your kerberos ticket expired? You might try re-\"kinit\"ing.\n");
+            fprintf(stderr, "--> Is your kerberos ticket expired? "
+                    "You might try re-\"kinit\"ing.\n"
+                );
         }
         if (flags->no_reverse_lookups == false) {
             fprintf(stderr, "--> Is DNS configured correctly? ");
-            fprintf(stderr, "You might try options \"--server\" and \"--no-reverse-lookups\".\n");
+            fprintf(stderr, "You might try options \"--server\" "
+                    "and \"--no-reverse-lookups\".\n"
+                );
         }
         exit(1);
     }
@@ -304,7 +341,9 @@ int add_and_remove_principals(msktutil_exec *exec)
 
     for (size_t i = 0; i < exec->add_principals.size(); ++i) {
         std::string principal = exec->add_principals[i];
-        if (std::find(cur_princs.begin(), cur_princs.end(), principal) == cur_princs.end()) {
+        if (std::find(cur_princs.begin(),
+                      cur_princs.end(),
+                      principal) == cur_princs.end()) {
             /* Not already in the list, so add it. */
             int loc_ret = ldap_add_principal(principal, Globals::flags());
             if (loc_ret) {
@@ -317,7 +356,8 @@ int add_and_remove_principals(msktutil_exec *exec)
 
     for (size_t i = 0; i < exec->remove_principals.size(); ++i) {
         std::string principal = exec->remove_principals[i];
-        if (std::find(cur_princs.begin(), cur_princs.end(), principal) != cur_princs.end()) {
+        if (std::find(cur_princs.begin(), cur_princs.end(), principal)
+            != cur_princs.end()) {
             int loc_ret = ldap_remove_principal(principal, Globals::flags());
             if (loc_ret) {
                 fprintf(stderr, "Error: ldap_remove_principal failed\n");
@@ -325,7 +365,11 @@ int add_and_remove_principals(msktutil_exec *exec)
                 continue;
             }
         } else {
-            fprintf(stderr, "Error: principal %s cannot be removed, was not in servicePrincipalName.\n", principal.c_str());
+            fprintf(stderr,
+                    "Error: principal %s cannot be removed, was not in "
+                    "servicePrincipalName.\n",
+                    principal.c_str()
+                );
             for (size_t i = 0; i < cur_princs.size(); ++i)
                 fprintf(stderr, "  %s\n", cur_princs[i].c_str());
             ret = 1;
@@ -459,7 +503,8 @@ static int wait_for_new_kvno(msktutil_flags *flags)
     }
 
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
-        VERBOSE("Warning: authenticated with expired password -- no way to verify the password change in LDAP.");
+        VERBOSE("Warning: authenticated with expired password -- "
+                "no way to verify the password change in LDAP.");
         return 0;
     }
 
@@ -472,7 +517,9 @@ static int wait_for_new_kvno(msktutil_flags *flags)
             return 0;
         }
 
-        fprintf(stdout, "Waiting for account replication (%d seconds past)\n", this_time);
+        fprintf(stdout,
+                "Waiting for account replication (%d seconds past)\n",
+                this_time);
         sleep(5);
     }
 }
@@ -500,31 +547,40 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         exit(ret);
     }
     if (exec->mode == MODE_FLUSH) {
-        fprintf(stdout, "Flushing all entries for %s from the keytab %s\n", flags->hostname.c_str(),
+        fprintf(stdout,
+                "Flushing all entries for %s from the keytab %s\n",
+                flags->hostname.c_str(),
                 flags->keytab_writename.c_str());
         ret = flush_keytab(flags);
         return ret;
-    } else if (exec->mode == MODE_CREATE || exec->mode == MODE_UPDATE || exec->mode == MODE_AUTO_UPDATE) {
+    } else if (exec->mode == MODE_CREATE ||
+               exec->mode == MODE_UPDATE ||
+               exec->mode == MODE_AUTO_UPDATE) {
         if (exec->mode == MODE_AUTO_UPDATE) {
             if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
                 flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
                 flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
                 std::string pwdLastSet = ldap_get_pwdLastSet(flags);
                 /* Windows timestamp is in
-                   100-nanoseconds-since-1601. (or, tenths of
-                   microseconds) */
-                long long windows_timestamp = strtoll(pwdLastSet.c_str(), NULL, 10);
+                 * 100-nanoseconds-since-1601. (or, tenths of
+                 * microseconds) */
+                long long windows_timestamp = strtoll(pwdLastSet.c_str(),
+                                                      NULL,
+                                                      10);
                 long long epoch_bias_1601_to_1970 = 116444736000000000LL;
                 /* Unix timestamp is seconds since 1970. */
                 long long unix_timestamp;
                 if (windows_timestamp < epoch_bias_1601_to_1970) {
                     unix_timestamp = 0;
                 } else {
-                    unix_timestamp = (windows_timestamp - epoch_bias_1601_to_1970) / 10000000;
+                    unix_timestamp = (windows_timestamp -
+                                      epoch_bias_1601_to_1970) / 10000000;
                 }
                 time_t current_unix_time = time(NULL);
-                long long days_since_password_change = (current_unix_time - unix_timestamp) / 86400;
-                VERBOSE("Password last set %lld days ago.", days_since_password_change);
+                long long days_since_password_change = (current_unix_time -
+                                                        unix_timestamp) / 86400;
+                VERBOSE("Password last set %lld days ago.",
+                        days_since_password_change);
                 if (days_since_password_change < flags->auto_update_interval) {
                     VERBOSE("Exiting because password was changed recently.");
                     return 0;
@@ -533,13 +589,13 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         }
 
         /* Check if computer account exists, update if so, create if
-           not. */
+         * not. */
         if (! ldap_check_account(flags)) {
             ldap_create_account(flags);
             flags->kvno = ldap_get_kvno(flags);
         } else {
             /* We retrieve the kvno _before_ the password change and
-               increment it. */
+             * increment it. */
             flags->kvno = ldap_get_kvno(flags);
             if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
                 flags->kvno++;
@@ -551,11 +607,24 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                 if (ret) {
                     fprintf(stderr, "Error: set_password failed\n");
                     if (flags->use_service_account) {
-                        fprintf(stderr, "Hint: Does your password policy allow to change %s's password?\n", flags->samAccountName.c_str());
-                        fprintf(stderr, "      For example, there could be a \"Minimum password age\" policy preventing\n");
-                        fprintf(stderr, "      passwords from being changed too frequently. If so, you can reset the\n");
-                        fprintf(stderr, "      password instead of changing it using the --user-creds-only option.\n");
-                        fprintf(stderr, "      Be aware that you need a ticket of a user with administrative privileges\n");
+                        fprintf(stderr,
+                                "Hint: Does your password policy allow to "
+                                "change %s's password?\n",
+                                flags->samAccountName.c_str()
+                            );
+                        fprintf(stderr, "      For example, there could be a "
+                                "\"Minimum password age\" policy preventing\n"
+                            );
+                        fprintf(stderr, "      passwords from being changed "
+                                "too frequently. If so, you can reset the\n"
+                            );
+                        fprintf(stderr, "      password instead of changing "
+                                "it using the --user-creds-only option.\n"
+                            );
+                        fprintf(stderr, "      Be aware that you need a "
+                                "ticket of a user with administrative "
+                                "privileges\n"
+                            );
                         fprintf(stderr, "      for that.\n");
                     }
                     return ret;
@@ -564,19 +633,21 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         }
 
         /* And add and remove principals to servicePrincipalName in
-           LDAP.*/
+         * LDAP.*/
         add_and_remove_principals(exec);
 
-        VERBOSE("Updating all entries for %s in the keytab %s", flags->hostname.c_str(),
+        VERBOSE("Updating all entries for %s in the keytab %s",
+                flags->hostname.c_str(),
                 flags->keytab_writename.c_str());
         update_keytab(flags);
         wait_for_new_kvno(flags);
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
         /* Change account password to default value: */
-        flags->password = create_default_machine_password(flags->samAccountName);
+        flags->password = create_default_machine_password(
+            flags->samAccountName);
         /* Check if computer account exists, update if so, create if
-           not. */
+         * not. */
         if (! ldap_check_account(flags)) {
             ldap_create_account(flags);
         }
@@ -589,7 +660,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         }
 
         /* And add and remove principals to servicePrincipalName in
-           LDAP. */
+         * LDAP. */
         add_and_remove_principals(exec);
         wait_for_new_kvno(flags);
         return ret;
@@ -644,8 +715,8 @@ int main(int argc, char *argv [])
     }
 
     if (exec->mode == MODE_NONE) {
-        /* compatibility for old command line syntax (e.g. "--create" or
-           "-c" instead of "create") */
+        /* compatibility for old command line syntax (e.g. "--create"
+         * or "-c" instead of "create") */
         start_i = 1;
     }
 
@@ -699,7 +770,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 exec->add_principals.push_back(argv[i]);
             } else {
-                fprintf(stderr, "Error: No service principal given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No service principal given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -708,25 +782,34 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 exec->remove_principals.push_back(argv[i]);
             } else {
-                fprintf(stderr, "Error: No service principal given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No service principal given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
         }
 
         /* Host name */
-        if (!strcmp(argv[i], "--host") || !strcmp(argv[i], "--hostname") || !strcmp(argv[i], "-h")) {
+        if (!strcmp(argv[i], "--host") ||
+            !strcmp(argv[i], "--hostname") ||
+            !strcmp(argv[i], "-h")) {
             if (++i < argc) {
                 flags->hostname = argv[i];
             } else {
-                fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No name given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
         }
 
         /* no canonical name */
-        if (!strcmp(argv[i], "--no-canonical-name") || !strcmp(argv[i], "-n")) {
+        if (!strcmp(argv[i], "--no-canonical-name") ||
+            !strcmp(argv[i], "-n")) {
             flags->no_canonical_name = true;
             continue;
         }
@@ -736,7 +819,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->old_account_password = argv[i];
             } else {
-                fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No password given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -747,7 +833,10 @@ int main(int argc, char *argv [])
                                 flags->password_from_cmdline = true;
                                 flags->password = argv[i];
             } else {
-                fprintf(stderr, "Error: No password given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No password given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -758,7 +847,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->site = argv[i];
             } else {
-                fprintf(stderr, "Error: No site given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No site given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -769,7 +861,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 set_supportedEncryptionTypes(flags, argv[i]);
             } else {
-                fprintf(stderr, "Error: No enctype after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No enctype after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -819,11 +914,15 @@ int main(int argc, char *argv [])
         }
 
         /* Use a certain sam account name */
-        if (!strcmp(argv[i], "--computer-name") || !strcmp(argv[i], "--account-name")) {
+        if (!strcmp(argv[i], "--computer-name") ||
+            !strcmp(argv[i], "--account-name")) {
             if (++i < argc) {
                 flags->samAccountName = argv[i];
             } else {
-                fprintf(stderr, "Error: No name given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No name given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -834,7 +933,10 @@ int main(int argc, char *argv [])
                 flags->set_userPrincipalName = true;
                 flags->userPrincipalName = argv[i];
             } else {
-                fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No principal given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -845,7 +947,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->keytab_file = argv[i];
             } else {
-                fprintf(stderr, "Error: No file given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No file given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -856,7 +961,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->ldap_ou = argv[i];
             } else {
-                fprintf(stderr, "Error: No base given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No base given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -868,7 +976,10 @@ int main(int argc, char *argv [])
                 flags->set_description = true;
                 flags->description = argv[i];
             } else {
-                fprintf(stderr, "Error: No description given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No description given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -879,7 +990,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->server = argv[i];
             } else {
-                fprintf(stderr, "Error: No server given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No server given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -896,14 +1010,18 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->realm_name = argv[i];
             } else {
-                fprintf(stderr, "Error: No realm given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No realm given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
         }
 
         /* do not reverse lookup server names */
-        if (!strcmp(argv[i], "--no-reverse-lookups") || !strcmp(argv[i], "-N")) {
+        if (!strcmp(argv[i], "--no-reverse-lookups") ||
+            !strcmp(argv[i], "-N")) {
             flags->no_reverse_lookups = true;
             continue;
         }
@@ -924,7 +1042,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->keytab_auth_princ = argv[i];
             } else {
-                fprintf(stderr, "Error: No principal given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No principal given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -934,7 +1055,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->auto_update_interval = atoi(argv[i]);
             } else {
-                fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No number given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -944,7 +1068,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 flags->cleanup_days = atoi(argv[i]);
             } else {
-                fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No number given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -954,7 +1081,10 @@ int main(int argc, char *argv [])
             if (++i < argc) {
                 set_cleanup_enctype(flags, argv[i]);
             } else {
-                fprintf(stderr, "Error: No number given after '%s'\n", argv[i - 1]);
+                fprintf(stderr,
+                        "Error: No number given after '%s'\n",
+                        argv[i - 1]
+                    );
                 goto error;
             }
             continue;
@@ -978,21 +1108,29 @@ int main(int argc, char *argv [])
     }
 
     /* make --old-account-password and --user-creds-only mutually
-       exclusive: */
-    if (strlen(flags->old_account_password.c_str()) && flags->user_creds_only) {
-        fprintf(stderr, "Error: --old-account-password and --user-creds-only are mutually exclusive\n");
+     * exclusive: */
+    if (strlen(flags->old_account_password.c_str()) &&
+        flags->user_creds_only) {
+        fprintf(stderr,
+                "Error: --old-account-password and --user-creds-only "
+                "are mutually exclusive\n");
         goto error;
     }
 
     /* allow --remove-enctype only in cleanup mode */
-    if (exec->mode != MODE_CLEANUP && flags->cleanup_enctype != VALUE_IGNORE) {
-        fprintf(stderr, "Error: --remove-enctype can only be used in cleanup mode\n");
+    if (exec->mode != MODE_CLEANUP &&
+        flags->cleanup_enctype != VALUE_IGNORE) {
+        fprintf(stderr,
+                "Error: --remove-enctype can only be used in cleanup mode\n"
+            );
         goto error;
     }
 
     /* allow --remove-old only in cleanup mode */
     if (exec->mode != MODE_CLEANUP && flags->cleanup_days != -1) {
-        fprintf(stderr, "Error: --remove-old can only be used in cleanup mode\n");
+        fprintf(stderr,
+                "Error: --remove-old can only be used in cleanup mode\n"
+            );
         goto error;
     }
 
@@ -1004,7 +1142,11 @@ int main(int argc, char *argv [])
                         MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
 
         if ((flags->supportedEncryptionTypes|known) != known) {
-            fprintf(stderr, "Error: Unsupported --enctypes must be integer that fits mask=0x%x\n", known);
+            fprintf(stderr,
+                    "Error: Unsupported --enctypes must be integer that "
+                    "fits mask=0x%x\n",
+                    known
+                );
             goto error;
         }
         if (flags->supportedEncryptionTypes == 0) {
@@ -1024,7 +1166,10 @@ int main(int argc, char *argv [])
     if (exec->mode == MODE_CLEANUP &&
         flags->cleanup_days == -1 &&
         flags->cleanup_enctype == VALUE_IGNORE) {
-            fprintf(stderr, "Error: cleanup mode needs --remove-old or --remove-enctype\n");
+            fprintf(stderr,
+                    "Error: cleanup mode needs --remove-old or "
+                    "--remove-enctype\n"
+                );
             goto error;
     }
 
@@ -1096,8 +1241,8 @@ msktutil_flags::msktutil_flags() :
     cleanup_days(-1),
     cleanup_enctype(VALUE_IGNORE)
 {
-    /* Check for environment variables as well.  These variables will be overriden
-     * By command line arguments. */
+    /* Check for environment variables as well.  These variables will
+     * be overriden by command line arguments. */
     if (getenv("MSKTUTIL_KEYTAB")) {
         keytab_file = getenv("MSKTUTIL_KEYTAB");
     }
