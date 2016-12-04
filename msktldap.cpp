@@ -428,7 +428,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
         }
     }
 
-    if (flags->set_description) {
+    if (!flags->description.empty()) {
         ldap_simple_set_attr(dn, "description", flags->description, flags);
     }
 

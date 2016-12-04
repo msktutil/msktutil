@@ -179,7 +179,6 @@ public:
     std::string ad_dnsHostName;
     std::vector<std::string> ad_principals;
 
-    bool set_description;
     bool set_userPrincipalName;
     bool no_reverse_lookups;
     bool no_canonical_name;

@@ -985,7 +985,6 @@ int main(int argc, char *argv [])
         /* Set the description on the computer account */
         if (!strcmp(argv[i], "--description")) {
             if (++i < argc) {
-                flags->set_description = true;
                 flags->description = argv[i];
             } else {
                 fprintf(stderr,
@@ -1225,7 +1224,6 @@ msktutil_flags::msktutil_flags() :
     password(),
     password_from_cmdline(false),
     ldap(NULL),
-    set_description(false),
     set_userPrincipalName(false),
     no_reverse_lookups(false),
     no_canonical_name(false),
