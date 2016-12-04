@@ -166,9 +166,9 @@ public:
     std::string realm_name;
     std::string lower_realm_name;
     std::string base_dn;
-    std::string samAccountName;
-    std::string samAccountName_nodollar;
-    std::string samAccountName_uppercase;
+    std::string sAMAccountName;
+    std::string sAMAccountName_nodollar;
+    std::string sAMAccountName_uppercase;
     std::string password;
     bool password_from_cmdline;
     std::string userPrincipalName;
@@ -244,7 +244,7 @@ public:
 };
 
 /* Prototypes */
-extern std::string create_default_machine_password(const std::string &samaccountname);
+extern std::string create_default_machine_password(const std::string &sAMAccountName);
 extern void ldap_cleanup(msktutil_flags *);
 extern void init_password(msktutil_flags *);
 extern std::string get_default_hostname(bool no_canonical_name = false);

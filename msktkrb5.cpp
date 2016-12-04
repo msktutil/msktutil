@@ -83,7 +83,7 @@ void get_default_keytab(msktutil_flags *flags)
 std::string get_salt(msktutil_flags *flags)
 {
     std::string salt;
-    std::string lower_accountname = flags->samAccountName_nodollar;
+    std::string lower_accountname = flags->sAMAccountName_nodollar;
     for(std::string::iterator it = lower_accountname.begin();
         it != lower_accountname.end(); ++it) {
         *it = std::tolower(*it);
@@ -233,10 +233,10 @@ void cleanup_keytab(msktutil_flags *flags)
 
 void update_keytab(msktutil_flags *flags)
 {
-    VERBOSE("Updating all entries for %s", flags->samAccountName.c_str());
-    add_principal_keytab(flags->samAccountName, flags);
+    VERBOSE("Updating all entries for %s", flags->sAMAccountName.c_str());
+    add_principal_keytab(flags->sAMAccountName, flags);
     if (!flags->use_service_account) {
-        add_principal_keytab(flags->samAccountName_uppercase, flags);
+        add_principal_keytab(flags->sAMAccountName_uppercase, flags);
     }
     /* add upn */
     if (!flags->userPrincipalName.empty()) {
@@ -244,7 +244,7 @@ void update_keytab(msktutil_flags *flags)
     }
     /* add host/sAMAccountName */
     if (!flags->use_service_account) {
-        add_principal_keytab("host/" + flags->samAccountName_nodollar, flags);
+        add_principal_keytab("host/" + flags->sAMAccountName_nodollar, flags);
     }
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
         if ((flags->userPrincipalName.empty()) ||

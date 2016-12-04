@@ -205,7 +205,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
         /* Don't set a default hostname if none provided in pre-create
          * mode. */
-        if (flags->samAccountName.empty()) {
+        if (flags->sAMAccountName.empty()) {
             fprintf(stderr,
                     "Error: You must supply either --computer-name "
                     "or --hostname when using pre-create mode.\n"
@@ -219,8 +219,8 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
         flags->hostname = complete_hostname(flags->hostname);
     }
 
-    /* Determine the samAccountName, if not set */
-    if (flags->samAccountName.empty()) {
+    /* Determine the sAMAccountName, if not set */
+    if (flags->sAMAccountName.empty()) {
         if (flags->use_service_account) {
             fprintf(stderr,
                     "Error: You must supply --account-name "
@@ -228,40 +228,40 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
                 );
             exit(1);
         } else {
-            flags->samAccountName = get_short_hostname(flags)  + "$";
+            flags->sAMAccountName = get_short_hostname(flags)  + "$";
         }
     }
 
-    /* Determine samAccountName_nodollar */
-    flags->samAccountName_nodollar = flags->samAccountName;
-    if (flags->samAccountName_nodollar[
-            flags->samAccountName_nodollar.size()-1] == '$') {
-        flags->samAccountName_nodollar.erase(
-            flags->samAccountName_nodollar.size()-1);
+    /* Determine sAMAccountName_nodollar */
+    flags->sAMAccountName_nodollar = flags->sAMAccountName;
+    if (flags->sAMAccountName_nodollar[
+            flags->sAMAccountName_nodollar.size()-1] == '$') {
+        flags->sAMAccountName_nodollar.erase(
+            flags->sAMAccountName_nodollar.size()-1);
     }
 
     /* Add a "$" to machine accounts */
     if ((!flags->use_service_account)
-        && (flags->samAccountName[flags->samAccountName.size()-1] != '$')) {
-        flags->samAccountName += "$";
+        && (flags->sAMAccountName[flags->sAMAccountName.size()-1] != '$')) {
+        flags->sAMAccountName += "$";
     }
 
     /* Determine uppercase version of sAMAccountName */
-    flags->samAccountName_uppercase = flags->samAccountName;
+    flags->sAMAccountName_uppercase = flags->sAMAccountName;
     for (std::string::size_type i=0;
-         i<flags->samAccountName_uppercase.length();
+         i<flags->sAMAccountName_uppercase.length();
          ++i) {
-        flags->samAccountName_uppercase[i]
-            = toupper(flags->samAccountName_uppercase[i]);
+        flags->sAMAccountName_uppercase[i]
+            = toupper(flags->sAMAccountName_uppercase[i]);
     }
 
-    /* The samAccountName will cause win 9x, NT problems if longer
+    /* The sAMAccountName will cause win 9x, NT problems if longer
      * than MAX_SAM_ACCOUNT_LEN characters */
-    if (flags->samAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
+    if (flags->sAMAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
         fprintf(stderr,
                 "Error: The SAM name (%s) for this host is longer "
                 "than the maximum of MAX_SAM_ACCOUNT_LEN characters\n",
-                flags->samAccountName.c_str()
+                flags->sAMAccountName.c_str()
             );
         fprintf(stderr,
                 "Error: You can specify a shorter name using "
@@ -269,7 +269,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
             );
         exit(1);
     }
-    VERBOSE("SAM Account Name is: %s", flags->samAccountName.c_str());
+    VERBOSE("SAM Account Name is: %s", flags->sAMAccountName.c_str());
 
     /* Qualify entries in the principals list */
     qualify_principal_vec(exec->add_principals, flags->hostname);
@@ -616,7 +616,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                         fprintf(stderr,
                                 "Hint: Does your password policy allow to "
                                 "change %s's password?\n",
-                                flags->samAccountName.c_str()
+                                flags->sAMAccountName.c_str()
                             );
                         fprintf(stderr, "      For example, there could be a "
                                 "\"Minimum password age\" policy preventing\n"
@@ -651,7 +651,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
     } else if (exec->mode == MODE_PRECREATE) {
         /* Change account password to default value: */
         flags->password = create_default_machine_password(
-            flags->samAccountName);
+            flags->sAMAccountName);
         /* Check if computer account exists, update if so, create if
          * not. */
         if (! ldap_check_account(flags)) {
@@ -929,7 +929,7 @@ int main(int argc, char *argv [])
         if (!strcmp(argv[i], "--computer-name") ||
             !strcmp(argv[i], "--account-name")) {
             if (++i < argc) {
-                flags->samAccountName = argv[i];
+                flags->sAMAccountName = argv[i];
             } else {
                 fprintf(stderr,
                         "Error: No name given after '%s'\n",

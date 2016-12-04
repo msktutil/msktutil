@@ -35,9 +35,9 @@
 #include <cctype>
 
 
-std::string create_default_machine_password(const std::string &samaccountname)
+std::string create_default_machine_password(const std::string &sAMAccountName)
 {
-    std::string machine_password(samaccountname);
+    std::string machine_password(sAMAccountName);
 
     /* Default machine password after 'reset account' is created with the
      * following algorithm:
@@ -64,7 +64,7 @@ std::string create_default_machine_password(const std::string &samaccountname)
     }
 
     VERBOSE("Default machine password for %s is %s",
-            samaccountname.c_str(),
+            sAMAccountName.c_str(),
             machine_password.c_str());
 
     return machine_password;
@@ -221,11 +221,11 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
 {
     try {
         VERBOSE("Trying to authenticate for %s with password.",
-                flags->samAccountName.c_str());
-        KRB5Principal principal(flags->samAccountName);
+                flags->sAMAccountName.c_str());
+        KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal,
                         /*password:*/
-                        create_default_machine_password(flags->samAccountName));
+                        create_default_machine_password(flags->sAMAccountName));
         KRB5CCache ccache(ccache_name);
         ccache.initialize(principal);
         ccache.store(creds);
@@ -244,8 +244,8 @@ bool try_machine_supplied_password(msktutil_flags *flags,
 {
     try {
         VERBOSE("Trying to authenticate for %s with supplied password.",
-                flags->samAccountName.c_str());
-        KRB5Principal principal(flags->samAccountName);
+                flags->sAMAccountName.c_str());
+        KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal, /*password:*/ flags->old_account_password);
         KRB5CCache ccache(ccache_name);
         ccache.initialize(principal);
@@ -271,7 +271,7 @@ bool get_creds(msktutil_flags *flags)
     g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");
     std::string ccache_name = "FILE:" + g_ccache_filename;
     try {
-        KRB5Principal principal(flags->samAccountName);
+        KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal, /*password:*/ flags->password);
         KRB5CCache ccache(ccache_name.c_str());
         ccache.initialize(principal);
@@ -308,11 +308,11 @@ int find_working_creds(msktutil_flags *flags)
 {
     /* We try some different ways, in order:
      * 1) Use principal from keytab. Try both:
-     *    a) samAccountName
+     *    a) sAMAccountName
      *    b) host/full-hostname (for compat with older msktutil which
      *       didn't write the first).
-     * 2) Use principal samAccountName with default password
-     *    (samAccountName_nodollar)
+     * 2) Use principal sAMAccountName with default password
+     *    (sAMAccountName_nodollar)
      * 3) Use supplied credentials (--old-account-password)
      *    When the supplied password has expired (e.g. because
      *    the service account has been newly created) we cannot find
@@ -344,12 +344,12 @@ int find_working_creds(msktutil_flags *flags)
             return AUTH_FROM_EXPLICIT_KEYTAB;
         }
         if (try_machine_keytab_princ(flags,
-                                     flags->samAccountName,
+                                     flags->sAMAccountName,
                                      ccache_name.c_str())) {
             return AUTH_FROM_SAM_KEYTAB;
         }
         if (try_machine_keytab_princ(flags,
-                                     flags->samAccountName_uppercase,
+                                     flags->sAMAccountName_uppercase,
                                      ccache_name.c_str())) {
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
         }

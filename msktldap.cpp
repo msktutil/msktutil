@@ -110,7 +110,7 @@ LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
 {
     std::string filter = sform("(&(|(objectCategory=Computer)"
                                "(objectCategory=User))(sAMAccountName=%s))",
-                               flags->samAccountName.c_str());
+                               flags->sAMAccountName.c_str());
     return flags->ldap->search(flags->base_dn,
                                LDAP_SCOPE_SUBTREE,
                                filter,
@@ -123,7 +123,7 @@ LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
     std::string filter = sform("(&(|(objectCategory=Computer)"
                                "(objectCategory=User))"
                                "(sAMAccountName=%s))",
-                               flags->samAccountName.c_str());
+                               flags->sAMAccountName.c_str());
     return flags->ldap->search(flags->base_dn,
                                LDAP_SCOPE_SUBTREE,
                                filter, attr);
@@ -147,7 +147,7 @@ int ldap_flush_principals(msktutil_flags *flags)
     if (dn.empty()) {
         fprintf(stderr,
                 "Error: an account for %s was not found\n",
-                flags->samAccountName.c_str()
+                flags->sAMAccountName.c_str()
             );
         return -1;
     }
@@ -329,7 +329,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
 
     VERBOSE("Checking that adding principal %s to %s won't cause a conflict",
             principal.c_str(),
-            flags->samAccountName.c_str());
+            flags->sAMAccountName.c_str());
     std::string filter = sform("(servicePrincipalName=%s)", principal.c_str());
     LDAPMessage *mesg = ldap->search(flags->base_dn,
                                      LDAP_SCOPE_SUBTREE,
@@ -541,11 +541,11 @@ bool ldap_check_account(msktutil_flags *flags)
 
     if (flags->use_service_account) {
         VERBOSE("Checking that a service account for %s exists",
-                flags->samAccountName.c_str());
+                flags->sAMAccountName.c_str());
         mesg = ldap_get_account_attrs(flags, user_attrs);
     } else {
         VERBOSE("Checking that a computer account for %s exists",
-                flags->samAccountName.c_str());
+                flags->sAMAccountName.c_str());
         mesg = ldap_get_account_attrs(flags, machine_attrs);
     }
 
@@ -650,17 +650,17 @@ void ldap_create_account(msktutil_flags *flags)
         VERBOSE("Service account not found, create the account");
         fprintf(stdout,
                 "No service account for %s found, creating a new one.\n",
-                flags->samAccountName.c_str()
+                flags->sAMAccountName.c_str()
             );
     } else {
         VERBOSE("Computer account not found, create the account");
         fprintf(stdout,
                 "No computer account for %s found, creating a new one.\n",
-                flags->samAccountName_nodollar.c_str()
+                flags->sAMAccountName_nodollar.c_str()
             );
     }
     flags->ad_computerDn = sform("cn=%s,%s",
-                                 flags->samAccountName_nodollar.c_str(),
+                                 flags->sAMAccountName_nodollar.c_str(),
                                  flags->ldap_ou.c_str());
     LDAP_mod mod_attrs;
 
@@ -670,7 +670,7 @@ void ldap_create_account(msktutil_flags *flags)
         mod_attrs.add("objectClass", v_machine_objectClass);
     }
 
-    mod_attrs.add("cn", flags->samAccountName_nodollar);
+    mod_attrs.add("cn", flags->sAMAccountName_nodollar);
 
     int userAcctFlags;
     if (flags->use_service_account) {
@@ -680,7 +680,7 @@ void ldap_create_account(msktutil_flags *flags)
     }
     mod_attrs.add("userAccountControl", sform("%d", userAcctFlags));
 
-    mod_attrs.add("sAMAccountName", flags->samAccountName);
+    mod_attrs.add("sAMAccountName", flags->sAMAccountName);
     mod_attrs.add("unicodePwd", "\"" + flags->password  + "\"", true);
     ldap->add(flags->ad_computerDn, mod_attrs);
 

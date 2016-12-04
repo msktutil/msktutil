@@ -156,7 +156,7 @@ int set_password(msktutil_flags *flags)
         VERBOSE("Try change password using user's ticket cache");
 
         KRB5CCache ccache(KRB5CCache::defaultName());
-        KRB5Principal principal(flags->samAccountName);
+        KRB5Principal principal(flags->sAMAccountName);
 
         old_pwdLastSet = ldap_get_pwdLastSet(flags);
         ret = krb5_set_password_using_ccache(g_context.get(),
@@ -171,7 +171,7 @@ int set_password(msktutil_flags *flags)
         if (!ret && response) {
             fprintf(stderr,
                     "Error: Unable to set machine password for %s: (%d) %s\n",
-                    flags->samAccountName.c_str(),
+                    flags->sAMAccountName.c_str(),
                     response,
                     (char *) resp_code_string.data);
             krb5_free_data_contents(g_context.get(), &resp_code_string);
@@ -208,9 +208,9 @@ int set_password(msktutil_flags *flags)
             flags->auth_type == AUTH_FROM_HOSTNAME_KEYTAB) {
             std::string princ_name;
             if (flags->auth_type == AUTH_FROM_SAM_KEYTAB) {
-                princ_name = flags->samAccountName;
+                princ_name = flags->sAMAccountName;
             } else if (flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB) {
-                princ_name = flags->samAccountName_uppercase;
+                princ_name = flags->sAMAccountName_uppercase;
             } else if (flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
                 princ_name = flags->keytab_auth_princ;
             } else {
@@ -225,19 +225,19 @@ int set_password(msktutil_flags *flags)
             creds.move_from(local_creds);
         } else if (flags->auth_type == AUTH_FROM_PASSWORD) {
             VERBOSE("Try using default password for %s to change password",
-                    flags->samAccountName.c_str());
+                    flags->sAMAccountName.c_str());
 
-            KRB5Principal principal(flags->samAccountName);
+            KRB5Principal principal(flags->sAMAccountName);
             KRB5Creds local_creds(principal,
                                   create_default_machine_password(
-                                      flags->samAccountName),
+                                      flags->sAMAccountName),
                                   "kadmin/changepw");
             creds.move_from(local_creds);
         } else if ((flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) ||
                    (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD)) {
             VERBOSE("Try using supplied password for %s to change password",
-                    flags->samAccountName.c_str());
-            KRB5Principal principal(flags->samAccountName);
+                    flags->sAMAccountName.c_str());
+            KRB5Principal principal(flags->sAMAccountName);
             KRB5Creds local_creds(principal,
                                   flags->old_account_password,
                                   "kadmin/changepw");
