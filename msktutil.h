@@ -172,7 +172,6 @@ public:
     std::string password;
     bool password_from_cmdline;
     std::string userPrincipalName;
-    std::string unicodePwd;
     std::string old_account_password;
     std::string site;
     LDAPConnection* ldap;
