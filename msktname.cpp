@@ -405,7 +405,13 @@ std::string get_host_os()
 }
 
 
-std::string get_short_hostname(msktutil_flags *flags)
+/* Default sAMAccountName for current host:
+   Use lowercase FQDN, strip realm if applicable, convert remaining dots to dashes.
+   Eg. foo.example.com in realm EXAMPLE.COM -> foo
+       foo.subdomain1.example.com in realm EXAMPLE.COM -> foo-subdomain1
+       foo.subdomain1.example.com in realm OTHEREXAMPLE.COM -> foo-subdomain1-example-com
+ */
+std::string get_default_samaccountname(msktutil_flags *flags)
 {
     std::string long_hostname = flags->hostname;
 
@@ -414,25 +420,25 @@ std::string get_short_hostname(msktutil_flags *flags)
         *it = std::tolower(*it);
     }
 
-    std::string short_hostname = long_hostname;
+    std::string samaccountname = long_hostname;
 
     size_t dot = std::string::npos;
     while ((dot = long_hostname.find('.', dot + 1)) != std::string::npos) {
         if (long_hostname.compare(dot + 1,
                                   std::string::npos,
                                   flags->lower_realm_name) == 0) {
-            short_hostname = long_hostname.substr(0, dot);
+            samaccountname = long_hostname.substr(0, dot);
             break;
         }
     }
 
     /* Replace any remaining dots with dashes */
-    for (size_t i = 0; i < short_hostname.length(); ++i) {
-        if (short_hostname[i] == '.') {
-            short_hostname[i] = '-';
+    for (size_t i = 0; i < samaccountname.length(); ++i) {
+        if (samaccountname[i] == '.') {
+            samaccountname[i] = '-';
         }
     }
 
-    VERBOSE("Determined short hostname: %s", short_hostname.c_str());
-    return short_hostname;
+    VERBOSE("Determined sAMAccountName: %s", samaccountname.c_str());
+    return samaccountname;
 }
