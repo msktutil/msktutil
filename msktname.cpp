@@ -43,6 +43,7 @@
 #endif
 #endif
 #include <netinet/in.h>
+#include <algorithm>
 #include <cctype>
 std::string complete_hostname(const std::string &hostname,
                               bool no_canonical_name)
@@ -404,6 +405,14 @@ std::string get_host_os()
     return std::string(info.sysname);
 }
 
+/* Return true if <str> ends with <suffix>, false otherwise */
+static bool ends_with(std::string const &str, std::string const &suffix)
+{
+    if (suffix.size() > str.size())
+        return false;
+
+    return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
+}
 
 /* Default sAMAccountName for current host:
    Use lowercase FQDN, strip realm if applicable, convert remaining dots to dashes.
@@ -415,29 +424,16 @@ std::string get_default_samaccountname(msktutil_flags *flags)
 {
     std::string long_hostname = flags->hostname;
 
-    for(std::string::iterator it = long_hostname.begin();
-        it != long_hostname.end(); ++it) {
-        *it = std::tolower(*it);
-    }
+    std::transform(long_hostname.begin(), long_hostname.end(),
+                   long_hostname.begin(), ::tolower);
 
     std::string samaccountname = long_hostname;
 
-    size_t dot = std::string::npos;
-    while ((dot = long_hostname.find('.', dot + 1)) != std::string::npos) {
-        if (long_hostname.compare(dot + 1,
-                                  std::string::npos,
-                                  flags->lower_realm_name) == 0) {
-            samaccountname = long_hostname.substr(0, dot);
-            break;
-        }
-    }
+    if (ends_with(samaccountname, '.' + flags->lower_realm_name))
+        samaccountname.resize(samaccountname.length() - flags->lower_realm_name.length() - 1);
 
     /* Replace any remaining dots with dashes */
-    for (size_t i = 0; i < samaccountname.length(); ++i) {
-        if (samaccountname[i] == '.') {
-            samaccountname[i] = '-';
-        }
-    }
+    std::replace(samaccountname.begin(), samaccountname.end(), '.', '-');
 
     VERBOSE("Determined sAMAccountName: %s", samaccountname.c_str());
     return samaccountname;
