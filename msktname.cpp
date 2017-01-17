@@ -442,3 +442,14 @@ std::string get_default_samaccountname(msktutil_flags *flags)
     VERBOSE("Determined sAMAccountName: %s", samaccountname.c_str());
     return samaccountname;
 }
+
+/* Return first component of FQDN set in flags->hostname */
+std::string get_short_hostname(msktutil_flags *flags)
+{
+    std::string long_hostname = flags->hostname;
+    std::string short_hostname = long_hostname.substr(0, long_hostname.find('.'));
+    std::transform(short_hostname.begin(), short_hostname.end(), short_hostname.begin(), ::tolower);
+
+    VERBOSE("Determined short hostname: %s", short_hostname.c_str());
+    return short_hostname;
+}
