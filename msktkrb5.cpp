@@ -366,9 +366,9 @@ void update_keytab(msktutil_flags *flags)
     if (!flags->userPrincipalName.empty()) {
         add_principal_keytab(flags->userPrincipalName, flags);
     }
-    /* add host/sAMAccountName */
+    /* add host/<short_hostname> */
     if (!flags->use_service_account) {
-        add_principal_keytab("host/" + flags->sAMAccountName_nodollar, flags);
+        add_principal_keytab("host/" + get_short_hostname(flags), flags);
     }
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
         if ((flags->userPrincipalName.empty()) ||
