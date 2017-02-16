@@ -190,6 +190,7 @@ public:
     bool dontchangepw;
 
     msktutil_val dont_expire_password;
+    msktutil_val dont_update_dnshostname;
     msktutil_val no_pac;
     msktutil_val delegate;
     unsigned int ad_userAccountControl; /* value AD has now */

@@ -420,8 +420,8 @@ void ldap_check_account_strings(msktutil_flags *flags)
      *  ignored, for better or worse... But failure to set
      *  userPrincipalName is not ignored */
 
-    /* don't set dnsHostname on service accounts */
-    if (!flags->use_service_account) {
+    /* don't set dnsHostname on service accounts or if requested not to do it */
+    if (!flags->use_service_account && !flags->dont_update_dnshostname) {
         if (!flags->hostname.empty() &&
             flags->hostname != flags->ad_dnsHostName) {
             ldap_simple_set_attr(dn, "dNSHostName", flags->hostname, flags);
