@@ -9,3 +9,4 @@ config.status
 config.log
 autom4te.cache
 configure
+aclocal.m4
