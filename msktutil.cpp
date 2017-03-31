@@ -643,7 +643,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         add_and_remove_principals(exec);
 
         VERBOSE("Updating all entries for %s in the keytab %s",
-                flags->hostname.c_str(),
+                flags->samAccountName.c_str(),
                 flags->keytab_writename.c_str());
         update_keytab(flags);
         wait_for_new_kvno(flags);
