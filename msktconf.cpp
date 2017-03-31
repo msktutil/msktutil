@@ -338,22 +338,28 @@ int find_working_creds(msktutil_flags *flags)
         std::string ccache_name = "FILE:" + g_ccache_filename;
 
         if (!flags->keytab_auth_princ.empty() &&
+            access(flags->keytab_file.c_str(), R_OK) == 0 &&
             try_machine_keytab_princ(flags,
                                      flags->keytab_auth_princ,
                                      ccache_name.c_str())) {
             return AUTH_FROM_EXPLICIT_KEYTAB;
         }
-        if (try_machine_keytab_princ(flags,
+        if (access(flags->keytab_file.c_str(), R_OK) == 0 &&
+            try_machine_keytab_princ(flags,
                                      flags->samAccountName,
                                      ccache_name.c_str())) {
             return AUTH_FROM_SAM_KEYTAB;
         }
-        if (try_machine_keytab_princ(flags,
+        if (access(flags->keytab_file.c_str(), R_OK) == 0 &&
+            try_machine_keytab_princ(flags,
                                      flags->samAccountName_uppercase,
                                      ccache_name.c_str())) {
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
         }
-        if (try_machine_keytab_princ(flags, host_princ, ccache_name.c_str())) {
+        if (access(flags->keytab_file.c_str(), R_OK) == 0 &&
+            try_machine_keytab_princ(flags,
+                                     host_princ,
+                                     ccache_name.c_str())) {
             return AUTH_FROM_HOSTNAME_KEYTAB;
         }
         if (try_machine_password(flags, ccache_name.c_str())) {
