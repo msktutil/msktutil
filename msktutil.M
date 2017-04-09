@@ -431,6 +431,8 @@ Specifies that service tickets for this account should not contain a PAC (see --
 .PP
 (C) 2010-2013 Ken Dreyer <ktdreyer at ktdreyer.com>
 .PP
-(C) 2012-2015 Mark Proehl <mark at mproehl.net>
+(C) 2012-2017 Mark Proehl <mark at mproehl.net>
 .PP
-(C) 2012-2015 Olaf Flebbe <of at oflebbe.de>
+(C) 2012-2017 Olaf Flebbe <of at oflebbe.de>
+.PP
+(C) 2013-2017 Daniel Kobras <d.kobras at science-computing.de>

@@ -8,9 +8,9 @@
  * (C) 2009-2010 Doug Engert (deengert@anl.gov)
  * (C) 2010 James Y Knight (foom@fuhm.net)
  * (C) 2010-2013 Ken Dreyer <ktdreyer at ktdreyer.com>
- * (C) 2012-2016 Mark Proehl <mark at mproehl.net>
- * (C) 2012-2016 Olaf Flebbe <of at oflebbe.de>
- * (C) 2013-2016 Daniel Kobras <d.kobras at science-computing.de>
+ * (C) 2012-2017 Mark Proehl <mark at mproehl.net>
+ * (C) 2012-2017 Olaf Flebbe <of at oflebbe.de>
+ * (C) 2013-2017 Daniel Kobras <d.kobras at science-computing.de>
  *
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
