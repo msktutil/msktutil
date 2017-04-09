@@ -150,7 +150,8 @@ enum msktutil_mode {
     MODE_AUTO_UPDATE,
     MODE_FLUSH,
     MODE_CLEANUP,
-    MODE_PRECREATE
+    MODE_PRECREATE,
+    MODE_DELETE_ACCOUNT
 };
 
 class msktutil_flags {
