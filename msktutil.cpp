@@ -645,10 +645,15 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         /* And add and remove principals to servicePrincipalName in
          * LDAP.*/
         add_and_remove_principals(exec);
-
-        VERBOSE("Updating all entries for %s in the keytab %s",
-                flags->hostname.c_str(),
-                flags->keytab_writename.c_str());
+        if (flags->use_service_account) {
+            VERBOSE("Updating all entries for service account %s in the keytab %s",
+                    flags->sAMAccountName.c_str(),
+                    flags->keytab_writename.c_str());
+        } else {
+            VERBOSE("Updating all entries for %s in the keytab %s",
+                    flags->hostname.c_str(),
+                    flags->keytab_writename.c_str());            
+        }
         update_keytab(flags);
         wait_for_new_kvno(flags);
         return ret;
