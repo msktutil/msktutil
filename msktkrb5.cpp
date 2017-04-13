@@ -258,6 +258,15 @@ void update_keytab(msktutil_flags *flags)
     }
 }
 
+void add_and_remove_keytab_entries(msktutil_flags *flags)
+{
+    VERBOSE("Removing entries for %s", flags->sAMAccountName.c_str());
+    /* TODO */
+    VERBOSE("Adding entries for %s", flags->sAMAccountName.c_str());
+    /* TODO */
+}
+
+
 void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 {
     VERBOSE("Adding principal to keytab: %s", principal.c_str());

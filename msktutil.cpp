@@ -653,6 +653,9 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
          * LDAP.*/
         add_and_remove_principals(exec);
 
+        /* And add and remove principal entries in keytab.*/
+        add_and_remove_keytab_entries(flags);
+
         /* update keytab */
         if (!flags->dontchangepw) {
             if (flags->use_service_account) {
