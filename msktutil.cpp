@@ -538,6 +538,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         VERBOSE("Skipping creation of new password");
     } else if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need a new password");
+    } else if (exec->mode == MODE_DELETE_ACCOUNT) {
+        VERBOSE("delete-account mode: don't need a new password");
     } else {
         /* Generate a random password and store it. */
         ret = generate_new_password(flags);
