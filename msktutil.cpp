@@ -662,7 +662,6 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                     flags->keytab_writename.c_str());
         }
         update_keytab(flags);
-        update_keytab(flags);
         wait_for_new_kvno(flags);
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
