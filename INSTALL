@@ -1,6 +1,6 @@
- msktutil (C) 2004-2006 Dan Perry <dperry@pppl.gov>
- 	  (C) 2006 Brian Elliott Finley (finley@anl.gov)
-	  (C) 2009-2010 Doug Engert (deengert@anl.gov)
+msktutil  (C) 2004-2006 Dan Perry <dperry@pppl.gov>
+          (C) 2006 Brian Elliott Finley (finley@anl.gov)
+          (C) 2009-2010 Doug Engert (deengert@anl.gov)
           (C) 2010 James Knight <foom@fuhm.net>
           (C) 2010-2013 Ken Dreyer <ktdreyer at ktdreyer.com>
           (C) 2012-2017 Mark Proehl <mark at mproehl.net>
@@ -8,9 +8,7 @@
           (C) 2013-2017 Daniel Kobras <d.kobras at science-computing.de>
 -------------------------------------------------------------------------------
 
-
-
- Installing
+Installing
 
 Msktutil uses a standard autoconf system to build...  Just run './configure'
 followed by 'make' and (as root) 'make install'.   Note that in order to
