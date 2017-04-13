@@ -555,10 +555,17 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         exit(ret);
     }
     if (exec->mode == MODE_FLUSH) {
-        fprintf(stdout,
-                "Flushing all entries for %s from the keytab %s\n",
-                flags->hostname.c_str(),
-                flags->keytab_writename.c_str());
+        if (flags->use_service_account) {
+            fprintf(stdout,
+                    "Flushing all entries for service account %s from the keytab %s\n",
+                    flags->sAMAccountName.c_str(),
+                    flags->keytab_writename.c_str());
+        } else {
+            fprintf(stdout,
+                    "Flushing all entries for %s from the keytab %s\n",
+                    flags->hostname.c_str(),
+                    flags->keytab_writename.c_str());
+        }
         ret = flush_keytab(flags);
         return ret;
     } else if (exec->mode == MODE_CREATE ||
@@ -652,8 +659,9 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         } else {
             VERBOSE("Updating all entries for %s in the keytab %s",
                     flags->hostname.c_str(),
-                    flags->keytab_writename.c_str());            
+                    flags->keytab_writename.c_str());
         }
+        update_keytab(flags);
         update_keytab(flags);
         wait_for_new_kvno(flags);
         return ret;
