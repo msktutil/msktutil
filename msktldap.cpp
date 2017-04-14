@@ -389,14 +389,6 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     return ret;
 }
 
-
-template<typename T>
-void vec_remove(std::vector<T> &vec, const T &val)
-{
-    vec.erase(std::remove(vec.begin(), vec.end(), val), vec.end());
-}
-
-
 int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
 {
     VERBOSE("Removing servicePrincipalName %s from %s",
@@ -407,7 +399,12 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
                                        "servicePrincipalName",
                                        principal);
     if (ret == LDAP_SUCCESS) {
-        vec_remove(flags->ad_principals, principal);
+        flags->ad_principals.erase(
+            std::remove(flags->ad_principals.begin(),
+                        flags->ad_principals.end(),
+                        principal),
+            flags->ad_principals.end()
+            );
     }
     return ret;
 }
