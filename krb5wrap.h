@@ -204,4 +204,8 @@ public:
     krb5_timestamp timestamp() {
         return m_entry.timestamp;
     }
+
+    krb5_keyblock key() {
+        return m_entry.key;
+    }
 };
