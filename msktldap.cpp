@@ -399,6 +399,10 @@ void vec_remove(std::vector<T> vec, const T &val)
 
 int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
 {
+    VERBOSE("Removing servicePrincipalName %s from %s",
+            principal.c_str(),
+            flags->ad_computerDn.c_str());
+
     int ret = flags->ldap->remove_attr(flags->ad_computerDn,
                                        "servicePrincipalName",
                                        principal);
