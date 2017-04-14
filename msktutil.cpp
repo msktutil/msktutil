@@ -654,7 +654,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         add_and_remove_principals(exec);
 
         /* And add and remove principal entries in keytab.*/
-        add_and_remove_keytab_entries(flags);
+        add_and_remove_keytab_entries(flags, exec->remove_principals);
 
         /* update keytab */
         if (!flags->dontchangepw) {

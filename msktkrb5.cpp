@@ -258,12 +258,54 @@ void update_keytab(msktutil_flags *flags)
     }
 }
 
-void add_and_remove_keytab_entries(msktutil_flags *flags)
+
+void add_and_remove_keytab_entries(msktutil_flags *flags,
+                                   std::vector<std::string> remove_principals)
 {
-    VERBOSE("Removing entries for %s", flags->sAMAccountName.c_str());
+    KRB5Keytab keytab(flags->keytab_writename);
+
+    VERBOSE("Trying to remove entries for %s from keytab", flags->sAMAccountName.c_str());
+
+    typedef std::vector<std::pair<std::pair<std::string,krb5_kvno>, krb5_enctype> > to_delete_t;
+    to_delete_t to_delete;
+
+    for (size_t i = 0; i < remove_principals.size(); ++i) {
+        std::string remove_principal = remove_principals[i] + "@" + flags->realm_name;
+
+        try {
+            KRB5Keytab::cursor cursor(keytab);
+            while (cursor.next()) {
+                std::string principal = cursor.principal().name();
+                krb5_kvno kvno = cursor.kvno();
+                krb5_kvno enctype = cursor.enctype();
+                if (principal.compare(remove_principal) == 0) {
+                    to_delete.push_back(std::make_pair(std::make_pair(principal, kvno), enctype));
+                }
+            }
+        } catch (KRB5Exception ex) {
+            /* Ignore errors reading keytab */
+        }
+    }
+
+    for(to_delete_t::const_iterator it = to_delete.begin();
+        it != to_delete.end();
+        ++it) {
+        KRB5Principal princ(it->first.first);
+        krb5_kvno kvno = it->first.second;
+        krb5_enctype enctype = it->second;
+        VERBOSE("Deleting %s kvno=%d, enctype=%d",
+                it->first.first.c_str(),
+                kvno,
+                enctype
+            );
+        keytab.removeEntry(princ, kvno, enctype);
+    }
+
+    VERBOSE("Trying to add missing entries for %s to keytab", flags->sAMAccountName.c_str());
     /* TODO */
-    VERBOSE("Adding entries for %s", flags->sAMAccountName.c_str());
-    /* TODO */
+    for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
+        VERBOSE("%s needs to be added to keytab... (Not implemented yet!)", flags->ad_principals[i].c_str());
+    }
 }
 
 
