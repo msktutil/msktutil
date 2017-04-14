@@ -391,7 +391,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
 
 
 template<typename T>
-void vec_remove(std::vector<T> vec, const T &val)
+void vec_remove(std::vector<T> &vec, const T &val)
 {
     vec.erase(std::remove(vec.begin(), vec.end(), val), vec.end());
 }
