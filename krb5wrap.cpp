@@ -261,6 +261,7 @@ KRB5Keytab::cursor::cursor(KRB5Keytab &keytab) : m_keytab(keytab),
 
 
 KRB5Keytab::cursor::~cursor()
+noexcept(false)
 {
     krb5_free_keytab_entry_contents(g_context.get(), &m_entry);
     memset(&m_entry, 0, sizeof(m_entry));

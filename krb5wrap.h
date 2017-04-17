@@ -81,7 +81,7 @@ public:
             throw KRB5Exception("krb5_kt_resolve", ret);
     }
 
-    ~KRB5Keytab() {
+    ~KRB5Keytab() noexcept(false) {
         krb5_error_code ret = krb5_kt_close(g_context.get(), m_keytab);
         if (ret)
             /* FIXME: shouldn't throw from destructor... */
@@ -188,7 +188,7 @@ class KRB5Keytab::cursor : noncopyable {
 
 public:
     cursor(KRB5Keytab &keytab);
-    ~cursor();
+    ~cursor() noexcept(false);
     bool next();
 
     KRB5Principal &principal() { return m_princ; }
