@@ -649,12 +649,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
             }
         }
 
-        /* And add and remove principals to servicePrincipalName in
-         * LDAP.*/
+        /* Add and remove principals to servicePrincipalName in LDAP.*/
         add_and_remove_principals(exec);
-
-        /* And add and remove principal entries in keytab.*/
-        add_and_remove_keytab_entries(flags, exec->remove_principals);
 
         /* update keytab */
         if (!flags->dontchangepw) {
@@ -667,7 +663,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                         flags->hostname.c_str(),
                         flags->keytab_writename.c_str());
             }
-            update_keytab(flags);
+            update_keytab(flags, exec->remove_principals);
         }
 
         wait_for_new_kvno(flags);

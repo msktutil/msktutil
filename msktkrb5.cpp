@@ -231,35 +231,7 @@ void cleanup_keytab(msktutil_flags *flags)
 }
 
 
-void update_keytab(msktutil_flags *flags)
-{
-    VERBOSE("Updating all entries for %s", flags->sAMAccountName.c_str());
-    add_principal_keytab(flags->sAMAccountName, flags);
-    if (!flags->use_service_account) {
-        add_principal_keytab(flags->sAMAccountName_uppercase, flags);
-    }
-    /* add upn */
-    if (!flags->userPrincipalName.empty()) {
-        add_principal_keytab(flags->userPrincipalName, flags);
-    }
-    /* add host/sAMAccountName */
-    if (!flags->use_service_account) {
-        add_principal_keytab("host/" + flags->sAMAccountName_nodollar, flags);
-    }
-    for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
-        if ((flags->userPrincipalName.empty()) ||
-            flags->userPrincipalName.compare(flags->ad_principals[i]) != 0) {
-            add_principal_keytab(flags->ad_principals[i], flags);
-        } else {
-            VERBOSE("Entries for SPN %s have already been added. Skipping ...",
-                    flags->ad_principals[i].c_str()
-                );
-        }
-    }
-}
-
-
-void add_and_remove_keytab_entries(msktutil_flags *flags,
+void remove_keytab_entries(msktutil_flags *flags,
                                    std::vector<std::string> remove_principals)
 {
     KRB5Keytab keytab(flags->keytab_writename);
@@ -300,6 +272,12 @@ void add_and_remove_keytab_entries(msktutil_flags *flags,
             );
         keytab.removeEntry(princ, kvno, enctype);
     }
+}
+
+
+void add_keytab_entries(msktutil_flags *flags)
+{
+    KRB5Keytab keytab(flags->keytab_writename);
 
     VERBOSE("Trying to add missing entries for %s to keytab", flags->sAMAccountName.c_str());
 
@@ -364,6 +342,7 @@ void add_and_remove_keytab_entries(msktutil_flags *flags,
                             throw KRB5Exception("krb5_copy_keyblock_contents", ret);
                         }
                         to_add.push_back(newentry);
+                        VERBOSE("adding %s (kvno=%d, enctype=%d) to keytab.", add_principal.c_str(), kvno, enctype);
                     }
                 }
             }
@@ -380,6 +359,37 @@ void add_and_remove_keytab_entries(msktutil_flags *flags,
         kblock.from_keyblock(it->keyblock);
         keytab.addEntry(princ, it->kvno, kblock);
     }
+}
+
+
+void update_keytab(msktutil_flags *flags, std::vector<std::string> remove_principals)
+{
+    remove_keytab_entries(flags, remove_principals);
+
+    VERBOSE("Updating all entries for %s", flags->sAMAccountName.c_str());
+    add_principal_keytab(flags->sAMAccountName, flags);
+    if (!flags->use_service_account) {
+        add_principal_keytab(flags->sAMAccountName_uppercase, flags);
+    }
+    /* add upn */
+    if (!flags->userPrincipalName.empty()) {
+        add_principal_keytab(flags->userPrincipalName, flags);
+    }
+    /* add host/sAMAccountName */
+    if (!flags->use_service_account) {
+        add_principal_keytab("host/" + flags->sAMAccountName_nodollar, flags);
+    }
+    for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
+        if ((flags->userPrincipalName.empty()) ||
+            flags->userPrincipalName.compare(flags->ad_principals[i]) != 0) {
+            add_principal_keytab(flags->ad_principals[i], flags);
+        } else {
+            VERBOSE("Entries for SPN %s have already been added. Skipping ...",
+                    flags->ad_principals[i].c_str()
+                );
+        }
+    }
+    add_keytab_entries(flags);
 }
 
 
