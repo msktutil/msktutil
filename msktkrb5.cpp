@@ -302,9 +302,83 @@ void add_and_remove_keytab_entries(msktutil_flags *flags,
     }
 
     VERBOSE("Trying to add missing entries for %s to keytab", flags->sAMAccountName.c_str());
-    /* TODO */
+
+    typedef struct
+    {
+        std::string principal;
+        krb5_kvno kvno;
+        krb5_keyblock keyblock;
+    } to_add_t;
+
+    typedef std::vector<to_add_t> to_add_tv;
+    to_add_tv to_add;
+
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
-        VERBOSE("%s needs to be added to keytab... (Not implemented yet!)", flags->ad_principals[i].c_str());
+        /* We look at all keytab entries that match the account name
+         * and fetch their kvno, enctype and key. If an entry for the
+         * principal that needs to be added already exists, we do
+         * nothing.  If not, we are adding it by using the fetched keys
+         * from the account name entry. Doing it this way we are able
+         * to add service principals without changing the account
+         * password.
+         */
+        VERBOSE("checking if %s needs to be added to keytab...", flags->ad_principals[i].c_str());
+
+        std::string add_principal = flags->ad_principals[i] + "@" + flags->realm_name;
+        std::string template_principal = flags->sAMAccountName + "@" + flags->realm_name;
+
+        try {
+            KRB5Keytab::cursor cursor(keytab);
+            while (cursor.next()) {
+                std::string principal = cursor.principal().name();
+                krb5_kvno kvno = cursor.kvno();
+                krb5_enctype enctype = cursor.enctype();
+                krb5_keyblock keyblock = cursor.key();
+                if (principal.compare(template_principal) == 0) {
+                    /* We have a keytab entry for sAMAccountName. Now
+                     * let's see if there is an entry for
+                     * add_principal with the same kvno and
+                     * enctype. If not, add it to the list.
+                     */
+                    bool found_it = false;
+                    try {
+                        KRB5Keytab::cursor cursor2(keytab);
+                        while (cursor2.next()) {
+                            if (cursor2.principal().name().compare(add_principal) == 0 &&
+                                cursor2.kvno() == kvno &&
+                                cursor2.enctype() == enctype ) {
+                                found_it = true;
+                                break;
+                            }
+                        }
+                    } catch (KRB5Exception ex) {
+                        /* Ignore errors reading keytab */
+                    }
+                    if (!found_it) {
+
+                        to_add_t newentry;
+                        newentry.principal = add_principal;
+                        newentry.kvno = kvno;
+                        krb5_error_code ret = krb5_copy_keyblock_contents(g_context.get(), &keyblock, &newentry.keyblock);
+                        if (ret) {
+                            throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+                        }
+                        to_add.push_back(newentry);
+                    }
+                }
+            }
+        } catch (KRB5Exception ex) {
+            /* Ignore errors reading keytab */
+        }
+    }
+
+    for(to_add_tv::const_iterator it = to_add.begin();
+        it != to_add.end();
+        ++it) {
+        KRB5Principal princ(it->principal);
+        KRB5Keyblock kblock;
+        kblock.from_keyblock(it->keyblock);
+        keytab.addEntry(princ, it->kvno, kblock);
     }
 }
 
