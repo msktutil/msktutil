@@ -60,6 +60,8 @@ public:
 
     void from_string(krb5_enctype enctype, const std::string &password, const std::string &salt);
 
+    void from_keyblock(krb5_keyblock keyblock);
+
     ~KRB5Keyblock() {
         krb5_free_keyblock_contents(g_context.get(), &m_keyblock);
     }

@@ -120,6 +120,17 @@ void KRB5Keyblock::from_string(krb5_enctype enctype,
 }
 
 
+void KRB5Keyblock::from_keyblock(krb5_keyblock keyblock)
+{
+
+    krb5_error_code ret = krb5_copy_keyblock_contents(g_context.get(), &keyblock, &m_keyblock);
+
+    if (ret) {
+        throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+    }
+}
+
+
 void KRB5CCache::initialize(KRB5Principal &principal)
 {
     krb5_error_code ret = krb5_cc_initialize(g_context.get(),
