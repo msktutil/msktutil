@@ -431,8 +431,8 @@ void do_help()
     fprintf(stdout, "                         Specify the new account password instead of generating\n");
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
     fprintf(stdout, "                         defining the string.\n");
-    fprintf(stdout, "  --dontchangepw         (EXPERIMENTAL) Do not create a new random password and try to keep\n");
-    fprintf(stdout, "                         existing keys.\n");
+    fprintf(stdout, "  --dont-change-password Do not create a new random password. Try to use\n");
+    fprintf(stdout, "                         existing keys when performing keytab updates.\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");

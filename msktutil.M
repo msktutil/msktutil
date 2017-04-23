@@ -118,9 +118,9 @@ to create or update the keytab
 Specify the new account password instead of generating a random one. Consider the password policy settings
 when defining the string.
 .TP
---dontchangepw (EXPERIMENTAL)
-Do not create a new random password and try to keep existing keys. This is useful for adding new SPNs to
-a machine or service account.
+--dont-change-password
+Do not create a new random password. Try to use existing keys when performing keytab updates. This
+is useful for adding new SPNs to a machine or service account.
 .TP
 -h, --hostname <name>
 Overrides the current hostname to be used to be <name>.  If this is not specified, the local host
