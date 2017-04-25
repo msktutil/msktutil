@@ -159,14 +159,14 @@ int set_password(msktutil_flags *flags)
         KRB5Principal principal(flags->sAMAccountName);
 
         old_pwdLastSet = ldap_get_pwdLastSet(flags);
-        ret = krb5_set_password_using_ccache(g_context.get(),
+        ret = krb5_set_password_using_ccache(g_context,
                                              ccache.get(),
                                              const_cast<char*>(flags->password.c_str()),
                                              principal.get(),
                                              &response,
                                              &resp_code_string,
                                              &resp_string);
-        krb5_free_data_contents(g_context.get(), &resp_string);
+        krb5_free_data_contents(g_context, &resp_string);
 
         if (!ret && response) {
             fprintf(stderr,
@@ -174,10 +174,10 @@ int set_password(msktutil_flags *flags)
                     flags->sAMAccountName.c_str(),
                     response,
                     (char *) resp_code_string.data);
-            krb5_free_data_contents(g_context.get(), &resp_code_string);
+            krb5_free_data_contents(g_context, &resp_code_string);
             return response;
         }
-        krb5_free_data_contents(g_context.get(), &resp_code_string);
+        krb5_free_data_contents(g_context, &resp_code_string);
         if (ret) {
             if (!response && ret == KRB5KRB_AP_ERR_BADADDR) {
                 VERBOSE("krb5_set_password_using_ccache: password changed "
@@ -249,22 +249,22 @@ int set_password(msktutil_flags *flags)
             old_pwdLastSet = ldap_get_pwdLastSet(flags);
         }
 
-        ret = krb5_change_password(g_context.get(),
+        ret = krb5_change_password(g_context,
                                    creds.get(),
                                    const_cast<char*>(flags->password.c_str()),
                                    &response,
                                    &resp_code_string,
                                    &resp_string);
-        krb5_free_data_contents(g_context.get(), &resp_string);
+        krb5_free_data_contents(g_context, &resp_string);
 
         if (response) {
             VERBOSE("krb5_change_password failed using keytab: (%d) %s",
                     response,
                     (char *) resp_code_string.data);
-            krb5_free_data_contents(g_context.get(), &resp_code_string);
+            krb5_free_data_contents(g_context, &resp_code_string);
             return response;
         }
-        krb5_free_data_contents(g_context.get(), &resp_code_string);
+        krb5_free_data_contents(g_context, &resp_code_string);
         if (ret) {
             if (!response && ret == KRB5KRB_AP_ERR_BADADDR) {
                 VERBOSE("krb5_change_password: password changed "

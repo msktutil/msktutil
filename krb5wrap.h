@@ -28,33 +28,22 @@
  *
  *-----------------------------------------------------------------------------
  */
-class noncopyable {
-protected:
-    noncopyable() {}
-    ~noncopyable() {}
-private:  /* emphasize the following members are private */
-    noncopyable(const noncopyable&);
-    const noncopyable& operator=(const noncopyable&);
-};
 
-class KRB5Context : noncopyable {
-    krb5_context m_context;
+extern krb5_context g_context;
 
-public:
-    KRB5Context();
-    ~KRB5Context();
+void
+initialize_g_context();
 
-    void reload();
-
-    krb5_context &get() { return m_context; }
-};
-
-extern KRB5Context g_context;
+void
+destroy_g_context();
 
 
-class KRB5Keyblock : noncopyable{
+class KRB5Keyblock {
     krb5_keyblock m_keyblock;
 
+    // make it non copyable
+    KRB5Keyblock(const KRB5Keyblock&);
+    const  KRB5Keyblock& operator=(const KRB5Keyblock&);
 public:
     KRB5Keyblock() : m_keyblock() {}
 
@@ -63,7 +52,7 @@ public:
     void from_keyblock(krb5_keyblock keyblock);
 
     ~KRB5Keyblock() {
-        krb5_free_keyblock_contents(g_context.get(), &m_keyblock);
+        krb5_free_keyblock_contents(g_context, &m_keyblock);
     }
 
     krb5_keyblock &get() {
@@ -73,18 +62,22 @@ public:
 
 class KRB5Principal;
 
-class KRB5Keytab : noncopyable{
+class KRB5Keytab {
     krb5_keytab m_keytab;
+
+    // make it non copyable
+    KRB5Keytab(const KRB5Keytab&);
+    const  KRB5Keytab& operator=(const KRB5Keytab&);
 
 public:
     KRB5Keytab(const std::string &keytab_name) : m_keytab() {
-        krb5_error_code ret = krb5_kt_resolve(g_context.get(), keytab_name.c_str(), &m_keytab);
+        krb5_error_code ret = krb5_kt_resolve(g_context, keytab_name.c_str(), &m_keytab);
         if (ret)
             throw KRB5Exception("krb5_kt_resolve", ret);
     }
 
     ~KRB5Keytab() {
-        krb5_error_code ret = krb5_kt_close(g_context.get(), m_keytab);
+        krb5_error_code ret = krb5_kt_close(g_context, m_keytab);
         if (ret)
             /* FIXME: shouldn't throw from destructor... */
             throw KRB5Exception("krb5_kt_close", ret);
@@ -99,16 +92,19 @@ public:
     class cursor;
 };
 
-class KRB5Creds : noncopyable {
+class KRB5Creds {
     krb5_creds m_creds;
 
-public:
+    // make it non copyable
+    KRB5Creds(const KRB5Creds&);
+    const  KRB5Creds& operator=(const KRB5Creds&);
 
+public:
     KRB5Creds() : m_creds() {}
     KRB5Creds(KRB5Principal &principal, KRB5Keytab &keytab, const char *tkt_service=NULL);
     KRB5Creds(KRB5Principal &principal, const std::string &password, const char *tkt_service=NULL);
     ~KRB5Creds() {
-        krb5_free_cred_contents(g_context.get(), &m_creds);
+        krb5_free_cred_contents(g_context, &m_creds);
         memset(&m_creds, 0, sizeof(m_creds));
     }
 
@@ -120,22 +116,26 @@ public:
     }
 };
 
-class KRB5CCache : noncopyable {
+class KRB5CCache {
     krb5_ccache m_ccache;
+
+    // make it non copyable
+    KRB5CCache(const KRB5CCache&);
+    const  KRB5CCache& operator=(const KRB5CCache&);
 
 public:
     static const char *defaultName() {
-        return krb5_cc_default_name(g_context.get());
+        return krb5_cc_default_name(g_context);
     }
 
     KRB5CCache(const char *cc_name) : m_ccache() {
-        krb5_error_code ret = krb5_cc_resolve(g_context.get(), cc_name, &m_ccache);
+        krb5_error_code ret = krb5_cc_resolve(g_context, cc_name, &m_ccache);
         if (ret)
             throw KRB5Exception("krb5_cc_resolve", ret);
     }
 
     ~KRB5CCache() {
-        krb5_cc_close(g_context.get(), m_ccache);
+        krb5_cc_close(g_context, m_ccache);
     }
 
     krb5_ccache get() { return m_ccache; }
@@ -145,8 +145,7 @@ public:
 };
 
 
-
-class KRB5Principal : noncopyable {
+class KRB5Principal {
     friend class KRB5Keytab::cursor;
 
     krb5_principal m_princ;
@@ -157,36 +156,44 @@ class KRB5Principal : noncopyable {
         m_princ = princ;
     }
 
+    // make it non copyable
+    KRB5Principal(const KRB5Principal&);
+    const KRB5Principal& operator=(const KRB5Principal&);
+
 public:
     KRB5Principal(krb5_principal princ_raw) : m_princ(princ_raw) {}
 
     KRB5Principal(KRB5CCache &ccache) : m_princ() {
-        krb5_error_code ret = krb5_cc_get_principal(g_context.get(), ccache.get(), &m_princ);
+        krb5_error_code ret = krb5_cc_get_principal(g_context, ccache.get(), &m_princ);
         if (ret)
             throw KRB5Exception("krb5_cc_get_principal", ret);
     }
 
     KRB5Principal(std::string principal_name) : m_princ() {
-        krb5_error_code ret = krb5_parse_name(g_context.get(), principal_name.c_str(), &m_princ);
+        krb5_error_code ret = krb5_parse_name(g_context, principal_name.c_str(), &m_princ);
         if (ret)
             throw KRB5Exception("krb5_parse_name", ret);
     }
     ~KRB5Principal() {
         if (m_princ)
-            krb5_free_principal(g_context.get(), m_princ);
+            krb5_free_principal(g_context, m_princ);
     }
 
     krb5_principal get() { return m_princ; }
     std::string name();
 };
 
-class KRB5Keytab::cursor : noncopyable {
+class KRB5Keytab::cursor {
     KRB5Keytab &m_keytab;
     krb5_kt_cursor m_cursor;
     krb5_keytab_entry m_entry;
 
     /* Duplicates part of entry, but oh well. */
     KRB5Principal m_princ;
+
+    // make it non copyable
+    cursor(const cursor&);
+    const cursor& operator=(const cursor&);
 
 public:
     cursor(KRB5Keytab &keytab);

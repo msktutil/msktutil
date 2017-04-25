@@ -160,7 +160,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     char *temp_realm;
     if (flags->realm_name.empty()) {
-        if (krb5_get_default_realm(g_context.get(), &temp_realm)) {
+        if (krb5_get_default_realm(g_context, &temp_realm)) {
             fprintf(stderr, "Error: krb5_get_default_realm failed\n");
             exit(1);
         }
@@ -168,7 +168,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 #ifdef HEIMDAL
         krb5_xfree(temp_realm);
 #else
-        krb5_free_default_realm(g_context.get(), temp_realm);
+        krb5_free_default_realm(g_context, temp_realm);
 #endif
     }
 
@@ -722,6 +722,7 @@ int main(int argc, char *argv [])
 {
     /* unbuffer stdout. */
     setbuf(stdout, NULL);
+    initialize_g_context();
 
     int i;
     int start_i;

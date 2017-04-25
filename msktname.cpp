@@ -57,7 +57,7 @@ std::string complete_hostname(const std::string &hostname,
         type = KRB5_NT_UNKNOWN;
     }
 
-    krb5_error_code ret = krb5_sname_to_principal(g_context.get(),
+    krb5_error_code ret = krb5_sname_to_principal(g_context,
                                                   hostname.c_str(),
                                                   "host",
                                                   type,
@@ -74,11 +74,11 @@ std::string complete_hostname(const std::string &hostname,
     KRB5Principal temp_princ(temp_princ_raw);
 
 #ifdef HEIMDAL
-    const char *comp = krb5_principal_get_comp_string(g_context.get(),
+    const char *comp = krb5_principal_get_comp_string(g_context,
                                                       temp_princ.get(),
                                                       1);
 #else
-    krb5_data *comp = krb5_princ_component(g_context.get(),
+    krb5_data *comp = krb5_princ_component(g_context,
                                            temp_princ.get(),
                                            1);
 #endif
@@ -110,7 +110,7 @@ std::string get_default_hostname(bool no_canonical_name)
     /* do not canonicalize, use supplied hostname */
     if (no_canonical_name) { type = KRB5_NT_UNKNOWN; }
 
-    krb5_error_code ret = krb5_sname_to_principal(g_context.get(),
+    krb5_error_code ret = krb5_sname_to_principal(g_context,
                                                   NULL,
                                                   "host",
                                                   type,
@@ -123,11 +123,11 @@ std::string get_default_hostname(bool no_canonical_name)
     KRB5Principal temp_princ(temp_princ_raw);
 
 #ifdef HEIMDAL
-    const char *comp = krb5_principal_get_comp_string(g_context.get(),
+    const char *comp = krb5_principal_get_comp_string(g_context,
                                                       temp_princ.get(),
                                                       1);
 #else
-    krb5_data *comp = krb5_princ_component(g_context.get(),
+    krb5_data *comp = krb5_princ_component(g_context,
                                            temp_princ.get(),
                                            1);
 #endif

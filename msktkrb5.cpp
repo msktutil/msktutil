@@ -40,7 +40,7 @@ void get_default_keytab(msktutil_flags *flags)
     if (flags->keytab_file.empty()) {
         /* Only set the field to a default if it's empty */
 
-        krb5_error_code ret = krb5_kt_default_name(g_context.get(),
+        krb5_error_code ret = krb5_kt_default_name(g_context,
                                                    keytab_name,
                                                    MAX_KEYTAB_NAME_LEN);
         if (ret) {
@@ -50,7 +50,7 @@ void get_default_keytab(msktutil_flags *flags)
         flags->keytab_readname = std::string(keytab_name);
 
 #ifdef HEIMDAL
-        ret = krb5_kt_default_modify_name(g_context.get(),
+        ret = krb5_kt_default_modify_name(g_context,
                                           keytab_name,
                                           MAX_KEYTAB_NAME_LEN);
         if (ret) {
@@ -330,7 +330,7 @@ void add_keytab_entries(msktutil_flags *flags)
                         msktutil_ktentry newentry;
                         newentry.principal = add_principal;
                         newentry.kvno = kvno;
-                        krb5_error_code ret = krb5_copy_keyblock_contents(g_context.get(), &keyblock, &newentry.keyblock);
+                        krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &keyblock, &newentry.keyblock);
                         if (ret) {
                             throw KRB5Exception("krb5_copy_keyblock_contents", ret);
                         }

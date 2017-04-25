@@ -153,7 +153,8 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 
     VERBOSE("Created a fake krb5.conf file: %s", g_config_filename.c_str());
 
-    g_context.reload();
+    destroy_g_context();
+    initialize_g_context();
 }
 
 
@@ -192,7 +193,7 @@ void switch_default_ccache(const char *ccache_name)
         throw Exception("Error: putenv failed");
     }
 #endif
-    krb5_cc_set_default_name(g_context.get(), ccache_name);
+    krb5_cc_set_default_name(g_context, ccache_name);
 }
 
 
