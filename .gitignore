@@ -1,5 +1,6 @@
 *.o
 msktutil
+msktutil.1
 *~
 Makefile
 TAGS
