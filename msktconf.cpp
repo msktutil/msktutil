@@ -78,8 +78,7 @@ static std::string g_ccache_filename;
 std::string get_tempfile_name(const char *name)
 {
     std::string full_template = sform("%s/%s-XXXXXX", TMP_DIR, name);
-    char template_arr[full_template.size() + 1];
-    memcpy(template_arr, full_template.c_str(), full_template.size() + 1);
+    char *template_arr = strdup(full_template.c_str());
 
     int fd = mkstemp(template_arr);
     if (fd < 0) {
@@ -88,7 +87,10 @@ std::string get_tempfile_name(const char *name)
 
     /* Didn't need an fd, just to have the filename created securely. */
     close(fd);
-    return std::string(template_arr);
+    std::string tempfile_name = std::string(template_arr);
+    free(template_arr);
+
+    return tempfile_name;
 }
 
 
