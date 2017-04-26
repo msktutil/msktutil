@@ -213,6 +213,11 @@ want to set this flag.  Generally requires administrator credentials.
 Unsets the DONT_EXPIRE_PASSWORD flag in the userAccountControl attribute.  Generally requires
 administrator credentials.
 .TP
+--dont-update-dnshostname 
+Do not update dnsHostName attribute. In some AD installations modification of this attribute
+is not allowed (unless using administrator credentials), using this option will avoid constraint 
+violation warning.  
+.TP
 --enctypes <integer>
 Sets the supported encryption types in the msDs-supportedEncryptionTypes field.
 

@@ -464,6 +464,8 @@ void do_help()
     fprintf(stdout, "                         delegation.\n");
     fprintf(stdout, "  --description <text>   Sets the description field on the account.\n");
     fprintf(stdout, "  --dont-expire-password Disables password expiration for the account.\n");
+    fprintf(stdout, "  --dont-update-dnshostname\n");
+    fprintf(stdout, "                         Do not update dNSHostName attribute.\n");
     fprintf(stdout, "  --do-expire-password   Undisables (puts back to default) password expiration.\n");
     fprintf(stdout, "  --enctypes <int>       Sets msDs-supportedEncryptionTypes\n");
     fprintf(stdout, "                         (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5\n");
@@ -939,6 +941,12 @@ int main(int argc, char *argv [])
         /* Password expiry (is rotation required?) */
         if (!strcmp(argv[i], "--dont-expire-password")) {
             flags->dont_expire_password = VALUE_ON;
+            continue;
+        }
+
+        /* Prevent dnsHostName attribute update */
+        if (!strcmp(argv[i], "--dont-update-dnshostname")) {
+            flags->dont_update_dnshostname = VALUE_ON;
             continue;
         }
 
