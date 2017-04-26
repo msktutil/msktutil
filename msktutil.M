@@ -119,8 +119,8 @@ Specify the new account password instead of generating a random one. Consider th
 when defining the string.
 .TP
 --dont-change-password
-Do not create a new random password. Try to use existing keys when performing keytab updates. This
-is useful for adding new SPNs to a machine or service account.
+Do not create a new password. Try to use existing keys when performing keytab updates. This
+is useful for adding new SPNs to a machine or service account. This option is only available in update mode.
 .TP
 -h, --hostname <name>
 Overrides the current hostname to be used to be <name>.  If this is not specified, the local host
@@ -343,11 +343,23 @@ the --no-pac option.
 For unprivileged users the most common invocations are:
 .PP
 .nf
+REPLACE_PROGNAME create
+.fi
+.PP
+This will create a computer account in Active Directory with a new password and write out a new keytab.
+.PP
+.nf
 REPLACE_PROGNAME update --service host --service HTTP
 .fi
 .PP
 This will update a computer account in Active Directory with a new password, write out a new keytab,
 and ensure that it has both "host" and "HTTP" service principals are on it for the hostname.
+.PP
+.nf
+REPLACE_PROGNAME update  --dont-change-password --service host --service HTTP
+.fi
+.PP
+This will do the same as the last example but without changing the password.
 .PP
 .nf
 REPLACE_PROGNAME auto-update
@@ -376,7 +388,7 @@ REPLACE_PROGNAME create on the hosts themselves (without special credentials) to
 domain.
 .PP
 .nf
-REPLACE_PROGNAME --host afs --service afs --enctypes 0x03
+REPLACE_PROGNAME create --host afs --service afs --enctypes 0x03
 .fi
 .PP
 This will create an afs/cell.name@REALM principal, and associate that principal with a computer
