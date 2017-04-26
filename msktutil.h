@@ -186,7 +186,7 @@ public:
     bool server_behind_nat;
     bool set_samba_secret;
     bool check_replication;
-    bool dontchangepw;
+    bool dont_change_password;
 
     msktutil_val dont_expire_password;
     msktutil_val no_pac;

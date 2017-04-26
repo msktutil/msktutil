@@ -534,7 +534,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
     int ret = 0;
     if (flags->password_from_cmdline) {
         VERBOSE("Using password from command line");
-    } else if (flags->dontchangepw) {
+    } else if (flags->dont_change_password) {
         VERBOSE("Skipping creation of new password");
     } else if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need a new password");
@@ -613,12 +613,12 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
              * increment it. */
             flags->kvno = ldap_get_kvno(flags);
             if ((flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) &&
-                (!flags->dontchangepw)) {
+                (!flags->dont_change_password)) {
                 flags->kvno++;
             }
 
             if ((flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) &&
-                (!flags->dontchangepw)) {
+                (!flags->dont_change_password)) {
                 /* Set the password. */
                 ret = set_password(flags);
                 if (ret) {
@@ -653,7 +653,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         add_and_remove_principals(exec);
 
         /* update keytab */
-        if (!flags->dontchangepw) {
+        if (!flags->dont_change_password) {
             if (flags->use_service_account) {
                 VERBOSE("Updating all entries for service account %s in the keytab %s",
                         flags->sAMAccountName.c_str(),
@@ -871,8 +871,8 @@ int main(int argc, char *argv [])
         }
 
         /* do not change the password */
-        if (!strcmp(argv[i], "--dontchangepw")) {
-            flags->dontchangepw = true;
+        if (!strcmp(argv[i], "--dont-change-password")) {
+            flags->dont_change_password = true;
             continue;
         }
 
@@ -1252,7 +1252,7 @@ msktutil_flags::msktutil_flags() :
     server_behind_nat(false),
     set_samba_secret(false),
     check_replication(false),
-    dontchangepw(false),
+    dont_change_password(false),
     dont_expire_password(VALUE_IGNORE),
     no_pac(VALUE_IGNORE),
     delegate(VALUE_IGNORE),

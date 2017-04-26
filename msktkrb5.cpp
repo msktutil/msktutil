@@ -502,7 +502,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     for(size_t i = 0; i < enc_types.size(); ++i) {
         KRB5Keyblock keyblock;
         keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]),
-                             flags->dontchangepw ?
+                             flags->dont_change_password ?
                                  flags->old_account_password : flags->password,
                              get_salt(flags));
 
