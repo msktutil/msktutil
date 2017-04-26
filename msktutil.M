@@ -216,7 +216,7 @@ administrator credentials.
 --dont-update-dnshostname 
 Do not update dnsHostName attribute. In some AD installations modification of this attribute
 is not allowed (unless using administrator credentials), using this option will avoid constraint 
-violation warning.  
+violation warning.
 .TP
 --enctypes <integer>
 Sets the supported encryption types in the msDs-supportedEncryptionTypes field.
@@ -258,7 +258,7 @@ multiple times.
 Specifies a service principal to remove from the account (and keytab if appropriate).
 .TP
 --upn <principal>
-Sets the userPrincipalName attribute of the computer account or service account to be <principal>.  
+Sets the userPrincipalName attribute of the computer account or service account to be <principal>.
 
 The userPrincipalName can be used in addition to the sAMAccountName (e.g. computername$ for computer accounts) for kinit.
 
