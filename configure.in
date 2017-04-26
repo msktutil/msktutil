@@ -265,11 +265,8 @@ AC_CHECK_LIB([ldap], [ldap_search_ext_s], , [AC_MSG_ERROR([libldap not found])])
 #
 # OpenLDAP's LDAP_OPT_ON macro uses ber_pvt_opt_on. In newer OpenLDAP
 # versions, we have to explicitly link with lber.
-# AC_CHECK_LIB for ber_pvt_opt_on does not work for HPUX and AIX, since it is data not code
-# So link lber unconditionally, if found
-# Since OpenLDAP libldap depends on it anyway, no additional dependency added.
 #
-AC_CHECK_LIB([lber], [ber_alloc], , [AC_MSG_WARN([liblber not found])])
+AC_CHECK_LIB([lber], [ber_pvt_opt_on], , [AC_MSG_ERROR([liblber not found])])
 #AC_CHECK_LIB([com_err], [error_message], , [AC_MSG_ERROR([libcom_err not found])])
 #
 # LDAP_OPT_DIAGNOSTIC_MESSAGE is present from OpenLDAP 2.4 upwards, only.
