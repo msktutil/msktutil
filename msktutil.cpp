@@ -662,7 +662,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                         flags->keytab_writename.c_str());
             } else {
                 VERBOSE("Updating all entries for %s in the keytab %s",
-                        flags->samAccountName.c_str(),
+                        flags->sAMAccountName.c_str(),
                         flags->keytab_writename.c_str());
             }
             update_keytab(flags, exec->remove_principals);
