@@ -431,8 +431,8 @@ void do_help()
     fprintf(stdout, "                         Specify the new account password instead of generating\n");
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
     fprintf(stdout, "                         defining the string.\n");
-    fprintf(stdout, "  --dont-change-password Do not create a new random password. Try to use\n");
-    fprintf(stdout, "                         existing keys when performing keytab updates.\n");
+    fprintf(stdout, "  --dont-change-password Do not create a new password. Try to use existing keys\n");
+    fprintf(stdout, "                         when performing keytab updates (update mode only).\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");
@@ -1149,6 +1149,16 @@ int main(int argc, char *argv [])
                 "are mutually exclusive\n");
         goto error;
     }
+
+    /* allow --dont-change-password only in update mode */
+    if (exec->mode != MODE_UPDATE &&
+        flags->dont_change_password) {
+        fprintf(stderr,
+                "Error: --dont_change_password can only be used in update mode\n"
+            );
+        goto error;
+    }
+    
 
     /* allow --remove-enctype only in cleanup mode */
     if (exec->mode != MODE_CLEANUP &&
