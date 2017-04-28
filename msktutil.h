@@ -154,6 +154,15 @@ enum msktutil_mode {
     MODE_DELETE_ACCOUNT
 };
 
+/* a structure that stores keytab entries: */
+typedef struct
+{
+    std::string principal;
+    krb5_kvno kvno;
+    krb5_keyblock keyblock;
+} msktutil_ktentry;
+
+
 class msktutil_flags {
 public:
     std::string keytab_file;

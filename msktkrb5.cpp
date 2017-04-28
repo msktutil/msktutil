@@ -281,15 +281,8 @@ void add_keytab_entries(msktutil_flags *flags)
 
     VERBOSE("Trying to add missing entries for %s to keytab", flags->sAMAccountName.c_str());
 
-    typedef struct
-    {
-        std::string principal;
-        krb5_kvno kvno;
-        krb5_keyblock keyblock;
-    } to_add_t;
-
-    typedef std::vector<to_add_t> to_add_tv;
-    to_add_tv to_add;
+    typedef std::vector<msktutil_ktentry> entry_list;
+    entry_list to_add;
 
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
         /* We look at all keytab entries that match the account name
@@ -334,7 +327,7 @@ void add_keytab_entries(msktutil_flags *flags)
                     }
                     if (!found_it) {
 
-                        to_add_t newentry;
+                        msktutil_ktentry newentry;
                         newentry.principal = add_principal;
                         newentry.kvno = kvno;
                         krb5_error_code ret = krb5_copy_keyblock_contents(g_context.get(), &keyblock, &newentry.keyblock);
@@ -351,7 +344,7 @@ void add_keytab_entries(msktutil_flags *flags)
         }
     }
 
-    for(to_add_tv::const_iterator it = to_add.begin();
+    for(entry_list::const_iterator it = to_add.begin();
         it != to_add.end();
         ++it) {
         KRB5Principal princ(it->principal);
