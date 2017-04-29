@@ -268,7 +268,9 @@ extern std::string complete_hostname(const std::string &,
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
 extern void cleanup_keytab(msktutil_flags *);
-extern void update_keytab(msktutil_flags *, std::vector<std::string>);
+extern void update_keytab(msktutil_flags *);
+extern void add_keytab_entries(msktutil_flags *);
+extern void remove_keytab_entries(msktutil_flags *,std::vector<std::string>);
 extern void add_principal_keytab(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *);
 extern int set_password(msktutil_flags *);

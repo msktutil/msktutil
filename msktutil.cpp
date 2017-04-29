@@ -654,6 +654,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         /* Add and remove principals to servicePrincipalName in LDAP.*/
         add_and_remove_principals(exec);
 
+        remove_keytab_entries(flags, exec->remove_principals);
+
         /* update keytab */
         if (!flags->dont_change_password) {
             if (flags->use_service_account) {
@@ -665,8 +667,10 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                         flags->sAMAccountName.c_str(),
                         flags->keytab_writename.c_str());
             }
-            update_keytab(flags, exec->remove_principals);
+            update_keytab(flags);
         }
+
+        add_keytab_entries(flags);
 
         wait_for_new_kvno(flags);
         return ret;

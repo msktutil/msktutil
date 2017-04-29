@@ -355,10 +355,8 @@ void add_keytab_entries(msktutil_flags *flags)
 }
 
 
-void update_keytab(msktutil_flags *flags, std::vector<std::string> remove_principals)
+void update_keytab(msktutil_flags *flags)
 {
-    remove_keytab_entries(flags, remove_principals);
-
     VERBOSE("Updating all entries for %s", flags->sAMAccountName.c_str());
     add_principal_keytab(flags->sAMAccountName, flags);
     if (!flags->use_service_account) {
@@ -382,7 +380,6 @@ void update_keytab(msktutil_flags *flags, std::vector<std::string> remove_princi
                 );
         }
     }
-    add_keytab_entries(flags);
 }
 
 
