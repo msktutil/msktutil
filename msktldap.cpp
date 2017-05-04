@@ -621,7 +621,7 @@ bool ldap_check_account(msktutil_flags *flags)
                 if (pos != std::string::npos) {
                     upn.erase(pos);
                 }
-                VERBOSE("  Found User Principal: %s", upn.c_str());
+                VERBOSE("Found User Principal: %s", upn.c_str());
                 /* update userPrincipalName for salt generation */
                 flags->userPrincipalName = upn.c_str();
             }
