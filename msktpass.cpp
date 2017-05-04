@@ -287,7 +287,7 @@ int set_password(msktutil_flags *flags)
         }
     }
 
-    VERBOSE("Successfully set password.");
+    VERBOSE("Successfully set password");
 
     if (!flags->set_samba_secret) {
         return 0;

@@ -201,7 +201,7 @@ bool try_machine_keytab_princ(msktutil_flags *flags,
                               const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s from local keytab...",
+        VERBOSE("Trying to authenticate for %s from local keytab",
                 principal_name.c_str());
         KRB5Keytab keytab(flags->keytab_readname);
         KRB5Principal principal(principal_name);
@@ -222,7 +222,7 @@ bool try_machine_keytab_princ(msktutil_flags *flags,
 bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s with password.",
+        VERBOSE("Trying to authenticate for %s with password",
                 flags->sAMAccountName.c_str());
         KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal,
@@ -245,7 +245,7 @@ bool try_machine_supplied_password(msktutil_flags *flags,
                                    const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s with supplied password.",
+        VERBOSE("Trying to authenticate for %s with supplied password",
                 flags->sAMAccountName.c_str());
         KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal, /*password:*/ flags->old_account_password);
@@ -291,7 +291,7 @@ bool get_creds(msktutil_flags *flags)
 bool try_user_creds()
 {
     try {
-        VERBOSE("Checking if default ticket cache has tickets...");
+        VERBOSE("Checking if default ticket cache has tickets");
         /* The following is for the side effect of throwing an
          * exception or not. */
         KRB5CCache ccache(KRB5CCache::defaultName());
@@ -300,7 +300,7 @@ bool try_user_creds()
         return true;
     } catch(KRB5Exception &e) {
         VERBOSE("%s", e.what());
-        VERBOSE("User ticket cache was not valid.");
+        VERBOSE("User ticket cache was not valid");
         return false;
     }
 }

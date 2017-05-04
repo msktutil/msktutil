@@ -293,7 +293,7 @@ void add_keytab_entries(msktutil_flags *flags)
          * to add service principals without changing the account
          * password.
          */
-        VERBOSE("checking if %s needs to be added to keytab...", flags->ad_principals[i].c_str());
+        VERBOSE("Checking if %s needs to be added to keytab", flags->ad_principals[i].c_str());
 
         std::string add_principal = flags->ad_principals[i] + "@" + flags->realm_name;
         std::string template_principal = flags->sAMAccountName + "@" + flags->realm_name;
@@ -335,7 +335,7 @@ void add_keytab_entries(msktutil_flags *flags)
                             throw KRB5Exception("krb5_copy_keyblock_contents", ret);
                         }
                         to_add.push_back(newentry);
-                        VERBOSE("adding %s (kvno=%d, enctype=%d) to keytab.", add_principal.c_str(), kvno, enctype);
+                        VERBOSE("Adding %s (kvno=%d, enctype=%d) to keytab", add_principal.c_str(), kvno, enctype);
                     }
                 }
             }
