@@ -1166,7 +1166,7 @@ int main(int argc, char *argv [])
     if (exec->mode != MODE_UPDATE &&
         flags->dont_change_password) {
         fprintf(stderr,
-                "Error: --dont_change_password can only be used in update mode\n"
+                "Error: --dont-change-password can only be used in update mode\n"
             );
         goto error;
     }
