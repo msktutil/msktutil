@@ -663,7 +663,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                         flags->sAMAccountName.c_str(),
                         flags->keytab_writename.c_str());
             } else {
-                VERBOSE("Updating all entries for %s in the keytab %s",
+                VERBOSE("Updating all entries for computer account %s in the keytab %s",
                         flags->sAMAccountName.c_str(),
                         flags->keytab_writename.c_str());
             }
