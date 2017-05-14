@@ -60,7 +60,7 @@ int generate_new_password(msktutil_flags *flags)
 
     fd = open("/dev/urandom", O_RDONLY);
     if (fd < 0) {
-        fprintf(stderr, "ERROR: failed to open /dev/urandom\n");
+        fprintf(stderr, "error_exit: failed to open /dev/urandom\n");
         return -1;
     }
 

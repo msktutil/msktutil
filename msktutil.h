@@ -294,6 +294,8 @@ int generate_new_password(msktutil_flags *flags);
 /* Verbose messages */
 #define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }
 
+/* Fatal error */
+void error_exit( const char *text);
 
 /* printf into a C++ string. */
 std::string sform(const char* format, ...);

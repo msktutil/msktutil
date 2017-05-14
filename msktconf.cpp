@@ -82,7 +82,7 @@ std::string get_tempfile_name(const char *name)
 
     int fd = mkstemp(template_arr);
     if (fd < 0) {
-        throw Exception(sform("Error: mkstemp failed: %d", errno));
+        error_exit("mkstemp failed");
     }
 
     /* Didn't need an fd, just to have the filename created securely. */
@@ -142,12 +142,12 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 #ifdef HAVE_SETENV
     int ret = setenv("KRB5_CONFIG", g_config_filename.c_str(), 1);
     if (ret) {
-        throw Exception("setenv failed");
+        error_exit("setenv failed");
     }
 #else
     int ret = putenv(strdup((std::string("KRB5_CONFIG=") +  g_config_filename).c_str()));
     if (ret) {
-        throw Exception("putenv failed");
+        error_exit("putenv failed");
     }
 #endif
 
@@ -186,11 +186,11 @@ void switch_default_ccache(const char *ccache_name)
      * kerberos entirely! */
 #ifdef HAVE_SETENV
     if (setenv("KRB5CCNAME", ccache_name, 1)) {
-        throw Exception("Error: setenv failed");
+        error_exit("setenv failed");
     }
 #else
     if (!putenv(strdup((std::string("KRB5CCNAME=")+ ccache_name).c_str()))) {
-        throw Exception("Error: putenv failed");
+        error_exit("putenv failed");
     }
 #endif
     krb5_cc_set_default_name(g_context, ccache_name);
