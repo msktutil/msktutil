@@ -232,7 +232,7 @@ int ldap_simple_set_attr(const std::string &dn,
         }
 
         if (attrName == "userPrincipalName") {
-            fprintf(stderr, "ERROR:   Can't continue with wrong UPN\n");
+            fprintf(stderr, "error_exit:   Can't continue with wrong UPN\n");
             exit(1);
         } else {
             fprintf(stderr, "         Continuing anyway ...\n");
