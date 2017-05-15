@@ -60,8 +60,7 @@ int generate_new_password(msktutil_flags *flags)
 
     fd = open("/dev/urandom", O_RDONLY);
     if (fd < 0) {
-        fprintf(stderr, "error_exit: failed to open /dev/urandom\n");
-        return -1;
+        error_exit( "failed to open /dev/urandom");
     }
 
     if (flags->use_service_account) {
@@ -104,16 +103,12 @@ static int set_samba_secret(const std::string& password)
 
     FILE *pipe = popen("net changesecretpw -f -i", "w");
     if (pipe == NULL) {
-        fprintf(stdout, "Error executing samba net command\n");
-        return 1;
+        error_exit( "could not run samba net command");
     }
 
     size_t len = password.length();
     if (fwrite(password.c_str(), sizeof(char), len, pipe) != len) {
-        fprintf(stdout,
-                "Write error putting password to samba net command\n"
-            );
-        return 1;
+        error_exit( "write error putting password to samba net command");
     }
 
     int rc = pclose(pipe);
