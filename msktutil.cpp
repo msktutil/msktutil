@@ -65,7 +65,7 @@ std::string sform(const char* format, ...)
     int result = vasprintf(&buf, format, args);
 #endif
     if (result < 0) {
-        error_exit("vasprintf error");
+        error_exit("vasprintf failed");
     }
     std::string outstr(buf, result);
     free(buf);
