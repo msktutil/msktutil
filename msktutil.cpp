@@ -41,6 +41,11 @@
 
 int g_verbose = 0;
 
+/* Fatal error */
+void error_exit( const char *text) {
+    fprintf(stderr, "error_exit: %s: %s\n", text, strerror(errno));
+    exit(1);
+}
 
 std::string sform(const char* format, ...)
 {
@@ -60,7 +65,7 @@ std::string sform(const char* format, ...)
     int result = vasprintf(&buf, format, args);
 #endif
     if (result < 0) {
-        throw Exception("vasprintf error");
+        error_exit("vasprintf failed");
     }
     std::string outstr(buf, result);
     free(buf);

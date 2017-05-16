@@ -132,7 +132,7 @@ std::string get_default_hostname(bool no_canonical_name)
                                            1);
 #endif
     if (comp == NULL) {
-        throw Exception("Error: get_default_hostname: couldn't determine "
+        error_exit("get_default_hostname: couldn't determine "
                         "hostname, strange value from "
                         "krb5_sname_to_principal.");
     }
