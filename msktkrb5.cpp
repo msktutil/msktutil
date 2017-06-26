@@ -140,7 +140,7 @@ int flush_keytab(msktutil_flags *flags)
                                                    cursor.enctype()));
             }
         }
-    } catch (KRB5Exception ex) {
+    } catch (KRB5Exception& ex) {
         /* Ignore errors reading keytab */
     }
 
@@ -212,7 +212,7 @@ void cleanup_keytab(msktutil_flags *flags)
                                                    cursor.enctype()));
             }
         }
-    } catch (KRB5Exception ex) {
+    } catch (KRB5Exception& ex) {
         /* Ignore errors reading keytab */
     }
 
@@ -254,7 +254,7 @@ void remove_keytab_entries(msktutil_flags *flags,
                     to_delete.push_back(std::make_pair(std::make_pair(principal, kvno), enctype));
                 }
             }
-        } catch (KRB5Exception ex) {
+        } catch (KRB5Exception& ex) {
             /* Ignore errors reading keytab */
         }
     }
@@ -322,7 +322,7 @@ void add_keytab_entries(msktutil_flags *flags)
                                 break;
                             }
                         }
-                    } catch (KRB5Exception ex) {
+                    } catch (KRB5Exception& ex) {
                         /* Ignore errors reading keytab */
                     }
                     if (!found_it) {
@@ -339,7 +339,7 @@ void add_keytab_entries(msktutil_flags *flags)
                     }
                 }
             }
-        } catch (KRB5Exception ex) {
+        } catch (KRB5Exception& ex) {
             /* Ignore errors reading keytab */
         }
     }
@@ -449,7 +449,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
                 }
             }
         }
-    } catch (KRB5Exception ex) {
+    } catch (KRB5Exception& ex) {
         /* Ignore errors reading keytab */
     }
 
