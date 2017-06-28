@@ -31,6 +31,9 @@
 
 extern krb5_context g_context;
 
+void krb5_error_exit( const char *func, int err_code);
+void krb5_warn( const char *func, int err_code);
+
 void
 initialize_g_context();
 
@@ -72,15 +75,16 @@ class KRB5Keytab {
 public:
     KRB5Keytab(const std::string &keytab_name) : m_keytab() {
         krb5_error_code ret = krb5_kt_resolve(g_context, keytab_name.c_str(), &m_keytab);
-        if (ret)
+        if (ret) {
             throw KRB5Exception("krb5_kt_resolve", ret);
+        }
     }
 
     ~KRB5Keytab() {
         krb5_error_code ret = krb5_kt_close(g_context, m_keytab);
-        if (ret)
-            /* FIXME: shouldn't throw from destructor... */
-            throw KRB5Exception("krb5_kt_close", ret);
+        if (ret) {
+            krb5_warn("krb5_kt_close", ret);
+        }
     }
 
     void addEntry(KRB5Principal &princ, krb5_kvno kvno, KRB5Keyblock &keyblock);
@@ -194,11 +198,12 @@ class KRB5Keytab::cursor {
     // make it non copyable
     cursor(const cursor&);
     const cursor& operator=(const cursor&);
-
+    bool m_ok;
 public:
     cursor(KRB5Keytab &keytab);
     ~cursor();
     bool next();
+    void reset();
 
     KRB5Principal &principal() { return m_princ; }
     krb5_kvno kvno() { return m_entry.vno; }
@@ -210,9 +215,7 @@ public:
 #endif
     }
 
-    krb5_timestamp timestamp() {
-        return m_entry.timestamp;
-    }
+    krb5_timestamp timestamp() { return m_entry.timestamp; }
 
     krb5_keyblock key() {
         return m_entry.key;
