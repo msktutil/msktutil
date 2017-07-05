@@ -29,7 +29,7 @@ $(PROG) : $(objects)
 	@$(ECHO) "Assembling $(PROG)"
 	$(CXX) $(LDFLAGS) $(objects) $(LIBS) -o $(PROG)
 
-%.o : %.cpp msktutil.h krb5wrap.h config.h ldapconnection.h
+%.o : %.cpp msktutil.h msktname.h krb5wrap.h config.h ldapconnection.h
 	@$(ECHO) "Compiling $<"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
