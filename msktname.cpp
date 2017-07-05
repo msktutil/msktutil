@@ -167,7 +167,7 @@ bool DnsSrvHost::validate(bool nocanon) {
             VERBOSE("Failed to open socket");
             continue;
         }
-        if (connect(sock, (struct sockaddr *) &addr, 2) != -1) {
+        if (connect(sock, (struct sockaddr *) &addr, 2) == -1) {
             VERBOSE("LDAP connection (%d) failed", i);
             continue;
         }
