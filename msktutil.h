@@ -297,6 +297,9 @@ int generate_new_password(msktutil_flags *flags);
 /* Fatal error */
 void error_exit(const char *text);
 
+/* To be used by higher level error messages, like krb5 */
+void v_error_exit(const char* format, ...);
+
 /* printf into a C++ string. */
 std::string sform(const char* format, ...);
 
