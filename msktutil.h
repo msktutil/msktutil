@@ -350,6 +350,7 @@ class LDAPException : public Exception
 
 #include "krb5wrap.h"
 #include "ldapconnection.h"
+#include "msktname.h"
 
 
 

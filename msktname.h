@@ -29,7 +29,7 @@
  *-----------------------------------------------------------------------------
  */
 
-#include "msktutil.h"
+#include "config.h"
 
 #if defined(HAVE_LIBUDNS)
 #include <udns.h>

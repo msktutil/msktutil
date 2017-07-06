@@ -30,7 +30,6 @@
  */
 
 #include "msktutil.h"
-#include "msktname.h"
 
 #include <algorithm>
 #include <cctype>
