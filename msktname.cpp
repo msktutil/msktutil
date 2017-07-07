@@ -198,7 +198,7 @@ bool DnsSrvHost::validate(bool nocanon) {
     return ! validated_name.empty();
 };
 
-DnsSrvQuery::DnsSrvQuery(std::string domain, std::string service, std::string protocol)
+DnsSrvQuery::DnsSrvQuery(const std::string& domain, const std::string& service, const std::string& protocol)
 {
 #if defined(HAVE_LIBUDNS)
     struct dns_ctx *nsctx = NULL;

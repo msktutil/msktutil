@@ -66,7 +66,7 @@ private:
     unsigned int m_weight;
     unsigned int m_port;
 public:
-    DnsSrvHost(std::string name, unsigned int priority, unsigned int weight, unsigned int port)
+    DnsSrvHost(const std::string& name, unsigned int priority, unsigned int weight, unsigned int port)
         : srvname(name),
           validated_name(""),
           m_priority(priority),
@@ -120,10 +120,10 @@ private:
     std::vector<DnsSrvHost> m_results;
 public:
     DnsSrvQuery() {};
-    DnsSrvQuery(DnsSrvHost host) {
+    DnsSrvQuery(const DnsSrvHost& host) {
         m_results.push_back(host);
     };
-    DnsSrvQuery(std::string domain, std::string service, std::string protocol);
+    DnsSrvQuery(const std::string& domain, const std::string& service, const std::string& protocol);
     bool empty() { return m_results.empty(); };
     std::vector<DnsSrvHost>::iterator begin() { return m_results.begin(); };
     std::vector<DnsSrvHost>::iterator end() { return m_results.end(); };
