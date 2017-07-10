@@ -43,7 +43,14 @@ int g_verbose = 0;
 
 /* Fatal error */
 void error_exit( const char *text) {
-    fprintf(stderr, "error_exit: %s: %s\n", text, strerror(errno));
+    v_error_exit("error_exit: %s: %s\n", text, strerror(errno));
+}
+
+void v_error_exit(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
     exit(1);
 }
 
@@ -72,7 +79,6 @@ std::string sform(const char* format, ...)
     va_end(args);
     return outstr;
 }
-
 
 void remove_files_at_exit()
 {
@@ -233,7 +239,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
                 );
             exit(1);
         } else {
-            flags->sAMAccountName = get_short_hostname(flags)  + "$";
+            flags->sAMAccountName = get_default_samaccountname(flags)  + "$";
         }
     }
 

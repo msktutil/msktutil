@@ -313,34 +313,46 @@ std::string get_host_os()
     return std::string(info.sysname);
 }
 
+/* Return true if <str> ends with <suffix>, false otherwise */
+static bool ends_with(std::string const &str, std::string const &suffix)
+{
+    if (suffix.size() > str.size())
+        return false;
 
-std::string get_short_hostname(msktutil_flags *flags)
+    return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
+}
+
+/* Default sAMAccountName for current host:
+   Use lowercase FQDN, strip realm if applicable, convert remaining dots to dashes.
+   Eg. foo.example.com in realm EXAMPLE.COM -> foo
+       foo.subdomain1.example.com in realm EXAMPLE.COM -> foo-subdomain1
+       foo.subdomain1.example.com in realm OTHEREXAMPLE.COM -> foo-subdomain1-example-com
+ */
+std::string get_default_samaccountname(msktutil_flags *flags)
 {
     std::string long_hostname = flags->hostname;
 
-    for(std::string::iterator it = long_hostname.begin();
-        it != long_hostname.end(); ++it) {
-        *it = std::tolower(*it);
-    }
+    std::transform(long_hostname.begin(), long_hostname.end(),
+                   long_hostname.begin(), ::tolower);
 
-    std::string short_hostname = long_hostname;
+    std::string samaccountname = long_hostname;
 
-    size_t dot = std::string::npos;
-    while ((dot = long_hostname.find('.', dot + 1)) != std::string::npos) {
-        if (long_hostname.compare(dot + 1,
-                                  std::string::npos,
-                                  flags->lower_realm_name) == 0) {
-            short_hostname = long_hostname.substr(0, dot);
-            break;
-        }
-    }
+    if (ends_with(samaccountname, '.' + flags->lower_realm_name))
+        samaccountname.resize(samaccountname.length() - flags->lower_realm_name.length() - 1);
 
     /* Replace any remaining dots with dashes */
-    for (size_t i = 0; i < short_hostname.length(); ++i) {
-        if (short_hostname[i] == '.') {
-            short_hostname[i] = '-';
-        }
-    }
+    std::replace(samaccountname.begin(), samaccountname.end(), '.', '-');
+
+    VERBOSE("Determined sAMAccountName: %s", samaccountname.c_str());
+    return samaccountname;
+}
+
+/* Return first component of FQDN set in flags->hostname */
+std::string get_short_hostname(msktutil_flags *flags)
+{
+    std::string long_hostname = flags->hostname;
+    std::string short_hostname = long_hostname.substr(0, long_hostname.find('.'));
+    std::transform(short_hostname.begin(), short_hostname.end(), short_hostname.begin(), ::tolower);
 
     VERBOSE("Determined short hostname: %s", short_hostname.c_str());
     return short_hostname;

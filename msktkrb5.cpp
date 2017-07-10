@@ -124,24 +124,20 @@ int flush_keytab(msktutil_flags *flags)
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
     to_delete_t to_delete;
 
-    try {
-        KRB5Keytab::cursor cursor(keytab);
-        while (cursor.next()) {
-            std::string principal = cursor.principal().name();
-            size_t first_chr = principal.find('/') + 1;
-            size_t last_chr = principal.rfind('@');
+    KRB5Keytab::cursor cursor(keytab);
+    while (cursor.next()) {
+        std::string principal = cursor.principal().name();
+        size_t first_chr = principal.find('/') + 1;
+        size_t last_chr = principal.rfind('@');
 
-            std::string host = principal.substr(first_chr,
-                                                last_chr - first_chr);
-            if (host == flags->hostname) {
-                to_delete.push_back(std::make_pair(std::make_pair(
-                                                       principal,
-                                                       cursor.kvno()),
-                                                   cursor.enctype()));
-            }
+        std::string host = principal.substr(first_chr,
+                                            last_chr - first_chr);
+        if (host == flags->hostname) {
+            to_delete.push_back(std::make_pair(std::make_pair(
+                                                    principal,
+                                                    cursor.kvno()),
+                                                cursor.enctype()));
         }
-    } catch (KRB5Exception& ex) {
-        /* Ignore errors reading keytab */
     }
 
     for(to_delete_t::const_iterator it = to_delete.begin();
@@ -173,47 +169,43 @@ void cleanup_keytab(msktutil_flags *flags)
     typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
     to_delete_t to_delete;
     time_t ttNow = time(NULL);
-    try {
-        newest_timestamp = 0;
-        {
-            KRB5Keytab::cursor cursor(keytab);
-            while (cursor.next()) {
-                if (newest_timestamp < cursor.timestamp()) {
-                    newest_timestamp = cursor.timestamp();
-                }
-            }
+
+    newest_timestamp = 0;
+    KRB5Keytab::cursor cursor(keytab);
+    while (cursor.next()) {
+        if (newest_timestamp < cursor.timestamp()) {
+            newest_timestamp = cursor.timestamp();
         }
-        KRB5Keytab::cursor cursor(keytab);
-        while (cursor.next()) {
-            /*
-             * (1) clean the current entry if its enctype matches the
-             *     one given by --remove-enctype
-             * (2) clean the entry if its time stamp and the current
-             *     time differ by more than the number of days given by
-             *     --remove-old. But only if --remove-old has been
-             *     given on the command line (i.e. cleanup_days != -1)
-             * (3) don't let a too small number of days given by
-             *     --remove-old clean one of the newest
-             *     entries. Note: the newest entries could have
-             *     slightly different time stamps. Therefore,
-             *     newest_timestamp and cursor.timestamp must not be
-             *     compared directly. As a workaround we clean the
-             *     current entry only if its time stamp and
-             *     newest_timestamp differ by more than 2 seconds.
-             */
-            if ((cursor.enctype() == flags->cleanup_enctype) ||
-                ((ttNow - cursor.timestamp() >= flags->cleanup_days * 60 * 60 * 24) &&
-                 (flags->cleanup_days != -1) &&
-                 (abs(newest_timestamp - cursor.timestamp()) >= 2))) {
-                std::string principal = cursor.principal().name();
-                to_delete.push_back(std::make_pair(std::make_pair(
-                                                       principal,
-                                                       cursor.kvno()),
-                                                   cursor.enctype()));
-            }
+    }
+
+    cursor.reset();
+    while (cursor.next()) {
+        /*
+            * (1) clean the current entry if its enctype matches the
+            *     one given by --remove-enctype
+            * (2) clean the entry if its time stamp and the current
+            *     time differ by more than the number of days given by
+            *     --remove-old. But only if --remove-old has been
+            *     given on the command line (i.e. cleanup_days != -1)
+            * (3) don't let a too small number of days given by
+            *     --remove-old clean one of the newest
+            *     entries. Note: the newest entries could have
+            *     slightly different time stamps. Therefore,
+            *     newest_timestamp and cursor.timestamp must not be
+            *     compared directly. As a workaround we clean the
+            *     current entry only if its time stamp and
+            *     newest_timestamp differ by more than 2 seconds.
+            */
+        if ((cursor.enctype() == flags->cleanup_enctype) ||
+            ((ttNow - cursor.timestamp() >= flags->cleanup_days * 60 * 60 * 24) &&
+                (flags->cleanup_days != -1) &&
+                (abs(newest_timestamp - cursor.timestamp()) >= 2))) {
+            std::string principal = cursor.principal().name();
+            to_delete.push_back(std::make_pair(std::make_pair(
+                                                    principal,
+                                                    cursor.kvno()),
+                                                cursor.enctype()));
         }
-    } catch (KRB5Exception& ex) {
-        /* Ignore errors reading keytab */
     }
 
     for(to_delete_t::const_iterator it = to_delete.begin();
@@ -244,18 +236,14 @@ void remove_keytab_entries(msktutil_flags *flags,
     for (size_t i = 0; i < remove_principals.size(); ++i) {
         std::string remove_principal = remove_principals[i] + "@" + flags->realm_name;
 
-        try {
-            KRB5Keytab::cursor cursor(keytab);
-            while (cursor.next()) {
-                std::string principal = cursor.principal().name();
-                krb5_kvno kvno = cursor.kvno();
-                krb5_kvno enctype = cursor.enctype();
-                if (principal.compare(remove_principal) == 0) {
-                    to_delete.push_back(std::make_pair(std::make_pair(principal, kvno), enctype));
-                }
+        KRB5Keytab::cursor cursor(keytab);
+        while (cursor.next()) {
+            std::string principal = cursor.principal().name();
+            krb5_kvno kvno = cursor.kvno();
+            krb5_kvno enctype = cursor.enctype();
+            if (principal.compare(remove_principal) == 0) {
+                to_delete.push_back(std::make_pair(std::make_pair(principal, kvno), enctype));
             }
-        } catch (KRB5Exception& ex) {
-            /* Ignore errors reading keytab */
         }
     }
 
@@ -298,49 +286,42 @@ void add_keytab_entries(msktutil_flags *flags)
         std::string add_principal = flags->ad_principals[i] + "@" + flags->realm_name;
         std::string template_principal = flags->sAMAccountName + "@" + flags->realm_name;
 
-        try {
-            KRB5Keytab::cursor cursor(keytab);
-            while (cursor.next()) {
-                std::string principal = cursor.principal().name();
-                krb5_kvno kvno = cursor.kvno();
-                krb5_enctype enctype = cursor.enctype();
-                krb5_keyblock keyblock = cursor.key();
-                if (principal.compare(template_principal) == 0) {
-                    /* We have a keytab entry for sAMAccountName. Now
-                     * let's see if there is an entry for
-                     * add_principal with the same kvno and
-                     * enctype. If not, add it to the list.
-                     */
-                    bool found_it = false;
-                    try {
-                        KRB5Keytab::cursor cursor2(keytab);
-                        while (cursor2.next()) {
-                            if (cursor2.principal().name().compare(add_principal) == 0 &&
-                                cursor2.kvno() == kvno &&
-                                cursor2.enctype() == enctype ) {
-                                found_it = true;
-                                break;
-                            }
-                        }
-                    } catch (KRB5Exception& ex) {
-                        /* Ignore errors reading keytab */
-                    }
-                    if (!found_it) {
+        KRB5Keytab::cursor cursor(keytab);
+        while (cursor.next()) {
+            std::string principal = cursor.principal().name();
+            krb5_kvno kvno = cursor.kvno();
+            krb5_enctype enctype = cursor.enctype();
+            krb5_keyblock keyblock = cursor.key();
+            if (principal.compare(template_principal) == 0) {
+                /* We have a keytab entry for sAMAccountName. Now
+                    * let's see if there is an entry for
+                    * add_principal with the same kvno and
+                    * enctype. If not, add it to the list.
+                    */
+                bool found_it = false;
 
-                        msktutil_ktentry newentry;
-                        newentry.principal = add_principal;
-                        newentry.kvno = kvno;
-                        krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &keyblock, &newentry.keyblock);
-                        if (ret) {
-                            throw KRB5Exception("krb5_copy_keyblock_contents", ret);
-                        }
-                        to_add.push_back(newentry);
-                        VERBOSE("Adding %s (kvno=%d, enctype=%d) to keytab", add_principal.c_str(), kvno, enctype);
+                KRB5Keytab::cursor cursor2(keytab);
+                while (cursor2.next()) {
+                    if (cursor2.principal().name().compare(add_principal) == 0 &&
+                        cursor2.kvno() == kvno &&
+                        cursor2.enctype() == enctype ) {
+                        found_it = true;
+                        break;
                     }
                 }
+
+                if (!found_it) {
+                    msktutil_ktentry newentry;
+                    newentry.principal = add_principal;
+                    newentry.kvno = kvno;
+                    krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &keyblock, &newentry.keyblock);
+                    if (ret) {
+                        throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+                    }
+                    to_add.push_back(newentry);
+                    VERBOSE("Adding %s (kvno=%d, enctype=%d) to keytab", add_principal.c_str(), kvno, enctype);
+                }
             }
-        } catch (KRB5Exception& ex) {
-            /* Ignore errors reading keytab */
         }
     }
 
@@ -366,9 +347,9 @@ void update_keytab(msktutil_flags *flags)
     if (!flags->userPrincipalName.empty()) {
         add_principal_keytab(flags->userPrincipalName, flags);
     }
-    /* add host/sAMAccountName */
+    /* add host/<short_hostname> */
     if (!flags->use_service_account) {
-        add_principal_keytab("host/" + flags->sAMAccountName_nodollar, flags);
+        add_principal_keytab("host/" + get_short_hostname(flags), flags);
     }
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
         if ((flags->userPrincipalName.empty()) ||
@@ -414,43 +395,37 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
      * valid service ticket in their credential cache can continue
      * using it to connect to the server.
      */
-    try {
-        krb5_kvno earliest_kvno_to_keep = 0;
-        {
-            krb5_timestamp min_keep_timestamp = time(NULL) - (7*24*60*60);
+    krb5_kvno earliest_kvno_to_keep = 0;
+    krb5_timestamp min_keep_timestamp = time(NULL) - (7*24*60*60);
 
-            KRB5Keytab::cursor cursor(keytab);
-            while (cursor.next()) {
-                std::string curr_principal = cursor.principal().name();
-                if (curr_principal == principal_string) {
-                    if (cursor.kvno() < flags->kvno) {
-                        if (cursor.timestamp() < min_keep_timestamp) {
-                            earliest_kvno_to_keep = std::max(
-                                earliest_kvno_to_keep,
-                                cursor.kvno());
-                        }
-                    }
+    KRB5Keytab::cursor cursor(keytab);
+    while (cursor.next()) {
+        std::string curr_principal = cursor.principal().name();
+        if (curr_principal == principal_string) {
+            if (cursor.kvno() < flags->kvno) {
+                if (cursor.timestamp() < min_keep_timestamp) {
+                    earliest_kvno_to_keep = std::max(
+                        earliest_kvno_to_keep,
+                        cursor.kvno());
                 }
             }
         }
-        VERBOSE("Removing entries with kvno < %d", earliest_kvno_to_keep);
-        {
-            KRB5Keytab::cursor cursor(keytab);
-            while (cursor.next()) {
-                std::string curr_principal = cursor.principal().name();
-                if (curr_principal == principal_string &&
-                    (cursor.kvno() >= flags->kvno ||
-                     cursor.kvno() < earliest_kvno_to_keep)) {
-                    to_delete.push_back(std::make_pair(
-                                            std::make_pair(
-                                                curr_principal,
-                                                cursor.kvno()),
-                                            cursor.enctype()));
-                }
-            }
+    }
+
+    VERBOSE("Removing entries with kvno < %d", earliest_kvno_to_keep);
+    cursor.reset();
+
+    while (cursor.next()) {
+        std::string curr_principal = cursor.principal().name();
+        if (curr_principal == principal_string &&
+            (cursor.kvno() >= flags->kvno ||
+                cursor.kvno() < earliest_kvno_to_keep)) {
+            to_delete.push_back(std::make_pair(
+                                    std::make_pair(
+                                        curr_principal,
+                                        cursor.kvno()),
+                                    cursor.enctype()));
         }
-    } catch (KRB5Exception& ex) {
-        /* Ignore errors reading keytab */
     }
 
     for(to_delete_t::const_iterator it = to_delete.begin();

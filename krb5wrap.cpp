@@ -30,6 +30,14 @@
  */
 #include "msktutil.h"
 
+void krb5_error_exit( const char *func, int err_code) {
+   v_error_exit("error_exit: krb func %s failed: (%s)", func, error_message(err_code));
+}
+
+void krb5_warn( const char *func, int err_code) {
+   fprintf( stderr, "Warning: krb func %s failed: (%s)", func, error_message(err_code));
+}
+
 #ifdef HEIMDAL
 krb5_error_code krb5_free_keytab_entry_contents(krb5_context context,
                                                 krb5_keytab_entry *entry)
@@ -53,8 +61,7 @@ initialize_g_context() {
     VERBOSE("Creating Kerberos Context");
     krb5_error_code ret = krb5_init_context(&g_context);
     if (ret) {
-        fprintf( stderr, "krb5_init_context faild %d", ret);
-        exit(1);
+        krb5_error_exit("krb5_init_context", ret);
     }
 }
 
@@ -218,7 +225,10 @@ void KRB5Keytab::addEntry(KRB5Principal &princ,
                                             m_keytab,
                                             &entry);
     if (ret) {
-        throw KRB5Exception("krb5_kt_add_entry", ret);
+        if (errno != 0) {
+            fprintf(stderr,"Error: Keytab write error: %s!\n", strerror(errno));
+        }
+        throw KRB5Exception("krb5_kt_add_entry failed", ret);
     }
 }
 
@@ -241,6 +251,9 @@ void KRB5Keytab::removeEntry(KRB5Principal &princ,
                                                m_keytab,
                                                &entry);
     if (ret) {
+        if (errno != 0) {
+            fprintf(stderr,"Error: Keytab write error: %s!\n", strerror(errno));
+        }
         throw KRB5Exception("krb5_kt_remove_entry", ret);
     }
 }
@@ -249,19 +262,26 @@ void KRB5Keytab::removeEntry(KRB5Principal &princ,
 KRB5Keytab::cursor::cursor(KRB5Keytab &keytab) : m_keytab(keytab),
                                                  m_cursor(),
                                                  m_entry(),
-                                                 m_princ()
+                                                 m_princ(),
+                                                 m_ok(true)
 {
+    memset(&m_entry, 0, sizeof(m_entry));
+
     krb5_error_code ret = krb5_kt_start_seq_get(g_context,
                                                 m_keytab.m_keytab,
                                                 &m_cursor);
     if (ret) {
-        throw KRB5Exception("krb5_kt_start_seq_get", ret);
+        m_ok = false;
     }
 }
 
 
 KRB5Keytab::cursor::~cursor()
 {
+    if (!m_ok) {
+        m_princ.reset_no_free(NULL);
+        return;
+    }
     krb5_free_keytab_entry_contents(g_context, &m_entry);
     memset(&m_entry, 0, sizeof(m_entry));
     /* Tell m_princ to not free its contents! */
@@ -270,14 +290,28 @@ KRB5Keytab::cursor::~cursor()
                                               m_keytab.m_keytab,
                                               &m_cursor);
     if (ret) {
-        /* FIXME: shouldn't throw from destructor... */
-        throw KRB5Exception("krb5_kt_end_seq_get", ret);
+        krb5_warn("krb5_kt_end_seq_get", ret);
     }
 }
 
+void KRB5Keytab::cursor::reset()
+{
+    if (!m_ok) {
+        return;
+    }
+    krb5_error_code ret = krb5_kt_start_seq_get(g_context,
+                                                m_keytab.m_keytab,
+                                                &m_cursor);
+    if (ret) {
+        m_ok = false;
+    }
+}
 
 bool KRB5Keytab::cursor::next()
 {
+    if (!m_ok) {
+        return false;
+    }
     krb5_free_keytab_entry_contents(g_context, &m_entry);
     memset(&m_entry, 0, sizeof(m_entry));
     krb5_error_code ret = krb5_kt_next_entry(g_context,
