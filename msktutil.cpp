@@ -239,7 +239,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
                 );
             exit(1);
         } else {
-            flags->sAMAccountName = get_short_hostname(flags)  + "$";
+            flags->sAMAccountName = get_default_samaccountname(flags)  + "$";
         }
     }
 
