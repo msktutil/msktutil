@@ -43,6 +43,11 @@
 #endif
 #endif
 
+#ifndef stringify
+#define stringify(x) stringify_(x)
+#define stringify_(x) #x
+#endif
+
 #include <algorithm>
 #include <cctype>
 
