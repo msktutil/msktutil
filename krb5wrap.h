@@ -224,7 +224,7 @@ public:
 
 class KRB5KeytabEntry {
 private:
-    krb5_principal m_principal;
+    std::string m_principal;
     krb5_timestamp m_timestamp;
     krb5_kvno m_kvno;
     krb5_enctype m_enctype;
@@ -235,19 +235,19 @@ public:
                     krb5_timestamp timestamp,
                     krb5_kvno kvno,
                     krb5_enctype enctype,
-                    krb5_keyblock keyblock) : m_principal(principal),
+                    krb5_keyblock keyblock) : m_principal(KRB5Principal(principal).name()),
                                               m_timestamp(timestamp),
                                               m_kvno(kvno),
                                               m_enctype(enctype),
                                               m_keyblock(keyblock) {};
 
-    KRB5KeytabEntry(KRB5Keytab::cursor& cursor) : m_principal(cursor.principal().get()),
+    KRB5KeytabEntry(KRB5Keytab::cursor& cursor) : m_principal(cursor.principal().name()),
                                                         m_timestamp(cursor.timestamp()),
                                                         m_kvno(cursor.kvno()),
                                                         m_enctype(cursor.enctype()),
                                                         m_keyblock(cursor.key()) {};
 
-    krb5_principal principal() { return m_principal; };
+    std::string principal() { return m_principal; };
     krb5_timestamp timestamp() { return m_timestamp; };
     krb5_kvno kvno() { return m_kvno; };
     krb5_enctype enctype() { return m_enctype; };
