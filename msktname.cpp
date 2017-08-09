@@ -263,7 +263,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
             VERBOSE("Attempting to find site-specific Domain Controller to use via "
                             "DNS SRV record in domain %s for site %s and procotol %s",
                             realm_name.c_str(), site_name.c_str(), protocols[i].c_str());
-            dcsrvs = DnsSrvQuery(site_name + "._sites." + realm_name, "kerberos", protocols[i]);
+            dcsrvs = DnsSrvQuery(site_name + "._sites.dc._msdcs." + realm_name, "kerberos", protocols[i]);
             if (!dcsrvs.empty()) {
                 break;
             }
@@ -275,7 +275,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
             VERBOSE("Attempting to find Domain Controller to use via "
                             "DNS SRV record in domain %s for procotol %s",
                             realm_name.c_str(), protocols[i].c_str());
-            dcsrvs = DnsSrvQuery(realm_name, "kerberos", protocols[i]);
+            dcsrvs = DnsSrvQuery("dc._msdcs." + realm_name, "kerberos", protocols[i]);
             if (!dcsrvs.empty()) {
                 break;
             }

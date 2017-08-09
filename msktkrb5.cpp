@@ -59,17 +59,28 @@ void get_default_keytab(msktutil_flags *flags)
                                 ret);
         }
         flags->keytab_writename = std::string(keytab_name);
+        if (!strncmp(keytab_name, "FILE:", 5)) {
+            /* Ignore opening FILE: part */
+            flags->keytab_file = std::string(keytab_name + 5);
+        } else {
+            /* untyped or unsupported--just try to use it as
+             * a filename for now */
+            flags->keytab_file = std::string(keytab_name);
+        }
 #else
         if (!strncmp(keytab_name, "FILE:", 5)) {
             /* Ignore opening FILE: part */
             flags->keytab_writename = "WRFILE:" + std::string(keytab_name + 5);
         } else if (!strncmp(keytab_name, "WRFILE:", 7)) {
-            /* Ignore the opening WRFILE: part */
+            /* Already includes the opening WRFILE: part */
             flags->keytab_writename = std::string(keytab_name);
         } else {
             /* No prefix to the keytab path */
             flags->keytab_writename = "WRFILE:" + std::string(keytab_name);
         }
+
+        /* Ignore opening WRFILE: part */
+        flags->keytab_file = flags->keytab_writename.substr(7);
 #endif
         VERBOSE("Obtaining the default keytab name: %s",
                 flags->keytab_readname.c_str());
