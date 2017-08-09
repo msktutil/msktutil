@@ -283,9 +283,8 @@ void add_keytab_entries(msktutil_flags *flags)
             VERBOSE("Adding %s (kvno=%d, enctype=%d) to keytab", add_principal.c_str(), sam->kvno(), sam->enctype());
 
             KRB5Principal princ(add_principal);
-            KRB5Keyblock kblock;
-            kblock.from_keyblock(sam->keyblock());
-            keytab.addEntry(princ, sam->kvno(), kblock);
+            krb5_keyblock keyblock(sam->keyblock());
+            keytab.addEntry(princ, sam->kvno(), keyblock);
         }
     }
 }
@@ -406,14 +405,14 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     }
 #endif
 
-    for(size_t i = 0; i < enc_types.size(); ++i) {
-        KRB5Keyblock keyblock;
-        keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]),
-                             flags->dont_change_password ?
-                                 flags->old_account_password : flags->password,
-                             get_salt(flags));
+    std::string salt = get_salt(flags);
+    std::string password = flags->dont_change_password ?
+        flags->old_account_password : flags->password;
 
+    for(size_t i = 0; i < enc_types.size(); ++i) {
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
-        keytab.addEntry(princ, flags->kvno, keyblock);
+        keytab.addEntry(princ, flags->kvno,
+                        static_cast<krb5_enctype>(enc_types[i]),
+                        password, salt);
     }
 }
