@@ -239,13 +239,26 @@ public:
                                               m_timestamp(timestamp),
                                               m_kvno(kvno),
                                               m_enctype(enctype),
-                                              m_keyblock(keyblock) {};
+                                              m_keyblock(keyblock)
+                                              {
+                                                  krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &keyblock, &m_keyblock);
+                                                  if (ret) {
+                                                      throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+                                                  }
+                                              };
 
     KRB5KeytabEntry(KRB5Keytab::cursor& cursor) : m_principal(cursor.principal().name()),
                                                         m_timestamp(cursor.timestamp()),
                                                         m_kvno(cursor.kvno()),
                                                         m_enctype(cursor.enctype()),
-                                                        m_keyblock(cursor.key()) {};
+                                                        m_keyblock(cursor.key())
+                                                        {
+                                                            krb5_keyblock tmp_kblock = cursor.key();
+                                                            krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &tmp_kblock, &m_keyblock);
+                                                            if (ret) {
+                                                                throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+                                                            }
+                                                        };
 
     std::string principal() { return m_principal; };
     krb5_timestamp timestamp() { return m_timestamp; };
