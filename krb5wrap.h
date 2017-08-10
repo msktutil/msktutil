@@ -238,7 +238,7 @@ public:
         }
     };
 
-    KRB5KeytabEntry(const KRB5KeytabEntry &keytab_entry) {
+    const  KRB5KeytabEntry& operator=(const KRB5KeytabEntry& keytab_entry) {
         m_principal = keytab_entry.m_principal;
         m_timestamp = keytab_entry.m_timestamp;
         m_kvno = keytab_entry.m_kvno;
@@ -251,7 +251,14 @@ public:
         if (ret) {
             throw KRB5Exception("krb5_copy_keyblock_contents", ret);
         }
+
+	return *this;
     };
+
+    KRB5KeytabEntry(const KRB5KeytabEntry &keytab_entry) {
+        (void) operator=(keytab_entry);
+    };
+
 
     ~KRB5KeytabEntry() { krb5_free_keyblock_contents(g_context, &m_keyblock); };
 
