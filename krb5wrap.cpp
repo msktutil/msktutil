@@ -208,7 +208,7 @@ std::string KRB5Principal::name()
 }
 
 
-void KRB5Keytab::addEntry(KRB5Principal &princ,
+void KRB5Keytab::addEntry(const KRB5Principal &princ,
                           krb5_kvno kvno,
                           KRB5Keyblock &keyblock)
 {
@@ -233,7 +233,7 @@ void KRB5Keytab::addEntry(KRB5Principal &princ,
 }
 
 
-void KRB5Keytab::removeEntry(KRB5Principal &princ,
+void KRB5Keytab::removeEntry(const KRB5Principal &princ,
                              krb5_kvno kvno,
                              krb5_enctype enctype)
 {
