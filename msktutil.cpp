@@ -1287,6 +1287,7 @@ msktutil_flags::msktutil_flags() :
     check_replication(false),
     dont_change_password(false),
     dont_expire_password(VALUE_IGNORE),
+    dont_update_dnshostname(VALUE_OFF),
     no_pac(VALUE_IGNORE),
     delegate(VALUE_IGNORE),
     ad_userAccountControl(0),
