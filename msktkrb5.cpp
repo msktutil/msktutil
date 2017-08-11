@@ -348,7 +348,7 @@ static void prune_keytab(KRB5Keytab& keytab, KRB5Principal &principal, krb5_time
     std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin();
 
     for (; it != keytab_entries.end(); it++) {
-        if (it->timestamp() > min_keep_timestamp)
+        if (it->timestamp() < min_keep_timestamp)
             break;
     }
 
