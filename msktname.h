@@ -74,7 +74,7 @@ public:
           m_port(port)
         {};
 #if defined(HAVE_LIBUDNS)
-    DnsSrvHost(struct dns_srv dnssrv& const)
+    DnsSrvHost(const struct dns_srv& dnssrv)
         : srvname(dnssrv.name),
           validated_name(""),
           m_priority(dnssrv.priority),
