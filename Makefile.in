@@ -8,7 +8,7 @@ mandir=@mandir@
 CXX=@CXX@
 CC=@CC@
 CPPFLAGS=-I. @CPPFLAGS@
-CXXFLAGS=@CXXFLAGS@ $(WARNFLAGS)
+CXXFLAGS=@CXXFLAGS@ @WARNFLAGS@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
 INSTALL=@INSTALL@
@@ -18,7 +18,6 @@ SED=@SED@
 CAT=@CAT@
 ECHO=@ECHO@
 MKDIR=@MKDIR@
-WARNFLAGS=-Wall -Wextra -Wno-write-strings
 MAN=$(PROG).1
 SOURCES=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msktpass.cpp msktconf.cpp strtoll.cpp ldapconnection.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
