@@ -73,60 +73,6 @@ destroy_g_context() {
 }
 
 
-void KRB5Keyblock::from_string(krb5_enctype enctype,
-                               const std::string &password,
-                               const std::string &salt)
-{
-#ifdef HEIMDAL
-    krb5_data pass_data;
-    krb5_salt salt_data;
-
-    salt_data.salttype = KRB5_PW_SALT;
-    salt_data.saltvalue.data = const_cast<char *>(salt.c_str());
-    salt_data.saltvalue.length = salt.length();
-
-    pass_data.data = const_cast<char *>(password.c_str());
-    pass_data.length = password.length();
-
-    krb5_error_code ret = krb5_string_to_key_data_salt(g_context,
-                                                       enctype,
-                                                       pass_data,
-                                                       salt_data,
-                                                       &m_keyblock);
-    if (ret) {
-        throw KRB5Exception("krb5_string_to_key_data_salt", ret);
-    }
-#else
-    krb5_data salt_data, pass_data;
-    salt_data.data = const_cast<char *>(salt.c_str());
-    salt_data.length = salt.length();
-
-    pass_data.data = const_cast<char *>(password.c_str());
-    pass_data.length = password.length();
-
-    krb5_error_code ret = krb5_c_string_to_key(g_context,
-                                               enctype,
-                                               &pass_data,
-                                               &salt_data,
-                                               &m_keyblock);
-    if (ret) {
-        throw KRB5Exception("krb5_c_string_to_key", ret);
-    }
-#endif
-}
-
-
-void KRB5Keyblock::from_keyblock(krb5_keyblock keyblock)
-{
-
-    krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &keyblock, &m_keyblock);
-
-    if (ret) {
-        throw KRB5Exception("krb5_copy_keyblock_contents", ret);
-    }
-}
-
-
 void KRB5CCache::initialize(KRB5Principal &principal)
 {
     krb5_error_code ret = krb5_cc_initialize(g_context,
@@ -208,18 +154,18 @@ std::string KRB5Principal::name()
 }
 
 
-void KRB5Keytab::addEntry(KRB5Principal &princ,
+void KRB5Keytab::addEntry(const KRB5Principal &princ,
                           krb5_kvno kvno,
-                          KRB5Keyblock &keyblock)
+                          krb5_keyblock &keyblock)
 {
     krb5_keytab_entry entry;
 
     entry.principal = princ.get();
     entry.vno = kvno;
 #ifdef HEIMDAL
-    entry.keyblock = keyblock.get();
+    entry.keyblock = keyblock;
 #else
-    entry.key = keyblock.get();
+    entry.key = keyblock;
 #endif
     krb5_error_code ret = krb5_kt_add_entry(g_context,
                                             m_keytab,
@@ -232,8 +178,57 @@ void KRB5Keytab::addEntry(KRB5Principal &princ,
     }
 }
 
+void KRB5Keytab::addEntry(const KRB5Principal &princ,
+                          krb5_kvno kvno,
+                          krb5_enctype enctype,
+                          const std::string &password,
+                          const std::string &salt)
+{
+    krb5_keyblock keyblock;
 
-void KRB5Keytab::removeEntry(KRB5Principal &princ,
+#ifdef HEIMDAL
+    krb5_data pass_data;
+    krb5_salt salt_data;
+
+    salt_data.salttype = KRB5_PW_SALT;
+    salt_data.saltvalue.data = const_cast<char *>(salt.c_str());
+    salt_data.saltvalue.length = salt.length();
+
+    pass_data.data = const_cast<char *>(password.c_str());
+    pass_data.length = password.length();
+
+    krb5_error_code ret = krb5_string_to_key_data_salt(g_context,
+                                                       enctype,
+                                                       pass_data,
+                                                       salt_data,
+                                                       &keyblock);
+    if (ret) {
+        throw KRB5Exception("krb5_string_to_key_data_salt", ret);
+    }
+#else
+    krb5_data salt_data, pass_data;
+    salt_data.data = const_cast<char *>(salt.c_str());
+    salt_data.length = salt.length();
+
+    pass_data.data = const_cast<char *>(password.c_str());
+    pass_data.length = password.length();
+
+    krb5_error_code ret = krb5_c_string_to_key(g_context,
+                                               enctype,
+                                               &pass_data,
+                                               &salt_data,
+                                               &keyblock);
+    if (ret) {
+        throw KRB5Exception("krb5_c_string_to_key", ret);
+    }
+#endif
+
+    addEntry(princ, kvno, keyblock);
+}
+
+
+
+void KRB5Keytab::removeEntry(const KRB5Principal &princ,
                              krb5_kvno kvno,
                              krb5_enctype enctype)
 {

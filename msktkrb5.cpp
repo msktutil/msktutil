@@ -131,38 +131,28 @@ int flush_keytab(msktutil_flags *flags)
     VERBOSE("Flushing the keytab");
     KRB5Keytab keytab(flags->keytab_writename);
 
-    /* Delete all entries for this host */
-    typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
-    to_delete_t to_delete;
+    std::vector<KRB5KeytabEntry> keytab_entries;
 
-    KRB5Keytab::cursor cursor(keytab);
-    while (cursor.next()) {
-        std::string principal = cursor.principal().name();
-        size_t first_chr = principal.find('/') + 1;
-        size_t last_chr = principal.rfind('@');
-
-        std::string host = principal.substr(first_chr,
-                                            last_chr - first_chr);
-        if (host == flags->hostname) {
-            to_delete.push_back(std::make_pair(std::make_pair(
-                                                    principal,
-                                                    cursor.kvno()),
-                                                cursor.enctype()));
-        }
+    /* Extract a vector of keytab entries */
+    for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
+        keytab_entries.push_back(cursor);
     }
 
-    for(to_delete_t::const_iterator it = to_delete.begin();
-        it != to_delete.end();
-        ++it) {
-        KRB5Principal princ(it->first.first);
-        krb5_kvno kvno = it->first.second;
-        krb5_enctype enctype = it->second;
-        VERBOSE("Deleting %s kvno=%d, enctype=%d",
-                it->first.first.c_str(),
-                kvno,
-                enctype
-            );
-        keytab.removeEntry(princ, kvno, enctype);
+    for (std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin(); it != keytab_entries.end(); it++) {
+        KRB5Principal principal(it->principal());
+        std::string principal_name(principal.name());
+        size_t first_chr = principal_name.find('/') + 1;
+        size_t last_chr = principal_name.rfind('@');
+
+        std::string host = principal_name.substr(first_chr,
+                                                 last_chr - first_chr);
+
+        if (host != flags->hostname) {
+            continue;
+        }
+
+        VERBOSE("Deleting %s kvno=%d, enctype=%d", principal_name.c_str(), it->kvno(), it->enctype());
+        keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 
     return ldap_flush_principals(flags);
@@ -174,62 +164,53 @@ void cleanup_keytab(msktutil_flags *flags)
     VERBOSE("Cleaning the keytab");
     KRB5Keytab keytab(flags->keytab_writename);
 
-    /* Determine timestamp of newest entries: */
-    time_t newest_timestamp;
-    /* Delete all entries for this host */
-    typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
-    to_delete_t to_delete;
-    time_t ttNow = time(NULL);
+    std::vector<KRB5KeytabEntry> keytab_entries;
 
-    newest_timestamp = 0;
-    KRB5Keytab::cursor cursor(keytab);
-    while (cursor.next()) {
-        if (newest_timestamp < cursor.timestamp()) {
-            newest_timestamp = cursor.timestamp();
-        }
+    /* Extract a vector of keytab entries */
+    for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
+        keytab_entries.push_back(cursor);
     }
 
-    cursor.reset();
-    while (cursor.next()) {
-        /*
-            * (1) clean the current entry if its enctype matches the
-            *     one given by --remove-enctype
-            * (2) clean the entry if its time stamp and the current
-            *     time differ by more than the number of days given by
-            *     --remove-old. But only if --remove-old has been
-            *     given on the command line (i.e. cleanup_days != -1)
-            * (3) don't let a too small number of days given by
-            *     --remove-old clean one of the newest
-            *     entries. Note: the newest entries could have
-            *     slightly different time stamps. Therefore,
-            *     newest_timestamp and cursor.timestamp must not be
-            *     compared directly. As a workaround we clean the
-            *     current entry only if its time stamp and
-            *     newest_timestamp differ by more than 2 seconds.
-            */
-        if ((cursor.enctype() == flags->cleanup_enctype) ||
-            ((ttNow - cursor.timestamp() >= flags->cleanup_days * 60 * 60 * 24) &&
-                (flags->cleanup_days != -1) &&
-                (abs(newest_timestamp - cursor.timestamp()) >= 2))) {
-            std::string principal = cursor.principal().name();
-            to_delete.push_back(std::make_pair(std::make_pair(
-                                                    principal,
-                                                    cursor.kvno()),
-                                                cursor.enctype()));
+    /* cleanup all entries that match --remove-enctype */
+    for (std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin(); it != keytab_entries.end(); it++) {
+        if (it->enctype() != flags->cleanup_enctype) {
+            continue;
         }
+        KRB5Principal principal(it->principal());
+        VERBOSE("Deleting %s kvno=%d, enctype=%d", principal.name().c_str(), it->kvno(), it->enctype());
+        keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 
-    for(to_delete_t::const_iterator it = to_delete.begin();
-        it != to_delete.end();
-        ++it) {
-            KRB5Principal princ(it->first.first);
-            krb5_kvno kvno = it->first.second;
-            krb5_enctype enctype = it->second;
-            VERBOSE("Deleting %s kvno=%d, enctype=%d",
-                    it->first.first.c_str(),
-                    kvno,
-                    enctype);
-            keytab.removeEntry(princ, kvno, enctype);
+    /* stop further processing unless --remove-old was given */
+    if (flags->cleanup_days == -1) {
+        return;
+    }
+
+    /* Sort vector by timestamp in descending order */
+    std::sort(keytab_entries.rbegin(), keytab_entries.rend());
+
+    std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin();
+
+    /* Empty list? Nothing to do */
+    if (it == keytab_entries.end())
+        return;
+
+    /* kvno of the first (== most recent) entry */
+    /* FIXME this will work nicely for multiple principals derived from the
+     * same account/password, but what about multiple independent principals
+     * within the same keytab? We could run the cleanup separately for each
+     * principal, but then there's no way to get rid of truely obsolete
+     * principals. */
+    krb5_kvno keep_kvno = it->kvno();
+    time_t min_keep_timestamp = time(0) - flags->cleanup_days * 60 * 60 * 24;
+
+    for (; it != keytab_entries.end(); it++) {
+        if (it->timestamp() > min_keep_timestamp || it->kvno() == keep_kvno) {
+            continue;
+        }
+        KRB5Principal principal(it->principal());
+        VERBOSE("Deleting %s kvno=%d, enctype=%d", principal.name().c_str(), it->kvno(), it->enctype());
+        keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 }
 
@@ -241,35 +222,23 @@ void remove_keytab_entries(msktutil_flags *flags,
 
     VERBOSE("Trying to remove entries for %s from keytab", flags->sAMAccountName.c_str());
 
-    typedef std::vector<std::pair<std::pair<std::string,krb5_kvno>, krb5_enctype> > to_delete_t;
-    to_delete_t to_delete;
+    std::vector<KRB5KeytabEntry> keytab_entries;
 
-    for (size_t i = 0; i < remove_principals.size(); ++i) {
-        std::string remove_principal = remove_principals[i] + "@" + flags->realm_name;
-
-        KRB5Keytab::cursor cursor(keytab);
-        while (cursor.next()) {
-            std::string principal = cursor.principal().name();
-            krb5_kvno kvno = cursor.kvno();
-            krb5_kvno enctype = cursor.enctype();
-            if (principal.compare(remove_principal) == 0) {
-                to_delete.push_back(std::make_pair(std::make_pair(principal, kvno), enctype));
-            }
-        }
+    /* Extract a vector of keytab entries */
+    for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
+        keytab_entries.push_back(cursor);
     }
 
-    for(to_delete_t::const_iterator it = to_delete.begin();
-        it != to_delete.end();
-        ++it) {
-        KRB5Principal princ(it->first.first);
-        krb5_kvno kvno = it->first.second;
-        krb5_enctype enctype = it->second;
-        VERBOSE("Deleting %s kvno=%d, enctype=%d",
-                it->first.first.c_str(),
-                kvno,
-                enctype
-            );
-        keytab.removeEntry(princ, kvno, enctype);
+    for (std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin(); it != keytab_entries.end(); it++) {
+        KRB5Principal principal(it->principal());
+        std::string principal_name(principal.name());
+        for (size_t i = 0; i < remove_principals.size(); ++i) {
+            std::string remove_principal = remove_principals[i] + "@" + flags->realm_name;
+            if (principal_name.compare(remove_principal) == 0) {
+                VERBOSE("Deleting %s kvno=%d, enctype=%d", principal.name().c_str(), it->kvno(), it->enctype());
+                keytab.removeEntry(principal, it->kvno(), it->enctype());
+            }
+        }
     }
 }
 
@@ -280,8 +249,18 @@ void add_keytab_entries(msktutil_flags *flags)
 
     VERBOSE("Trying to add missing entries for %s to keytab", flags->sAMAccountName.c_str());
 
-    typedef std::vector<msktutil_ktentry> entry_list;
-    entry_list to_add;
+    std::vector<KRB5KeytabEntry> keytab_entries;
+    std::vector<KRB5KeytabEntry> sam_entries;
+
+    std::string template_principal = flags->sAMAccountName + "@" + flags->realm_name;
+
+    /* Extract a vector of keytab entries */
+    for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
+        keytab_entries.push_back(cursor);
+        if (cursor.principal().name().compare(template_principal) == 0) {
+            sam_entries.push_back(cursor);
+        }
+    }
 
     for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
         /* We look at all keytab entries that match the account name
@@ -295,54 +274,29 @@ void add_keytab_entries(msktutil_flags *flags)
         VERBOSE("Checking if %s needs to be added to keytab", flags->ad_principals[i].c_str());
 
         std::string add_principal = flags->ad_principals[i] + "@" + flags->realm_name;
-        std::string template_principal = flags->sAMAccountName + "@" + flags->realm_name;
 
-        KRB5Keytab::cursor cursor(keytab);
-        while (cursor.next()) {
-            std::string principal = cursor.principal().name();
-            krb5_kvno kvno = cursor.kvno();
-            krb5_enctype enctype = cursor.enctype();
-            krb5_keyblock keyblock = cursor.key();
-            if (principal.compare(template_principal) == 0) {
-                /* We have a keytab entry for sAMAccountName. Now
-                    * let's see if there is an entry for
-                    * add_principal with the same kvno and
-                    * enctype. If not, add it to the list.
-                    */
-                bool found_it = false;
-
-                KRB5Keytab::cursor cursor2(keytab);
-                while (cursor2.next()) {
-                    if (cursor2.principal().name().compare(add_principal) == 0 &&
-                        cursor2.kvno() == kvno &&
-                        cursor2.enctype() == enctype ) {
-                        found_it = true;
-                        break;
-                    }
+        for (std::vector<KRB5KeytabEntry>::iterator sam = sam_entries.begin(); sam != sam_entries.end(); sam++) {
+            std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin();
+            for (; it != keytab_entries.end(); it++) {
+                if (sam->kvno() != it->kvno() || sam->enctype() != it->enctype()) {
+                    continue;
                 }
-
-                if (!found_it) {
-                    msktutil_ktentry newentry;
-                    newentry.principal = add_principal;
-                    newentry.kvno = kvno;
-                    krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &keyblock, &newentry.keyblock);
-                    if (ret) {
-                        throw KRB5Exception("krb5_copy_keyblock_contents", ret);
-                    }
-                    to_add.push_back(newentry);
-                    VERBOSE("Adding %s (kvno=%d, enctype=%d) to keytab", add_principal.c_str(), kvno, enctype);
+                if (add_principal.compare(KRB5Principal(it->principal()).name()) == 0) {
+                    break;
                 }
             }
-        }
-    }
 
-    for(entry_list::const_iterator it = to_add.begin();
-        it != to_add.end();
-        ++it) {
-        KRB5Principal princ(it->principal);
-        KRB5Keyblock kblock;
-        kblock.from_keyblock(it->keyblock);
-        keytab.addEntry(princ, it->kvno, kblock);
+            if (it != keytab_entries.end()) {
+                /* Matching entry already present for this KVNO and enctype */
+                continue;
+            }
+
+            VERBOSE("Adding %s (kvno=%d, enctype=%d) to keytab", add_principal.c_str(), sam->kvno(), sam->enctype());
+
+            KRB5Principal princ(add_principal);
+            krb5_keyblock keyblock(sam->keyblock());
+            keytab.addEntry(princ, sam->kvno(), keyblock);
+        }
     }
 }
 
@@ -375,6 +329,48 @@ void update_keytab(msktutil_flags *flags)
 }
 
 
+static void prune_keytab(KRB5Keytab& keytab, KRB5Principal &principal, krb5_timestamp min_keep_timestamp)
+{
+    std::vector<KRB5KeytabEntry> keytab_entries;
+
+    /* Extract a vector of keytab entries for this principal */
+    for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
+        if (cursor.principal().name() != principal.name())
+            continue;
+
+        keytab_entries.push_back(cursor);
+    }
+
+    /* Sort vector by timestamp in descending order */
+    std::sort(keytab_entries.rbegin(), keytab_entries.rend());
+
+    /* Now find the first entry older than min_keep_timestamp */
+    std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin();
+
+    for (; it != keytab_entries.end(); it++) {
+        if (it->timestamp() < min_keep_timestamp)
+            break;
+    }
+
+    if (it == keytab_entries.end())
+        return;
+
+    /* Keys for this kvno may still be valid, but any older entries for
+     * different keys (different kvno) have definitely been stale for more
+     * than min_keep_timestamp, and can therefore be pruned. */
+    krb5_kvno keep_kvno = it->kvno();
+
+    for (; it != keytab_entries.end(); it++) {
+        if (it->kvno() == keep_kvno)
+            continue;
+
+        KRB5Principal principal(it->principal());
+        VERBOSE("Deleting %s kvno=%d, enctype=%d",
+                principal.name().c_str(), it->kvno(), it->enctype());
+        keytab.removeEntry(principal, it->kvno(), it->enctype());
+    }
+}
+
 void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 {
     VERBOSE("Adding principal to keytab: %s", principal.c_str());
@@ -389,68 +385,13 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
                                  principal.c_str(),
                                  flags->realm_name.c_str());
     }
+
+    /* FIXME: Why do we use a fixed magic number instead of reusing
+     * flags->cleanup_days for update as well? */
+    krb5_timestamp min_keep_timestamp = time(NULL) - (7*24*60*60);
     KRB5Principal princ(principal_string);
 
-    typedef std::vector<std::pair<std::pair<std::string, krb5_kvno>, krb5_enctype> > to_delete_t;
-    to_delete_t to_delete;
-
-    /*
-     * Delete entries with obsolete kvnos.
-     *
-     * Keep all old keys with smaller kvnos which could've been used
-     * in the last week (a conservative guess for reasonable maximum
-     * ticket lifetimes).  That is: if kvno 3 has timestamp Jan 1,
-     * 2010, kvno 4 has timestamp Jan 20, 2010, and it is currently
-     * Jan 20, 2010, then keep both kvno 3 and 4, while writing out a
-     * new kvno 5. This is needed so that users who already have a
-     * valid service ticket in their credential cache can continue
-     * using it to connect to the server.
-     */
-    krb5_kvno earliest_kvno_to_keep = 0;
-    krb5_timestamp min_keep_timestamp = time(NULL) - (7*24*60*60);
-
-    KRB5Keytab::cursor cursor(keytab);
-    while (cursor.next()) {
-        std::string curr_principal = cursor.principal().name();
-        if (curr_principal == principal_string) {
-            if (cursor.kvno() < flags->kvno) {
-                if (cursor.timestamp() < min_keep_timestamp) {
-                    earliest_kvno_to_keep = std::max(
-                        earliest_kvno_to_keep,
-                        cursor.kvno());
-                }
-            }
-        }
-    }
-
-    VERBOSE("Removing entries with kvno < %d", earliest_kvno_to_keep);
-    cursor.reset();
-
-    while (cursor.next()) {
-        std::string curr_principal = cursor.principal().name();
-        if (curr_principal == principal_string &&
-            (cursor.kvno() >= flags->kvno ||
-                cursor.kvno() < earliest_kvno_to_keep)) {
-            to_delete.push_back(std::make_pair(
-                                    std::make_pair(
-                                        curr_principal,
-                                        cursor.kvno()),
-                                    cursor.enctype()));
-        }
-    }
-
-    for(to_delete_t::const_iterator it = to_delete.begin();
-        it != to_delete.end();
-        ++it) {
-        KRB5Principal princ(it->first.first);
-        krb5_kvno kvno = it->first.second;
-        krb5_enctype enctype = it->second;
-        VERBOSE("Deleting %s kvno=%d, enctype=%d",
-                it->first.first.c_str(),
-                kvno,
-                enctype);
-        keytab.removeEntry(princ, kvno, enctype);
-    }
+    prune_keytab(keytab, princ, min_keep_timestamp);
 
     std::vector<uint32_t> enc_types;
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_CRC) {
@@ -475,14 +416,14 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     }
 #endif
 
-    for(size_t i = 0; i < enc_types.size(); ++i) {
-        KRB5Keyblock keyblock;
-        keyblock.from_string(static_cast<krb5_enctype>(enc_types[i]),
-                             flags->dont_change_password ?
-                                 flags->old_account_password : flags->password,
-                             get_salt(flags));
+    std::string salt = get_salt(flags);
+    std::string password = flags->dont_change_password ?
+        flags->old_account_password : flags->password;
 
+    for(size_t i = 0; i < enc_types.size(); ++i) {
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
-        keytab.addEntry(princ, flags->kvno, keyblock);
+        keytab.addEntry(princ, flags->kvno,
+                        static_cast<krb5_enctype>(enc_types[i]),
+                        password, salt);
     }
 }

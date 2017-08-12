@@ -40,29 +40,6 @@ initialize_g_context();
 void
 destroy_g_context();
 
-
-class KRB5Keyblock {
-    krb5_keyblock m_keyblock;
-
-    // make it non copyable
-    KRB5Keyblock(const KRB5Keyblock&);
-    const  KRB5Keyblock& operator=(const KRB5Keyblock&);
-public:
-    KRB5Keyblock() : m_keyblock() {}
-
-    void from_string(krb5_enctype enctype, const std::string &password, const std::string &salt);
-
-    void from_keyblock(krb5_keyblock keyblock);
-
-    ~KRB5Keyblock() {
-        krb5_free_keyblock_contents(g_context, &m_keyblock);
-    }
-
-    krb5_keyblock &get() {
-        return m_keyblock;
-    }
-};
-
 class KRB5Principal;
 
 class KRB5Keytab {
@@ -87,8 +64,11 @@ public:
         }
     }
 
-    void addEntry(KRB5Principal &princ, krb5_kvno kvno, KRB5Keyblock &keyblock);
-    void removeEntry(KRB5Principal &princ, krb5_kvno kvno, krb5_enctype enctype);
+    void addEntry(const KRB5Principal &princ, krb5_kvno kvno, krb5_keyblock &keyblock);
+    void addEntry(const KRB5Principal &princ, krb5_kvno kvno, krb5_enctype enctype,
+                  const std::string &password, const std::string &salt);
+
+    void removeEntry(const KRB5Principal &princ, krb5_kvno kvno, krb5_enctype enctype);
 
     krb5_keytab get() { return m_keytab; }
 
@@ -183,7 +163,7 @@ public:
             krb5_free_principal(g_context, m_princ);
     }
 
-    krb5_principal get() { return m_princ; }
+    krb5_principal get() const { return m_princ; }
     std::string name();
 };
 
@@ -206,8 +186,8 @@ public:
     void reset();
 
     KRB5Principal &principal() { return m_princ; }
-    krb5_kvno kvno() { return m_entry.vno; }
-    krb5_enctype enctype() {
+    krb5_kvno kvno() const { return m_entry.vno; }
+    krb5_enctype enctype() const {
 #ifdef HEIMDAL
         return static_cast<krb5_enctype>(m_entry.keyblock.keytype);
 #else
@@ -215,9 +195,80 @@ public:
 #endif
     }
 
-    krb5_timestamp timestamp() { return m_entry.timestamp; }
+    krb5_timestamp timestamp() const { return m_entry.timestamp; }
 
-    krb5_keyblock key() {
+    krb5_keyblock key() const {
         return m_entry.key;
     }
+};
+
+class KRB5KeytabEntry {
+private:
+    std::string m_principal;
+    krb5_timestamp m_timestamp;
+    krb5_kvno m_kvno;
+    krb5_enctype m_enctype;
+    krb5_keyblock m_keyblock;
+
+public:
+    KRB5KeytabEntry(krb5_principal principal,
+                    krb5_timestamp timestamp,
+                    krb5_kvno kvno,
+                    krb5_enctype enctype,
+                    krb5_keyblock keyblock) : m_principal(KRB5Principal(principal).name()),
+                                              m_timestamp(timestamp),
+                                              m_kvno(kvno),
+                                              m_enctype(enctype),
+                                              m_keyblock(keyblock) {
+        krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &keyblock, &m_keyblock);
+        if (ret) {
+            throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+        }
+    };
+
+    KRB5KeytabEntry(KRB5Keytab::cursor& cursor) : m_principal(cursor.principal().name()),
+                                                        m_timestamp(cursor.timestamp()),
+                                                        m_kvno(cursor.kvno()),
+                                                        m_enctype(cursor.enctype()),
+                                                        m_keyblock(cursor.key()) {
+        krb5_keyblock tmp = cursor.key();
+        krb5_error_code ret = krb5_copy_keyblock_contents(g_context, &tmp, &m_keyblock);
+        if (ret) {
+            throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+        }
+    };
+
+    const  KRB5KeytabEntry& operator=(const KRB5KeytabEntry& keytab_entry) {
+        m_principal = keytab_entry.m_principal;
+        m_timestamp = keytab_entry.m_timestamp;
+        m_kvno = keytab_entry.m_kvno;
+        m_enctype = keytab_entry.m_enctype;
+        m_keyblock = keytab_entry.m_keyblock;
+
+        krb5_error_code ret = krb5_copy_keyblock_contents(g_context,
+                                                          &keytab_entry.m_keyblock,
+                                                          &m_keyblock);
+        if (ret) {
+            throw KRB5Exception("krb5_copy_keyblock_contents", ret);
+        }
+
+	return *this;
+    };
+
+    KRB5KeytabEntry(const KRB5KeytabEntry &keytab_entry) {
+        (void) operator=(keytab_entry);
+    };
+
+
+    ~KRB5KeytabEntry() { krb5_free_keyblock_contents(g_context, &m_keyblock); };
+
+    std::string principal() { return m_principal; };
+    krb5_timestamp timestamp() { return m_timestamp; };
+    krb5_kvno kvno() { return m_kvno; };
+    krb5_enctype enctype() { return m_enctype; };
+    krb5_keyblock keyblock() { return m_keyblock; };
+
+    bool operator < (const KRB5KeytabEntry& other) const {
+        return m_timestamp < other.m_timestamp;
+    };
 };
