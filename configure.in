@@ -21,6 +21,7 @@ AC_PATH_PROGS(CP, cp)
 AC_PATH_PROGS(ECHO, echo)
 AC_PATH_PROGS(SED, sed)
 AC_PATH_PROGS(MKDIR, mkdir)
+AC_SUBST(WARNFLAGS)
 
 AC_ARG_WITH(mandir,
 [  --with-mandir=DIR       Where to put man pages ($mandir)],
@@ -64,6 +65,10 @@ AS_IF([test -z "$krb5config"],
 		[${PATH}:/usr/kerberos/bin])
 	[ krb5config="$PATH_KRB5_CONFIG"]
 ])
+
+if test x$GCC = xyes ; then
+  WARNFLAGS="-Wall -Wextra -Wno-write-strings"
+fi
 
 if test -x "$krb5config"; then
   KRB5_CPPFLAGS=`$krb5config --cflags 2>/dev/null`
