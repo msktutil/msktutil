@@ -212,7 +212,7 @@ DnsSrvQuery::DnsSrvQuery(const std::string& domain, const std::string& service, 
                             protocol.c_str(), DNS_NOSRCH)) != NULL) {
 
                 for (int i = 0; i < srv->dnssrv_nrr; i++) {
-                    m_results.push_back(DnsSrvHost(srv->dnssrv_srv[i]);
+                    m_results.push_back(DnsSrvHost(srv->dnssrv_srv[i]));
                 }
                 free(srv);
             }
