@@ -20,25 +20,25 @@ ECHO=@ECHO@
 MKDIR=@MKDIR@
 WARNFLAGS=-Wall -Wextra -Wno-write-strings
 MAN=$(PROG).1
-
-objects = krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o strtoll.o ldapconnection.o
+SOURCES=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msktpass.cpp msktconf.cpp strtoll.cpp ldapconnection.cpp
+OBJECTS=$(SOURCES:.cpp=.o)
 
 all: $(PROG) $(MAN)
 
-$(PROG) : $(objects)
+$(PROG): $(OBJECTS)
 	@$(ECHO) "Assembling $(PROG)"
-	$(CXX) $(LDFLAGS) $(objects) $(LIBS) -o $(PROG)
+	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(PROG)
 
-%.o : %.cpp msktutil.h msktname.h krb5wrap.h config.h ldapconnection.h
+.cpp.o: msktutil.h msktname.h krb5wrap.h config.h ldapconnection.h
 	@$(ECHO) "Compiling $<"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(MAN) : msktutil.M Makefile
+$(MAN): msktutil.M Makefile
 	$(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" \
-               -e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" < $(srcdir)/msktutil.M >$@
+		-e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" < $(srcdir)/msktutil.M >$@
 
-clean :
-	$(RM) $(PROG) $(objects) $(MAN)
+clean:
+	$(RM) $(PROG) $(OBJECTS) $(MAN)
 
 distclean: clean
 	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~
