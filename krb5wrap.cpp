@@ -167,6 +167,10 @@ void KRB5Keytab::addEntry(const KRB5Principal &princ,
 #else
     entry.key = keyblock;
 #endif
+    // avoid duplicate entries
+    (void) krb5_kt_remove_entry(g_context,
+                                m_keytab,
+                                &entry);
     krb5_error_code ret = krb5_kt_add_entry(g_context,
                                             m_keytab,
                                             &entry);
