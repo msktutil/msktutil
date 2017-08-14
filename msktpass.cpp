@@ -46,20 +46,20 @@ void init_password(msktutil_flags *flags)
 int generate_new_password(msktutil_flags *flags)
 {
     int i;
-    char curr;
+    int curr;
     int have_lower = 0;
     int have_upper = 0;
     int have_symbol = 0;
     int have_number = 0;
-    int fd;
     int chars_used = 0;
+    FILE *fp;
 
 
     init_password(flags);
     flags->password.resize(PASSWORD_LEN);
 
-    fd = open("/dev/urandom", O_RDONLY);
-    if (fd < 0) {
+    fp = fopen("/dev/urandom", "r");
+    if (!fp) {
         error_exit( "failed to open /dev/urandom");
     }
 
@@ -75,22 +75,24 @@ int generate_new_password(msktutil_flags *flags)
         have_lower = 0;
         for (i = 0; i < PASSWORD_LEN; i++) {
             curr = 0;
-            while (curr < (char) 33 || curr > (char) 126) {
-                read(fd, &curr, 1);
+            while (curr < 33 || curr > 126) {
+                if ((curr = getc(fp)) == EOF) {
+                    error_exit("failed to read from /dev/urandom");
+                }
                 curr &= 0x7f;
                 chars_used++;
             }
-            have_symbol |= (curr >= (char) 33 && curr <= (char) 47);
-            have_symbol |= (curr >= (char) 91 && curr <= (char) 96);
-            have_symbol |= (curr >= (char) 123 && curr <= (char) 126);
-            have_symbol |= (curr >= (char) 58 && curr <= (char) 64);
-            have_number |= (curr >= (char) 48 && curr <= (char) 57);
-            have_upper |= (curr >= (char) 65 && curr <= (char) 90);
-            have_lower |= (curr >= (char) 97 && curr <= (char) 122);
-            flags->password[i] = curr;
+            have_symbol |= (curr >= 33 && curr <= 47);
+            have_symbol |= (curr >= 91 && curr <= 96);
+            have_symbol |= (curr >= 123 && curr <= 126);
+            have_symbol |= (curr >= 58 && curr <= 64);
+            have_number |= (curr >= 48 && curr <= 57);
+            have_upper |= (curr >= 65 && curr <= 90);
+            have_lower |= (curr >= 97 && curr <= 122);
+            flags->password[i] = (char) curr;
         }
     }
-    close(fd);
+    fclose(fp);
     VERBOSE(" Characters read from /dev/urandom = %d", chars_used);
     return 0;
 }
