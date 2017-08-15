@@ -7,6 +7,8 @@ Windows uses
 
 for the salt of machine accounts.
 
+(Note: samaccountname_nodollar is lower case for machine accounts)
+
 (Note: only for DES/AES; arcfour-hmac-md5 doesn't use salts at all)
 
 Salt for service accounts is created in a different way:
@@ -14,6 +16,8 @@ Salt for service accounts is created in a different way:
 - if userPrincpalName is not set:
 
   realm_name+samAccountName
+
+  (Note: samAccountName is case sensitive for service accounts)
 
 - if userPrincpalName is set:
 
