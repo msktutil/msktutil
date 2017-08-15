@@ -104,7 +104,7 @@ std::string get_salt(msktutil_flags *flags)
         if (flags->userPrincipalName.empty()) {
             salt = sform("%s%s",
                          flags->realm_name.c_str(),
-                         lower_accountname.c_str());
+                         flags->sAMAccountName.c_str());
         } else {
             std::string upnsalt = flags->userPrincipalName;
             upnsalt.erase(std::remove(upnsalt.begin(),
