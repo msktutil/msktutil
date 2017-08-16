@@ -443,7 +443,7 @@ void do_help()
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
     fprintf(stdout, "                         defining the string.\n");
     fprintf(stdout, "  --dont-change-password Do not create a new password. Try to use existing keys\n");
-    fprintf(stdout, "                         when performing keytab updates (update mode only).\n");
+    fprintf(stdout, "                         when performing keytab updates (update and create mode only).\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");

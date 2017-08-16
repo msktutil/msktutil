@@ -119,8 +119,10 @@ Specify the new account password instead of generating a random one. Consider th
 when defining the string.
 .TP
 --dont-change-password
-Do not create a new password. Try to use existing keys when performing keytab updates. This
-is useful for adding new SPNs to a machine or service account. This option is only available in update mode.
+Do not create a new password. Try to use existing keys when performing keytab updates or the old password
+when creating new keytabs. This is useful for adding new SPNs to a machine or service account. This option
+is only available in update or create mode. In create mode the old password needs to be specified
+with --old-account-password
 .TP
 -h, --hostname <name>
 Overrides the current hostname to be used to be <name>.  If this is not specified, the local host
@@ -406,6 +408,12 @@ REPLACE_PROGNAME create --use-service-account --service HTTP/hostname.example.co
 This will create an HTTP/hostname.example.com@REALM principal, and associate that principal with a service
 account called 'srv-http'.  Corresponding Kerberos keys will be written to the keytab file /etc/apache/krb5.keytab.
 The size of Kerberos tickets for that service will stay small because no PAC information will be included.
+.PP
+.nf
+REPLACE_PROGNAME create --keytab /etc/krb5/user/10123/client.keytab --use-service-account --account-name johndoe --dont-change-password --old-account-password <John Doe's Password>
+.fi
+.PP
+This will create a keytab for johndoe without changing John Doe's password
 .PP
 .nf
 REPLACE_PROGNAME create --service host/hostname --service host/hostname.example.com --set-samba-secret --enctypes 0x4
