@@ -94,17 +94,11 @@ void get_default_keytab(msktutil_flags *flags)
 std::string get_salt(msktutil_flags *flags)
 {
     std::string salt;
-    std::string lower_accountname = flags->sAMAccountName_nodollar;
-    for(std::string::iterator it = lower_accountname.begin();
-        it != lower_accountname.end(); ++it) {
-        *it = std::tolower(*it);
-    }
-
     if (flags->use_service_account) {
         if (flags->userPrincipalName.empty()) {
             salt = sform("%s%s",
                          flags->realm_name.c_str(),
-                         lower_accountname.c_str());
+                         flags->sAMAccountName.c_str());
         } else {
             std::string upnsalt = flags->userPrincipalName;
             upnsalt.erase(std::remove(upnsalt.begin(),
@@ -116,6 +110,12 @@ std::string get_salt(msktutil_flags *flags)
                          upnsalt.c_str());
         }
     } else {
+
+        std::string lower_accountname = flags->sAMAccountName_nodollar;
+        for(std::string::iterator it = lower_accountname.begin();
+            it != lower_accountname.end(); ++it) {
+            *it = std::tolower(*it);
+        }
         salt = sform("%shost%s.%s",
                      flags->realm_name.c_str(),
                      lower_accountname.c_str(),
