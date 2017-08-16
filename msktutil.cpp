@@ -668,7 +668,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         remove_keytab_entries(flags, exec->remove_principals);
 
         /* update keytab */
-        if (!flags->dont_change_password) {
+        if (!flags->dont_change_password ||
+            (flags->dont_change_password && exec->mode == MODE_CREATE)) {
             if (flags->use_service_account) {
                 VERBOSE("Updating all entries for service account %s in the keytab %s",
                         flags->sAMAccountName.c_str(),
@@ -1174,11 +1175,20 @@ int main(int argc, char *argv [])
         goto error;
     }
 
-    /* allow --dont-change-password only in update mode */
-    if (exec->mode != MODE_UPDATE &&
-        flags->dont_change_password) {
+    /* allow --dont-change-password only in update mode or when create
+     * mode is called with --old-account-password */
+    if (flags->dont_change_password &&
+        !(exec->mode == MODE_UPDATE  || exec->mode == MODE_CREATE )
+        ) {
         fprintf(stderr,
-                "Error: --dont-change-password can only be used in update mode\n"
+                "Error: --dont-change-password can only be used in update or create mode\n"
+            );
+        goto error;
+    }
+
+    if (flags->dont_change_password && exec->mode == MODE_CREATE && flags->old_account_password.empty()) {
+        fprintf(stderr,
+                "Error: --dont-change-password needs --old-account-password <password> in create mode\n"
             );
         goto error;
     }
