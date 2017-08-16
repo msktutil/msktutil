@@ -1178,7 +1178,7 @@ int main(int argc, char *argv [])
     /* allow --dont-change-password only in update mode or when create
      * mode is called with --old-account-password */
     if (flags->dont_change_password &&
-        !(exec->mode == MODE_UPDATE  || exec->mode == MODE_CREATE )
+        !(exec->mode == MODE_UPDATE || exec->mode == MODE_CREATE)
         ) {
         fprintf(stderr,
                 "Error: --dont-change-password can only be used in update or create mode\n"
