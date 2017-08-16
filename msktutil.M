@@ -120,7 +120,7 @@ when defining the string.
 .TP
 --dont-change-password
 Do not create a new password. Try to use existing keys when performing keytab updates or the old password
-when creating new keytabs. This is useful for adding new SPNs to a machine or service account. This option
+when creating a new keytab. This is useful for adding new SPNs to a machine or service account. This option
 is only available in update or create mode. In create mode the old password needs to be specified
 with --old-account-password
 .TP
