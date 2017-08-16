@@ -152,7 +152,7 @@ enum msktutil_mode {
     MODE_FLUSH,
     MODE_CLEANUP,
     MODE_PRECREATE,
-    MODE_DELETE_ACCOUNT
+    MODE_DELETE
 };
 
 

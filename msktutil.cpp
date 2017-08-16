@@ -417,7 +417,7 @@ void do_help()
     fprintf(stdout, "  flush                  Flushes all principals for the current host or service account\n");
     fprintf(stdout, "                         from the keytab, and deletes servicePrincipalName from AD.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  delete-account         Deletes the active directory host or service account.\n");
+    fprintf(stdout, "  delete                 Deletes the host or service account from Active Directory.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "  cleanup                Deletes entries from the keytab that are no longer needed.\n");
     fprintf(stdout, "\n");
@@ -551,8 +551,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         VERBOSE("Skipping creation of new password");
     } else if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need a new password");
-    } else if (exec->mode == MODE_DELETE_ACCOUNT) {
-        VERBOSE("delete-account mode: don't need a new password");
+    } else if (exec->mode == MODE_DELETE) {
+        VERBOSE("delete mode: don't need a new password");
     } else {
         /* Generate a random password and store it. */
         ret = generate_new_password(flags);
@@ -755,8 +755,8 @@ int main(int argc, char *argv [])
             exec->set_mode(MODE_FLUSH);
         } else if (!strcmp(argv[1], "cleanup")) {
             exec->set_mode(MODE_CLEANUP);
-        } else if (!strcmp(argv[1], "delete-account")) {
-            exec->set_mode(MODE_DELETE_ACCOUNT);
+        } else if (!strcmp(argv[1], "delete")) {
+            exec->set_mode(MODE_DELETE);
         }
     }
 

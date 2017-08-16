@@ -73,8 +73,8 @@ to the machine or service account.
 .TP
 .B cleanup
 Deletes entries from the keytab that are no longer needed.
-.B delete-account
-Deletes the active directory host or service account.
+.B delete
+Deletes the host or service account from Active Directory.
 .SH OPTIONS
 .SS COMMON OPTIONS
 .TP
