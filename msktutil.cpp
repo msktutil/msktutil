@@ -1103,7 +1103,8 @@ int main(int argc, char *argv [])
         }
 
         /* Use user kerberos credentials only */
-        if (!strcmp(argv[i], "--user-creds-only")) {
+        if (!strcmp(argv[i], "--user-creds-only") ||
+            (exec->mode == MODE_DELETE)) {
             flags->user_creds_only = true;
             continue;
         }
