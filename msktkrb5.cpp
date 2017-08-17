@@ -420,6 +420,20 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     std::string password = flags->dont_change_password ?
         flags->old_account_password : flags->password;
 
+    if (password.empty()) {
+        fprintf(stderr,
+                "Error: a password based keytab entry needs to be created "
+                        "but there is no password."
+            );
+        if (flags->dont_change_password) {
+            fprintf(stderr,
+                    " Please provide a password with "
+                    "--old-account-password <password>");
+                }
+        fprintf(stderr, "\n");
+        exit(1);
+    }
+
     for(size_t i = 0; i < enc_types.size(); ++i) {
         VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
         keytab.addEntry(princ, flags->kvno,
