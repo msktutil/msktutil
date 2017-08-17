@@ -443,7 +443,7 @@ void do_help()
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
     fprintf(stdout, "                         defining the string.\n");
     fprintf(stdout, "  --dont-change-password Do not create a new password. Try to use existing keys\n");
-    fprintf(stdout, "                         when performing keytab updates (update mode only).\n");
+    fprintf(stdout, "                         when performing keytab updates (update and create mode only).\n");
     fprintf(stdout, "  -k, --keytab <file>    Use <file> for the keytab (both read and write).\n");
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");
@@ -549,6 +549,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         VERBOSE("Using password from command line");
     } else if (flags->dont_change_password) {
         VERBOSE("Skipping creation of new password");
+        flags->password = flags->old_account_password;
     } else if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: don't need a new password");
     } else if (exec->mode == MODE_DELETE) {
@@ -619,8 +620,22 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         /* Check if computer account exists, update if so, create if
          * not. */
         if (! ldap_check_account(flags)) {
-            ldap_create_account(flags);
-            flags->kvno = ldap_get_kvno(flags);
+            if (flags->password.empty()) {
+                fprintf(stderr,
+                        "Error: a new AD account needs to be created "
+                        "but there is no password.");
+                if (flags->dont_change_password) {
+                    fprintf(stderr,
+                            " Please provide a password with "
+                            "--old-account-password <password>");
+                }
+                fprintf(stderr, "\n");
+                exit(1);
+            } else {
+                ldap_create_account(flags);
+                flags->kvno = ldap_get_kvno(flags);
+            }
+
         } else {
             /* We retrieve the kvno _before_ the password change and
              * increment it. */
@@ -668,18 +683,16 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         remove_keytab_entries(flags, exec->remove_principals);
 
         /* update keytab */
-        if (!flags->dont_change_password) {
-            if (flags->use_service_account) {
-                VERBOSE("Updating all entries for service account %s in the keytab %s",
-                        flags->sAMAccountName.c_str(),
-                        flags->keytab_writename.c_str());
-            } else {
-                VERBOSE("Updating all entries for computer account %s in the keytab %s",
-                        flags->sAMAccountName.c_str(),
-                        flags->keytab_writename.c_str());
-            }
-            update_keytab(flags);
+        if (flags->use_service_account) {
+            VERBOSE("Updating all entries for service account %s in the keytab %s",
+                    flags->sAMAccountName.c_str(),
+                    flags->keytab_writename.c_str());
+        } else {
+            VERBOSE("Updating all entries for computer account %s in the keytab %s",
+                    flags->sAMAccountName.c_str(),
+                    flags->keytab_writename.c_str());
         }
+        update_keytab(flags);
 
         add_keytab_entries(flags);
 
@@ -1174,11 +1187,20 @@ int main(int argc, char *argv [])
         goto error;
     }
 
-    /* allow --dont-change-password only in update mode */
-    if (exec->mode != MODE_UPDATE &&
-        flags->dont_change_password) {
+    /* allow --dont-change-password only in update mode or when create
+     * mode is called with --old-account-password */
+    if (flags->dont_change_password &&
+        !(exec->mode == MODE_UPDATE || exec->mode == MODE_CREATE)
+        ) {
         fprintf(stderr,
-                "Error: --dont-change-password can only be used in update mode\n"
+                "Error: --dont-change-password can only be used in update or create mode\n"
+            );
+        goto error;
+    }
+
+    if (flags->dont_change_password && exec->mode == MODE_CREATE && flags->old_account_password.empty()) {
+        fprintf(stderr,
+                "Error: --dont-change-password needs --old-account-password <password> in create mode\n"
             );
         goto error;
     }
