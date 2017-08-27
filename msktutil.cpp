@@ -1106,8 +1106,7 @@ int main(int argc, char *argv [])
         }
 
         /* Use user kerberos credentials only */
-        if (!strcmp(argv[i], "--user-creds-only") ||
-            (exec->mode == MODE_DELETE)) {
+        if (!strcmp(argv[i], "--user-creds-only")) {
             flags->user_creds_only = true;
             continue;
         }
@@ -1269,6 +1268,11 @@ int main(int argc, char *argv [])
         /* Default, no options present */
         fprintf(stderr, "Error: No command given\n");
         goto error;
+    }
+
+    /* delete mode will only work with admin credentials */
+    if (exec->mode == MODE_DELETE) {
+        flags->user_creds_only = true;
     }
 
     try {
