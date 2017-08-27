@@ -583,8 +583,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         ret = flush_keytab(flags);
         return ret;
     } else if (exec->mode == MODE_DELETE) {
-        fprintf(stderr, "delete mode not implemented!\n");
-        exit (1);
+        ret = ldap_delete_account(flags);
+        return ret;
     } else if (exec->mode == MODE_CREATE ||
                exec->mode == MODE_UPDATE ||
                exec->mode == MODE_AUTO_UPDATE) {
