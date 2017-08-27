@@ -698,3 +698,30 @@ void ldap_create_account(msktutil_flags *flags)
     flags->ad_userAccountControl = userAcctFlags;
     ldap_check_account_strings(flags);
 }
+
+int ldap_delete_account(msktutil_flags *flags)
+{
+    std::string dn;
+    int ret;
+
+    VERBOSE("Deleting LDAP entry of %s", flags->sAMAccountName.c_str());
+
+    LDAPMessage *mesg = ldap_get_account_attrs(flags, "distinguishedName");
+
+    if (flags->ldap->count_entries(mesg) == 1) {
+        mesg = flags->ldap->first_entry(mesg);
+        dn = flags->ldap->get_one_val(mesg, "distinguishedName");
+    }
+    ldap_msgfree(mesg);
+    if (dn.empty()) {
+        fprintf(stderr,
+                "Error: an account for %s was not found\n",
+                flags->sAMAccountName.c_str()
+            );
+        return -1;
+    }
+
+    ret = flags->ldap->del(dn);
+
+    return ret;
+}

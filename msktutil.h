@@ -278,6 +278,7 @@ extern std::string get_dc_host(const std::string &realm_name, const std::string 
 extern std::string get_host_os();
 extern bool ldap_check_account(msktutil_flags *);
 extern void ldap_create_account(msktutil_flags *);
+extern int ldap_delete_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);
 extern void remove_fake_krb5_conf();
 extern void remove_ccache();
