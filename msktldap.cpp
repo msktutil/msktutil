@@ -504,6 +504,10 @@ void ldap_check_account_strings(msktutil_flags *flags)
                                      UF_DONT_EXPIRE_PASSWORD,
                                      flags->dont_expire_password,
                                      flags);
+    ldap_set_userAccountControl_flag(dn,
+                                     UF_ACCOUNT_DISABLE,
+                                     flags->disable_account,
+                                     flags);
 }
 
 template<typename T, size_t N>

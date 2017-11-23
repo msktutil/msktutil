@@ -220,6 +220,10 @@ Do not update dnsHostName attribute. In some AD installations modification of th
 is not allowed (unless using administrator credentials), using this option will avoid constraint 
 violation warning.
 .TP
+--enable 
+Unsets the UF_ACCOUNT_DISABLE flag in the userAccountControl attribute.  When a computer leaves the domain
+this flag is normally set.  Generally requires administrator credentials.
+.TP
 --enctypes <integer>
 Sets the supported encryption types in the msDs-supportedEncryptionTypes field.
 

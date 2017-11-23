@@ -93,6 +93,7 @@
 
 /* From SAM.H */
 #define UF_WORKSTATION_TRUST_ACCOUNT    0x00001000
+#define UF_ACCOUNT_DISABLE              0x00000002
 #define UF_NORMAL_ACCOUNT               0x00000200
 #define UF_DONT_EXPIRE_PASSWORD         0x00010000
 #define UF_TRUSTED_FOR_DELEGATION       0x00080000
@@ -192,6 +193,7 @@ public:
 
     msktutil_val dont_expire_password;
     msktutil_val dont_update_dnshostname;
+    msktutil_val disable_account;
     msktutil_val no_pac;
     msktutil_val delegate;
     unsigned int ad_userAccountControl; /* value AD has now */

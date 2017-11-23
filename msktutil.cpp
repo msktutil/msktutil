@@ -470,6 +470,7 @@ void do_help()
     fprintf(stdout, "Object type/attribute-setting options:\n");
     fprintf(stdout, "  --use-service-account  Create and maintain service account instead of\n");
     fprintf(stdout, "                         machine account.\n");
+    fprintf(stdout, "  --enable               Enable the account.\n");
     fprintf(stdout, "  --delegation           Set the account to be trusted for delegation.\n");
     fprintf(stdout, "  --disable-delegation   Set the account to not be trusted for\n");
     fprintf(stdout, "                         delegation.\n");
@@ -941,6 +942,12 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* Enable the account */
+        if (!strcmp(argv[i], "--enable")) {
+            flags->disable_account = VALUE_OFF;
+            continue;
+        }
+
         /* Disable the PAC ? */
         if (!strcmp(argv[i], "--no-pac")) {
             flags->no_pac = VALUE_ON;
@@ -1310,6 +1317,7 @@ msktutil_flags::msktutil_flags() :
     dont_change_password(false),
     dont_expire_password(VALUE_IGNORE),
     dont_update_dnshostname(VALUE_OFF),
+    disable_account(VALUE_IGNORE),
     no_pac(VALUE_IGNORE),
     delegate(VALUE_IGNORE),
     ad_userAccountControl(0),
