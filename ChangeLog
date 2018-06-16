@@ -1,3 +1,15 @@
+Release 1.1rc1:
+- Bugfix: keytab entries generated with wrong salt
+- Bugfix: try_machine_keytab_princ is not called when keytab is not exlicitly given via --keytab
+- Bugfix: failure to write keytab entries for more than one principal
+- Bugfix: duplicate entries when using service account
+- New Option --dont-update-dnshostname
+- Create service keytabs without changing the password
+- Delete account renamed to delete mode
+- Improved AD SRV lookups
+- Fixed compilation Warnings
+- Kerberos flavor incorrectly detected on FreeBSD
+
 Release 1.0:
 
 - Fixes for "#59 Kerberos flavor incorrectly detected on FreeBSD"
