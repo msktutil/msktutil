@@ -45,8 +45,8 @@ distclean: clean
 install: all
 	$(MKDIR) -p $(DESTDIR)$(sbindir)
 	$(MKDIR) -p $(DESTDIR)$(mandir)/man1
-	$(INSTALL) $(PROG) $(DESTDIR)$(sbindir)
-	$(INSTALL) $(MAN) $(DESTDIR)$(mandir)/man1
+	$(INSTALL) -m 0755 $(PROG) $(DESTDIR)$(sbindir)
+	$(INSTALL) -m 0644 $(MAN) $(DESTDIR)$(mandir)/man1
 
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
