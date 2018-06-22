@@ -26,6 +26,8 @@ SOURCES=$(SOURCES_CPP) $(SOURCES_C)
 HEADERS=msktutil.h msktname.h krb5wrap.h ldapconnection.h
 OBJECTS=$(SOURCES_CPP:.cpp=.o) $(SOURCES_C:.c=.o)
 
+.SUFFIXES: .c .cpp .o
+
 all: $(PROG) $(MAN)
 
 $(PROG): $(OBJECTS)
