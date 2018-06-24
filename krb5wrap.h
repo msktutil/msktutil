@@ -198,7 +198,11 @@ public:
     krb5_timestamp timestamp() const { return m_entry.timestamp; }
 
     krb5_keyblock key() const {
-        return m_entry.key;
+#ifdef HEIMDAL
+       return m_entry.keyblock;
+#else
+       return m_entry.key;
+#endif
     }
 };
 
