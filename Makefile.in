@@ -1,8 +1,9 @@
 PROG=@PACKAGE_NAME@
 SHELL=/bin/sh
-srcdir = @srcdir@
+srcdir=@srcdir@
 VPATH=@srcdir@
 prefix=@prefix@
+datarootdir=@datarootdir@
 sbindir=$(prefix)/sbin
 mandir=@mandir@
 CXX=@CXX@
