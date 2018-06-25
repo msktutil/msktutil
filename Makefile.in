@@ -10,6 +10,7 @@ CXX=@CXX@
 CC=@CC@
 CPPFLAGS=-I. @CPPFLAGS@
 CXXFLAGS=@CXXFLAGS@ @WARNFLAGS@
+CFLAGS=@CFLAGS@ @WARNFLAGS@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
 INSTALL=@INSTALL@
@@ -20,18 +21,24 @@ CAT=@CAT@
 ECHO=@ECHO@
 MKDIR=@MKDIR@
 MAN=$(PROG).1
-SOURCES=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msktpass.cpp msktconf.cpp strtoll.cpp ldapconnection.cpp
-OBJECTS=$(SOURCES:.cpp=.o)
+SOURCES_CPP=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msktpass.cpp msktconf.cpp ldapconnection.cpp
+SOURCES_C=strtoll.c
+SOURCES=$(SOURCES_CPP) $(SOURCES_C)
+HEADERS=msktutil.h msktname.h krb5wrap.h ldapconnection.h
+OBJECTS=$(SOURCES_CPP:.cpp=.o) $(SOURCES_C:.c=.o)
+
+.SUFFIXES: .c .cpp .o
 
 all: $(PROG) $(MAN)
 
 $(PROG): $(OBJECTS)
-	@$(ECHO) "Assembling $(PROG)"
 	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(PROG)
 
-.cpp.o: msktutil.h msktname.h krb5wrap.h config.h ldapconnection.h
-	@$(ECHO) "Compiling $<"
+.cpp.o: $(HEADERS) config.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+.c.o: config.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(MAN): msktutil.M Makefile
 	$(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" \
@@ -41,7 +48,10 @@ clean:
 	$(RM) $(PROG) $(OBJECTS) $(MAN)
 
 distclean: clean
-	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~
+	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in
+
+configure config.h.in: configure.in
+	./autogen.sh
 
 install: all
 	$(MKDIR) -p $(DESTDIR)$(sbindir)
@@ -51,3 +61,8 @@ install: all
 
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
+
+dist: config.h.in configure
+	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -zcvf msktutil-@PACKAGE_VERSION@.tgz \
+                $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
+                Makefile.in configure.in config.h.in msktutil.M autogen.sh
