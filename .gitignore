@@ -5,6 +5,7 @@ msktutil.1
 Makefile
 TAGS
 config.h
+config.h.in
 config.status
 config.log
 autom4te.cache
