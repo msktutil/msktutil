@@ -1,3 +1,9 @@
+Release 1.1rc2:
+- Bugfix: various improvement in Makefile
+- Bugfix: Fix for Heimdal: Keyblock
+- Bugfix: Makefile.in: explicitly set permissions on install 
+- Improvement: Silence warning from autotools
+
 Release 1.1rc1:
 - Bugfix: keytab entries generated with wrong salt
 - Bugfix: try_machine_keytab_princ is not called when keytab is not exlicitly given via --keytab
