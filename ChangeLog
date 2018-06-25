@@ -1,3 +1,6 @@
+Release 1.1rc3:
+- Improvement: Adapt dist target to previous naming
+
 Release 1.1rc2:
 - Bugfix: various improvement in Makefile
 - Bugfix: Fix for Heimdal: Keyblock
