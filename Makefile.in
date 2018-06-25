@@ -63,6 +63,6 @@ distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
 dist: config.h.in configure
-	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -zcvf msktutil-@PACKAGE_VERSION@.tgz \
+	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
                 $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
                 Makefile.in configure.in config.h.in msktutil.M autogen.sh
