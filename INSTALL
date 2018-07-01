@@ -8,10 +8,15 @@ msktutil  (C) 2004-2006 Dan Perry <dperry@pppl.gov>
           (C) 2013-2017 Daniel Kobras <d.kobras at science-computing.de>
 -------------------------------------------------------------------------------
 
-Installing
+Generate files not checked into source control:
 
-Msktutil uses a standard autoconf system to build...  Just run './configure'
-followed by 'make' and (as root) 'make install'.   Note that in order to
+When building from a pristine source run './autogen.sh' (i.e. the tools
+autoconf and autoheader) to generate the files 'configure' and 'configure.h.in'.
+
+Building from source release:
+
+Msktutil uses a standard autoconf system to build. Just run './configure'
+followed by 'make' and (as root) 'make install'. Note that in order to
 build this you will need development headers and libraries for MIT Kerberos,
 LDAP, and SASL.  If these packages are installed elsewhere, you can use the
 following options to the configure script:
