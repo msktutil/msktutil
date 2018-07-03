@@ -50,7 +50,7 @@ clean:
 distclean: clean
 	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in
 
-configure config.h.in: configure.in
+configure config.h.in: configure.ac
 	./autogen.sh
 
 install: all
@@ -65,4 +65,4 @@ distcheck:
 dist: config.h.in configure
 	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
                 $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
-                Makefile.in configure.in config.h.in msktutil.M autogen.sh
+                Makefile.in configure.ac config.h.in msktutil.M autogen.sh
