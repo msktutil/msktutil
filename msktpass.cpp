@@ -105,18 +105,21 @@ static int set_samba_secret(const std::string& password)
 
     FILE *pipe = popen("net changesecretpw -f -i", "w");
     if (pipe == NULL) {
-        error_exit( "could not run samba net command");
+        fprintf(stderr, "WARNING: could not run samba net command");
+        return 1;
     }
 
     size_t len = password.length();
     if (fwrite(password.c_str(), sizeof(char), len, pipe) != len) {
-        error_exit( "write error putting password to samba net command");
+        fprintf(stderr,
+                "WARNING: write error putting password to samba net command");
+        return 1;
     }
 
     int rc = pclose(pipe);
     if (rc != 0) {
-        fprintf(stdout,
-                "Setting samba secret failed with error code %d\n",
+        fprintf(stderr,
+                "WARNING: Setting samba secret failed with error code %d\n",
                 rc
             );
         return 1;
@@ -286,9 +289,17 @@ int set_password(msktutil_flags *flags)
 
     VERBOSE("Successfully set password");
 
-    if (!flags->set_samba_secret) {
-        return 0;
+    if (flags->set_samba_secret) {
+        /* At this point, we've already set the new password in AD, and there's
+         * no way to roll back for us because we don't know the old password.
+         * Therefore, even if we fail to propagate the new password to Samba,
+         * we still need to carry on, and write out the new keys to the keytab.
+         * Failing here is not an option, so ignore the return value from
+         * set_samba_secret(), and proceed normally. (The function has already
+         * notified on stderr if a failure had occurred.)
+         */
+        (void) set_samba_secret(flags->password);
     }
 
-    return set_samba_secret(flags->password);
+    return 0;
 }
