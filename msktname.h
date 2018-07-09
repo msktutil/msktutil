@@ -116,7 +116,9 @@ public:
         
         return m_priority < other.m_priority;
     };
-    bool validate(bool nocanon);
+    /* Check host availability by opening a TCP connection to the objects's
+     * <port>. If <service> is non-empty, use its associated port instead. */
+    bool validate(bool nocanon, std::string service = "");
 };
 
 

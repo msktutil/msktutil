@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <sstream>
 
 std::string complete_hostname(const std::string &hostname,
                               bool no_canonical_name)
@@ -133,7 +134,7 @@ std::string get_default_hostname(bool no_canonical_name)
 #endif
 }
 
-bool DnsSrvHost::validate(bool nocanon) {
+bool DnsSrvHost::validate(bool nocanon, std::string service) {
     int ret, sock = -1;
     /* used to call into C function, so we prefer char[] over std::string */
     char host[NI_MAXHOST];
@@ -152,8 +153,13 @@ bool DnsSrvHost::validate(bool nocanon) {
         return true;
     }
 
-    /* FIXME Get rid of hard-coded port--we might get it dynamically from SRV records */
-    ret = getaddrinfo(srvname.c_str(), stringify(LDAP_PORT), &hints, &hostaddrinfo);
+    /* so far we don't require C++11, so no ::to_string(), yet */
+    if (service.empty()) {
+        std::stringstream srvtmp;
+        srvtmp << m_port;
+        std::string service = srvtmp.str();
+    }
+    ret = getaddrinfo(srvname.c_str(), service.c_str(), &hints, &hostaddrinfo);
 
     if (ret != 0) {
         VERBOSE("Error: gethostbyname failed for %s (%s)\n", srvname.c_str(),
@@ -310,7 +316,12 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     }
 
     for (std::vector<DnsSrvHost>::iterator it=dcsrvs.begin(); it != dcsrvs.end(); it++) {
-        if (it->validate(no_reverse_lookups)) {
+        /* Don't validate host availability by checking the KRB5 port returned
+         * from the SRV record, but the hard-coded, standard LDAP port (389).
+         * This is a short cut that should work as long as each DC runs both
+         * KRB5 and LDAP on default ports.
+         */
+        if (it->validate(no_reverse_lookups, stringify(LDAP_PORT))) {
             bestdc = it->name();
             break;
 	}
