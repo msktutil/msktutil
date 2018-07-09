@@ -33,6 +33,7 @@
 
 #if defined(HAVE_LIBUDNS)
 #include <udns.h>
+#define inet_ntop dns_ntop
 #elif defined(HAVE_NS_INITPARSE) && defined(HAVE_RES_SEARCH)
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
