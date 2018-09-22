@@ -1,0 +1,85 @@
+Name:    REPLACE_PROGNAME
+Version: REPLACE_VERSION
+Release: 0%{?dist}
+Summary: Program for interoperability with Active Directory 
+
+Group:   System Environment/Base
+License: GPLv2+
+URL:     https://github.com/msktutil/msktutil
+Source0: https://github.com/msktutil/msktutil/releases/download/v%{version}/%{name}-%{version}.tar.bz2
+
+BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+
+BuildRequires: openldap-devel
+BuildRequires: krb5-devel
+BuildRequires: autoconf
+%if 0%{?with_udns}
+BuildRequires: udns-devel
+%endif
+
+Requires: cyrus-sasl-gssapi
+
+%description
+Msktutil is a program for interoperability with Active Directory that can:
+ - Create a computer account in Active Directory
+ - Create a service account in Active Directory
+ - Create a system Kerberos keytab
+ - Create a Kerberos keytab for a dedicated service
+ - Add and remove principals to and from keytabs
+ - Change the account's password
+
+
+%prep
+%setup -q
+
+
+%build
+# Have to set CPPFLAGS per https://bugzilla.redhat.com/550889
+# Fedora 17 and later include a symlink.
+if [ ! -r /usr/include/com_err.h ]; then
+	# RHEL 5 and 6 store com_err.h here.
+	export CPPFLAGS="-I/usr/include/et/"
+fi
+
+export PATH_KRB5_CONFIG="/usr/bin/krb5-config"
+# RHEL 5 uses /usr/kerberos.
+if [ -x /usr/kerberos/bin/krb5-config ]; then
+	export PATH_KRB5_CONFIG="/usr/kerberos/bin/krb5-config"
+fi
+
+#autoconf
+./autogen.sh
+
+%configure \
+  %if 0%{?with_udns}
+  --with-udns=yes \
+  %endif
+  --with-krb5-config=$PATH_KRB5_CONFIG
+
+make %{?_smp_mflags}
+
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%doc LICENSE README ChangeLog windows-salt.txt INSTALL
+%{_mandir}/man1/%{name}.1*
+%{_sbindir}/%{name}
+
+
+%changelog
+* Sat Sep 22 2018 Jaroslaw Polok <jaroslaw.polok@gmail.com> 1.1-0
+- Adapted spec file from 2011 version.
+
+* Tue Jul 5 2011 Ken Dreyer <ktdreyer@ktdreyer.com> 0.4-2
+- Don't package INSTALL and un-mark manpages as doc
+
+* Tue May 10 2011 Ken Dreyer <ktdreyer@ktdreyer.com> 0.4-1
+- Initial package

@@ -17,10 +17,13 @@ INSTALL=@INSTALL@
 RM=@RM@ -rf
 CP=@CP@ -f
 SED=@SED@
+RPMBUILD=@RPMBUILD@
+TAR=@TAR@
 CAT=@CAT@
 ECHO=@ECHO@
 MKDIR=@MKDIR@
 MAN=$(PROG).1
+SPEC=$(PROG).spec
 SOURCES_CPP=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msktpass.cpp msktconf.cpp ldapconnection.cpp
 SOURCES_C=strtoll.c
 SOURCES=$(SOURCES_CPP) $(SOURCES_C)
@@ -29,7 +32,7 @@ OBJECTS=$(SOURCES_CPP:.cpp=.o) $(SOURCES_C:.c=.o)
 
 .SUFFIXES: .c .cpp .o
 
-all: $(PROG) $(MAN)
+all: $(PROG) $(MAN) $(SPEC)
 
 $(PROG): $(OBJECTS)
 	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(PROG)
@@ -45,10 +48,10 @@ $(MAN): msktutil.M Makefile
 		-e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" < $(srcdir)/msktutil.M >$@
 
 clean:
-	$(RM) $(PROG) $(OBJECTS) $(MAN)
+	$(RM) $(PROG) $(OBJECTS) $(MAN) $(SPEC)
 
 distclean: clean
-	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in
+	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in msktutil-@PACKAGE_VERSION@.tar.bz2
 
 configure config.h.in: configure.ac
 	./autogen.sh
@@ -62,7 +65,18 @@ install: all
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
-dist: config.h.in configure
-	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
+dist: config.h.in configure $(SPEC)
+	tar --transform='s+^+msktutil-@PACKAGE_VERSION@/+' -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
                 $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
-                Makefile.in configure.ac config.h.in msktutil.M autogen.sh
+                Makefile.in configure.ac config.h.in msktutil.M autogen.sh windows-salt.txt msktutil.spec.in msktutil.spec
+
+$(SPEC): msktutil.spec.in Makefile
+	$(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" \
+		-e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" < $(srcdir)/msktutil.spec.in >$@
+
+srpm: $(SPEC) dist
+	$(RPMBUILD) -ts msktutil-@PACKAGE_VERSION@.tar.bz2
+
+rpm: $(SPEC) dist
+	$(RPMBUILD) -tb msktutil-@PACKAGE_VERSION@.tar.bz2
+
