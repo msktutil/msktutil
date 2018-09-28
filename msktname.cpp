@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <sstream>
 
 std::string complete_hostname(const std::string &hostname,
                               bool no_canonical_name)
@@ -133,41 +134,58 @@ std::string get_default_hostname(bool no_canonical_name)
 #endif
 }
 
-bool DnsSrvHost::validate(bool nocanon) {
-    int sock = -1;
-    struct hostent *host;
+bool DnsSrvHost::validate(bool nocanon, std::string service) {
+    int ret, sock = -1;
+    /* used to call into C function, so we prefer char[] over std::string */
+    char host[NI_MAXHOST];
+    struct addrinfo *hostaddrinfo = NULL, hints = {
+        .ai_flags = 0,
+        .ai_family = AF_UNSPEC,
+        .ai_socktype = SOCK_STREAM,
+        .ai_protocol = IPPROTO_TCP,
+        .ai_addrlen = (socklen_t) 0,
+        .ai_addr = NULL,
+        .ai_canonname = NULL,
+        .ai_next = NULL,
+    };
 
     if (!validated_name.empty()) {
         return true;
     }
 
-    host = gethostbyname(srvname.c_str());
+    /* so far we don't require C++11, so no ::to_string(), yet */
+    if (service.empty()) {
+        std::stringstream srvtmp;
+        srvtmp << m_port;
+        std::string service = srvtmp.str();
+    }
+    ret = getaddrinfo(srvname.c_str(), service.c_str(), &hints, &hostaddrinfo);
 
-    if (!host) {
-        VERBOSE("Error: gethostbyname failed for %s\n", srvname.c_str());
+    if (ret != 0) {
+        VERBOSE("Error: gethostbyname failed for %s (%s)\n", srvname.c_str(),
+                ret == EAI_SYSTEM ? strerror(errno) : gai_strerror(ret));
+        if (hostaddrinfo) {
+            freeaddrinfo(hostaddrinfo);
+        }
         return false;
     }
 
     VERBOSE("Found DC: %s. Checking availability...", srvname.c_str());
 
-    for (int i = 0; host->h_addr_list[i]; i++) {
-        struct sockaddr_in addr;
-        struct hostent *hp;
-
-        memcpy(&(addr.sin_addr.s_addr), host->h_addr_list[i], host->h_length);
-
+    for (struct addrinfo *ai = hostaddrinfo; ai; ai = ai->ai_next) {
         /* Now let's try and open and close a socket to see if the domain controller is up or not */
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(LDAP_PORT);
         if (sock != -1) {
             close(sock);
         }
-        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            VERBOSE("Failed to open socket");
+        if ((sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
+            VERBOSE("Failed to open socket (%s)", strerror(errno));
             continue;
         }
-        if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-            VERBOSE("LDAP connection (%d) failed", i);
+        if (connect(sock, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1) {
+            int err = errno;
+            char addrstr[INET6_ADDRSTRLEN] = "";
+            (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
+            VERBOSE("LDAP connection to %s failed (%s)", addrstr, strerror(err));
             continue;
         }
 
@@ -180,20 +198,30 @@ bool DnsSrvHost::validate(bool nocanon) {
             validated_name = srvname;
             break;
         }
-        hp = gethostbyaddr((char *) &addr.sin_addr.s_addr, sizeof(addr.sin_addr.s_addr), AF_INET);
-        if (!hp) {
-            VERBOSE("Error: gethostbyaddr failed for %s\n", srvname.c_str());
+
+        ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, host, sizeof(host), NULL, 0, NI_NAMEREQD);
+
+        if (ret != 0) {
+            int err = errno;
+            char addrstr[INET6_ADDRSTRLEN] = "";
+            (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
+            VERBOSE("Error: getnameinfo failed for %s (%s)\n", addrstr,
+                    ret == EAI_SYSTEM ? strerror(err) : gai_strerror(ret));
             continue;
         }
-        if (!validated_name.empty() && std::string(hp->h_name) > validated_name) {
-            VERBOSE("Connection to DC %s ok, but we already prefer %s", hp->h_name, validated_name.c_str());
+
+        if (!validated_name.empty() && std::string(host) > validated_name) {
+            VERBOSE("Connection to DC %s ok, but we already prefer %s", host, validated_name.c_str());
             continue;
         }
-        validated_name = std::string(hp->h_name);
+        validated_name = std::string(host);
 
     }
     if (sock != -1) {
         close(sock);
+    }
+    if (hostaddrinfo) {
+        freeaddrinfo(hostaddrinfo);
     }
     return ! validated_name.empty();
 };
@@ -288,7 +316,12 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     }
 
     for (std::vector<DnsSrvHost>::iterator it=dcsrvs.begin(); it != dcsrvs.end(); it++) {
-        if (it->validate(no_reverse_lookups)) {
+        /* Don't validate host availability by checking the KRB5 port returned
+         * from the SRV record, but the hard-coded, standard LDAP port (389).
+         * This is a short cut that should work as long as each DC runs both
+         * KRB5 and LDAP on default ports.
+         */
+        if (it->validate(no_reverse_lookups, stringify(LDAP_PORT))) {
             bestdc = it->name();
             break;
 	}
