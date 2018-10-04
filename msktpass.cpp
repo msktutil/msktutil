@@ -126,8 +126,8 @@ static int set_samba_secret(msktutil_flags *flags)
 
     int rc = pclose(pipe);
     if (rc != 0) {
-        fprintf(stdout,
-                "Setting samba secret failed with error code %d\n",
+        fprintf(stderr,
+                "WARNING: Setting samba secret failed with error code %d\n",
                 rc
             );
         return 1;
@@ -297,9 +297,17 @@ int set_password(msktutil_flags *flags)
 
     VERBOSE("Successfully set password");
 
-    if (!flags->set_samba_secret) {
-        return 0;
+    if (flags->set_samba_secret) {
+        /* At this point, we've already set the new password in AD, and there's
+         * no way to roll back for us because we don't know the old password.
+         * Therefore, even if we fail to propagate the new password to Samba,
+         * we still need to carry on, and write out the new keys to the keytab.
+         * Failing here is not an option, so ignore the return value from
+         * set_samba_secret(), and proceed normally. (The function has already
+         * notified on stderr if a failure had occurred.)
+         */
+        (void) set_samba_secret(flags);
     }
 
-    return set_samba_secret(flags);
+    return 0;
 }

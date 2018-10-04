@@ -33,6 +33,7 @@
 
 #if defined(HAVE_LIBUDNS)
 #include <udns.h>
+#define inet_ntop dns_ntop
 #elif defined(HAVE_NS_INITPARSE) && defined(HAVE_RES_SEARCH)
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
@@ -41,6 +42,11 @@
 #if !defined(NS_MAXMSG)
 #define NS_MAXMSG 65535
 #endif
+#endif
+
+#ifndef stringify
+#define stringify(x) stringify_(x)
+#define stringify_(x) #x
 #endif
 
 #include <algorithm>
@@ -111,7 +117,9 @@ public:
         
         return m_priority < other.m_priority;
     };
-    bool validate(bool nocanon);
+    /* Check host availability by opening a TCP connection to the objects's
+     * <port>. If <service> is non-empty, use its associated port instead. */
+    bool validate(bool nocanon, std::string service = "");
 };
 
 
