@@ -1,5 +1,5 @@
-Name:    REPLACE_PROGNAME
-Version: REPLACE_VERSION
+Name:    @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@
 Release: 0%{?dist}
 Summary: Program for interoperability with Active Directory 
 
