@@ -17,10 +17,13 @@ INSTALL=@INSTALL@
 RM=@RM@ -rf
 CP=@CP@ -f
 SED=@SED@
+RPMBUILD=@RPMBUILD@
+TAR=@TAR@
 CAT=@CAT@
 ECHO=@ECHO@
 MKDIR=@MKDIR@
 MAN=$(PROG).1
+SPEC=$(PROG).spec
 SOURCES_CPP=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msktpass.cpp msktconf.cpp ldapconnection.cpp
 SOURCES_C=strtoll.c
 SOURCES=$(SOURCES_CPP) $(SOURCES_C)
@@ -48,7 +51,7 @@ clean:
 	$(RM) $(PROG) $(OBJECTS) $(MAN)
 
 distclean: clean
-	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in
+	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in msktutil-@PACKAGE_VERSION@.tar.bz2
 
 configure config.h.in: configure.ac
 	./autogen.sh
@@ -63,6 +66,13 @@ distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
 dist: config.h.in configure
-	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
+	$(TAR) --transform='s+^+msktutil-@PACKAGE_VERSION@/+' -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
                 $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
-                Makefile.in configure.ac config.h.in msktutil.M autogen.sh
+                Makefile.in configure.ac config.h.in msktutil.M autogen.sh windows-salt.txt msktutil.spec.in $(SPEC)
+
+srpm: dist
+	$(RPMBUILD) -ts msktutil-@PACKAGE_VERSION@.tar.bz2
+
+rpm: dist
+	$(RPMBUILD) -tb msktutil-@PACKAGE_VERSION@.tar.bz2
+
