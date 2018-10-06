@@ -32,7 +32,7 @@ OBJECTS=$(SOURCES_CPP:.cpp=.o) $(SOURCES_C:.c=.o)
 
 .SUFFIXES: .c .cpp .o
 
-all: $(PROG) $(MAN) $(SPEC)
+all: $(PROG) $(MAN)
 
 $(PROG): $(OBJECTS)
 	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(PROG)
@@ -48,7 +48,7 @@ $(MAN): msktutil.M Makefile
 		-e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" < $(srcdir)/msktutil.M >$@
 
 clean:
-	$(RM) $(PROG) $(OBJECTS) $(MAN) $(SPEC)
+	$(RM) $(PROG) $(OBJECTS) $(MAN)
 
 distclean: clean
 	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in msktutil-@PACKAGE_VERSION@.tar.bz2
@@ -65,18 +65,14 @@ install: all
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
-dist: config.h.in configure $(SPEC)
+dist: config.h.in configure
 	$(TAR) --transform='s+^+msktutil-@PACKAGE_VERSION@/+' -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
                 $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
-                Makefile.in configure.ac config.h.in msktutil.M autogen.sh windows-salt.txt msktutil.spec.in msktutil.spec
+                Makefile.in configure.ac config.h.in msktutil.M autogen.sh windows-salt.txt msktutil.spec.in $(SPEC)
 
-$(SPEC): msktutil.spec.in Makefile
-	$(SED) -e "s/REPLACE_PROGNAME/@PACKAGE_NAME@/g" \
-		-e "s/REPLACE_VERSION/@PACKAGE_VERSION@/g" < $(srcdir)/msktutil.spec.in >$@
-
-srpm: $(SPEC) dist
+srpm: dist
 	$(RPMBUILD) -ts msktutil-@PACKAGE_VERSION@.tar.bz2
 
-rpm: $(SPEC) dist
+rpm: dist
 	$(RPMBUILD) -tb msktutil-@PACKAGE_VERSION@.tar.bz2
 
