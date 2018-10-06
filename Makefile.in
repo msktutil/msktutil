@@ -66,7 +66,7 @@ distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
 dist: config.h.in configure $(SPEC)
-	tar --transform='s+^+msktutil-@PACKAGE_VERSION@/+' -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
+	$(TAR) --transform='s+^+msktutil-@PACKAGE_VERSION@/+' -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
                 $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
                 Makefile.in configure.ac config.h.in msktutil.M autogen.sh windows-salt.txt msktutil.spec.in msktutil.spec
 
