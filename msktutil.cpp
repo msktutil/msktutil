@@ -497,6 +497,8 @@ void do_help()
     fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
     fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
     fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
+    fprintf(stdout, "  --use-samba-cmd <command> Use the supplied command instead of samba\n");
+    fprintf(stdout, "                         net changesecretpw.\n");
     fprintf(stdout, "  --check-replication    Wait until password change is reflected in LDAP.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Cleanup options:\n");
@@ -1109,6 +1111,20 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        /* use supplied command instead of samba net */
+        if (!strcmp(argv[i], "--use-samba-cmd")) {
+            if (++i < argc) {
+                flags->samba_cmd = argv[i];
+            } else {
+                fprintf(stderr,
+                        "Error: No command given after '%s'\n",
+                        argv[i -1]
+                    );
+                goto error;
+            }
+            continue;
+        }
+
         /* Use user kerberos credentials only */
         if (!strcmp(argv[i], "--user-creds-only")) {
             flags->user_creds_only = true;
@@ -1191,6 +1207,15 @@ int main(int argc, char *argv [])
         fprintf(stderr,
                 "Error: --old-account-password and --user-creds-only "
                 "are mutually exclusive\n");
+        goto error;
+    }
+
+    if (strcmp(flags->samba_cmd.c_str(),DEFAULT_SAMBA_CMD) &&
+        !flags->set_samba_secret) {
+        fprintf(stderr,
+                "Error: --use-samba-cmd (or MSKTUTIL_SAMBA_CMD "
+                "environment variable) can only be used with "
+                "--set-samba-secret\n");
         goto error;
     }
 
@@ -1313,6 +1338,7 @@ msktutil_flags::msktutil_flags() :
     no_canonical_name(false),
     server_behind_nat(false),
     set_samba_secret(false),
+    samba_cmd(DEFAULT_SAMBA_CMD),
     check_replication(false),
     dont_change_password(false),
     dont_expire_password(VALUE_IGNORE),
@@ -1354,6 +1380,9 @@ msktutil_flags::msktutil_flags() :
     }
     if (getenv("MSKTUTIL_SERVER")) {
         server = getenv("MSKTUTIL_SERVER");
+    }
+    if (getenv("MSKTUTIL_SAMBA_CMD")) {
+        samba_cmd = getenv("MSKTUTIL_SAMBA_CMD");
     }
 }
 

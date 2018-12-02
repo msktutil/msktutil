@@ -122,6 +122,8 @@
 #define KVNO_FAILURE                    -1
 #define KVNO_WIN_2000                   0
 
+#define DEFAULT_SAMBA_CMD "net changesecretpw -f -i"
+
 /* Ways we can authenticate */
 enum auth_types {
     AUTH_NONE = 0,
@@ -188,6 +190,7 @@ public:
     bool no_canonical_name;
     bool server_behind_nat;
     bool set_samba_secret;
+    std::string samba_cmd;
     bool check_replication;
     bool dont_change_password;
 

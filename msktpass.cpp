@@ -98,21 +98,29 @@ int generate_new_password(msktutil_flags *flags)
 }
 
 
-/* Try to set the the new Samba secret to <password>. */
-static int set_samba_secret(const std::string& password)
+/* Try to set the the new Samba secret to <flags->password>. */
+static int set_samba_secret(msktutil_flags *flags)
 {
-    VERBOSE("Setting samba machine trust account password");
+    VERBOSE("Setting samba machine trust account password using '%s' command",
+            flags->samba_cmd.c_str());
 
-    FILE *pipe = popen("net changesecretpw -f -i", "w");
+    FILE *pipe;
+    pipe = popen(flags->samba_cmd.c_str(), "w");
+
     if (pipe == NULL) {
-        fprintf(stderr, "WARNING: could not run samba net command");
+        fprintf(stdout,
+                "Could not execute '%s' command\n",
+                flags->samba_cmd.c_str()
+            );
         return 1;
     }
 
-    size_t len = password.length();
-    if (fwrite(password.c_str(), sizeof(char), len, pipe) != len) {
-        fprintf(stderr,
-                "WARNING: write error putting password to samba net command");
+    size_t len = flags->password.length();
+    if (fwrite(flags->password.c_str(), sizeof(char), len, pipe) != len) {
+        fprintf(stdout,
+                "Write error putting password to '%s' command\n",
+                flags->samba_cmd.c_str()
+            );
         return 1;
     }
 
@@ -298,7 +306,7 @@ int set_password(msktutil_flags *flags)
          * set_samba_secret(), and proceed normally. (The function has already
          * notified on stderr if a failure had occurred.)
          */
-        (void) set_samba_secret(flags->password);
+        (void) set_samba_secret(flags);
     }
 
     return 0;

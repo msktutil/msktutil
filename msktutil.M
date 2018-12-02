@@ -278,6 +278,10 @@ This operation requires administrator privileges.
 Use Samba's net changesecretpw command to locally set the machine account password in Samba's secrets.tdb.
 $PATH need to include Samba's net command.  Samba needs to be configured appropriately.
 .TP
+--use-samba-cmd <command>
+Use supplied command instead of Samba's net changesecretpw command. command will be supplied machine account
+password on standard input and shall return 0 exit code on success. 
+.TP
 --check-replication
 Wait until the password change is reflected in LDAP.  By default, msktutil exits once a password update is
 successful and the new keytab is written.  However, due to replication delays, LDAP queries might still
@@ -451,6 +455,9 @@ Enables the account to be trusted for delegation (see --delegation).
 .TP
 MSKTUTIL_NO_PAC
 Specifies that service tickets for this account should not contain a PAC (see --no-pac).
+.TP
+MSKTUTIL_SAMBA_CMD
+Specifies the command to be used to locally set the machine account password in Samba's  secrets.tdb.
 .SH AUTHORS
 (C) 2004-2006 Dan Perry <dperry at pppl.gov>
 .PP
