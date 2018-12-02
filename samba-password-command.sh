@@ -55,11 +55,11 @@ if [ ! -x $TDBTOOL ] || [ ! -x $NET ]; then
    exit 1
 fi
 
-$TESTPARM -l -s --parameter-name workgroup 2>/dev/null | /usr/bin/grep -q -P "^$WORKGROUP"
+$TESTPARM -l -s --parameter-name workgroup 2>/dev/null | /usr/bin/grep -q -x "$WORKGROUP"
 
 [ $? -ne 0 ] && samba_msg && exit 1
 
-$TESTPARM -l -s --parameter-name security 2>/dev/null | /usr/bin/grep -q -P "^ADS$"
+$TESTPARM -l -s --parameter-name security 2>/dev/null | /usr/bin/grep -q -x "ADS"
 
 [ $? -ne 0 ] && samba_msg && exit 1
 
@@ -67,15 +67,15 @@ $NET -k -P rpc getsid -S $DCHOST
 
 [ $? -ne 0 ] && echo "$0: Error running $NET getsid" && exit 1
 
-$TDBTOOL /var/lib/samba/private/secrets.tdb store SECRETS/MACHINE_LAST_CHANGE_TIME/$WORKGROUP 0000 2>/dev/null 1>/dev/null
+$TDBTOOL /var/lib/samba/private/secrets.tdb store SECRETS/MACHINE_LAST_CHANGE_TIME/"$WORKGROUP" 0000 2>/dev/null 1>/dev/null
 
 [ $? -ne 0 ] && echo "$0: Error running $TDBTOOL (1)" && exit 1
 
-$TDBTOOL /var/lib/samba/private/secrets.tdb store SECRETS/MACHINE_PASSWORD.PREV/$WORKGROUP none 2>/dev/null 1>/dev/null
+$TDBTOOL /var/lib/samba/private/secrets.tdb store SECRETS/MACHINE_PASSWORD.PREV/"$WORKGROUP" none 2>/dev/null 1>/dev/null
 
 [ $? -ne 0 ] && echo "$0: Error running $TDBTOOL (2)" && exit 1
 
-$TDBTOOL /var/lib/samba/private/secrets.tdb store SECRETS/MACHINE_PASSWORD/$WORKGROUP none 2>/dev/null 1>/dev/null
+$TDBTOOL /var/lib/samba/private/secrets.tdb store SECRETS/MACHINE_PASSWORD/"$WORKGROUP" none 2>/dev/null 1>/dev/null
 
 [ $? -ne 0 ] && echo "$0: Error running $TDBTOOL (3)" && exit 1
 
