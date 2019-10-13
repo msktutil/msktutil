@@ -81,7 +81,9 @@ void get_default_ou(msktutil_flags *flags)
         fprintf(stderr,
                 "Warning: could not get default computer OU from AD.\n"
             );
-        flags->ldap_ou = "CN=Computers," + flags->base_dn;
+        std::string default_ou = flags->use_service_account ?
+                                 "CN=Users," : "CN=Computers,";
+        flags->ldap_ou = default_ou + flags->base_dn;
     } else {
         flags->ldap_ou = dn;
     }
