@@ -88,8 +88,9 @@ Displays a help message
 Enables verbose status messages.  May be specified more then once to get LDAP debugging.
 .SS CONNECTION/SETUP OPTIONS
 .TP
--b, --base <base>
-Specifies a relative LDAP base when creating a new account.  For example, specifying '-b OU=Unix'
+-b, --base <base ou>
+Specifies an LDAP base OU when creating a new account.  Unless the given string ends with the
+domain's base DN, it is assume to be a relative path: For example, specifying '-b OU=Unix'
 for a computer named SERVER in an Active Directory domain example.com would create a computer
 account in the LDAP path: CN=SERVER,OU=Unix,DC=EXAMPLE,DC=COM.  This option can also
 be specified by setting the MSKTUTIL_LDAP_BASE environment variable to the desired value.

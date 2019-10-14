@@ -34,43 +34,60 @@
 #include <sstream>
 #include <iostream>
 
+/* Check if string <s> ends with string <suffix> */
+static bool endswith(std::string const &s, std::string const &suffix)
+{
+    if (s.length() < suffix.length())
+        return false;
+    return s.compare(s.length() - suffix.length(),
+                     suffix.length(), suffix) == 0;
+}
+
 void get_default_ou(msktutil_flags *flags)
 {
-    if (flags->ldap_ou.empty()) {
-        /* Only do this on an empty value */
-
-        LDAPConnection *ldap = flags->ldap;
-
-        std::string wkguid;
-        if (flags->use_service_account) {
-            wkguid = sform("<WKGUID=a9d1ca15768811d1aded00c04fd8d5cd,%s>",
-                           flags->base_dn.c_str());
-        } else {
-            wkguid = sform("<WKGUID=aa312825768811d1aded00c04fd8d5cd,%s>",
-                           flags->base_dn.c_str());
-        }
-        LDAPMessage *mesg = ldap->search(wkguid, LDAP_SCOPE_BASE,
-                                         "objectClass=*",
-                                         "distinguishedName");
-
-        std::string dn;
-        if (ldap->count_entries(mesg) == 1) {
-            mesg = ldap->first_entry(mesg);
-            dn = ldap->get_one_val(mesg, "distinguishedName");
-        }
-        ldap_msgfree(mesg);
-        if (dn.empty()) {
-            fprintf(stderr,
-                    "Warning: could not get default computer OU from AD.\n"
-                );
-            flags->ldap_ou = "CN=Computers," + flags->base_dn;
-        } else {
-            flags->ldap_ou = dn;
-        }
-        VERBOSE("Determining default OU: %s", flags->ldap_ou.c_str());
-    } else {
-        flags->ldap_ou = flags->ldap_ou + "," + flags->base_dn;
+    /* If OU was given explicitly, we just need to make sure it's a
+     * valid dn below our base dn.
+     */
+    if (!flags->ldap_ou.empty()) {
+        if (!endswith(flags->ldap_ou, flags->base_dn))
+            flags->ldap_ou = flags->ldap_ou + "," + flags->base_dn;
+        VERBOSE("Using OU: %s", flags->ldap_ou.c_str());
+	return;
     }
+
+    /* Otherwise, probe AD for its default OU */
+
+    LDAPConnection *ldap = flags->ldap;
+
+    std::string wkguid;
+    if (flags->use_service_account) {
+        wkguid = sform("<WKGUID=a9d1ca15768811d1aded00c04fd8d5cd,%s>",
+                       flags->base_dn.c_str());
+    } else {
+        wkguid = sform("<WKGUID=aa312825768811d1aded00c04fd8d5cd,%s>",
+                       flags->base_dn.c_str());
+    }
+    LDAPMessage *mesg = ldap->search(wkguid, LDAP_SCOPE_BASE,
+                                     "objectClass=*",
+                                     "distinguishedName");
+
+    std::string dn;
+    if (ldap->count_entries(mesg) == 1) {
+        mesg = ldap->first_entry(mesg);
+        dn = ldap->get_one_val(mesg, "distinguishedName");
+    }
+    ldap_msgfree(mesg);
+    if (dn.empty()) {
+        fprintf(stderr,
+                "Warning: could not get default computer OU from AD.\n"
+            );
+        std::string default_ou = flags->use_service_account ?
+                                 "CN=Users," : "CN=Computers,";
+        flags->ldap_ou = default_ou + flags->base_dn;
+    } else {
+        flags->ldap_ou = dn;
+    }
+    VERBOSE("Determining default OU: %s", flags->ldap_ou.c_str());
 }
 
 
