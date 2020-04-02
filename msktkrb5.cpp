@@ -101,7 +101,13 @@ std::string get_salt(msktutil_flags *flags)
                          flags->sAMAccountName.c_str());
         } else {
             std::string upnsalt = flags->userPrincipalName;
-            upnsalt.erase(std::remove(upnsalt.begin(),
+
+            /* trim enterprise principals to first component */
+            size_t pos = upnsalt.find('@');
+            if (pos != std::string::npos)
+                upnsalt.erase(pos);
+
+	    upnsalt.erase(std::remove(upnsalt.begin(),
                                       upnsalt.end(),
                                       '/'),
                           upnsalt.end());
@@ -378,7 +384,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 
     std::string principal_string = "";
 
-    if (principal.find("@") != std::string::npos) {
+    if (is_in_realm(principal, flags)) {
         principal_string = sform("%s", principal.c_str());
     } else {
         principal_string = sform("%s@%s",

@@ -449,7 +449,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
         std::string userPrincipalName_string = "";
         std::string upn_found = "";
         const char *attrs[] = {"userPrincipalName", NULL};
-        if (flags->userPrincipalName.find("@") != std::string::npos) {
+        if (is_in_realm(flags->userPrincipalName, flags)) {
             userPrincipalName_string = sform("%s",
                                              flags->userPrincipalName.c_str());
         } else {
@@ -633,11 +633,14 @@ bool ldap_check_account(msktutil_flags *flags)
         } else {
             std::string upn = ldap->get_one_val(mesg, "userPrincipalName");
             if (!upn.empty()) {
-                size_t pos = upn.find('@');
-                if (pos != std::string::npos) {
+                VERBOSE("Found User Principal: %s", upn.c_str());
+                /* unless the UPN ends with our realm name, we treat it as
+                 * an enterprise principal name, and just keep it unmodified
+                 */
+                if (is_in_realm(upn, flags)) {
+                    size_t pos = upn.rfind('@');
                     upn.erase(pos);
                 }
-                VERBOSE("Found User Principal: %s", upn.c_str());
                 /* update userPrincipalName for salt generation */
                 flags->userPrincipalName = upn.c_str();
             }
