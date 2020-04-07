@@ -346,15 +346,6 @@ std::string get_host_os()
     return std::string(info.sysname);
 }
 
-/* Return true if <str> ends with <suffix>, false otherwise */
-static bool ends_with(std::string const &str, std::string const &suffix)
-{
-    if (suffix.size() > str.size())
-        return false;
-
-    return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
-}
-
 /* Default sAMAccountName for current host:
    Use lowercase FQDN, strip realm if applicable, convert remaining dots to dashes.
    Eg. foo.example.com in realm EXAMPLE.COM -> foo

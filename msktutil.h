@@ -302,6 +302,9 @@ void v_error_exit(const char* format, ...);
 /* printf into a C++ string. */
 std::string sform(const char* format, ...);
 
+/* Return true if <str> ends with <suffix>, false otherwise */
+bool ends_with(std::string const &str, std::string const &suffix);
+
 class Exception : public std::exception
 {
   protected:

@@ -80,6 +80,14 @@ std::string sform(const char* format, ...)
     return outstr;
 }
 
+bool ends_with(std::string const &str, std::string const &suffix)
+{
+    if (suffix.size() > str.size())
+        return false;
+
+    return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
+}
+
 void remove_files_at_exit()
 {
     remove_fake_krb5_conf();
