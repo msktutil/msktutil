@@ -305,6 +305,10 @@ std::string sform(const char* format, ...);
 /* Return true if <str> ends with <suffix>, false otherwise */
 bool ends_with(std::string const &str, std::string const &suffix);
 
+/* Returns true if <str> looks like a principal name in local realm
+ * (case insensitive) */
+bool is_in_realm(std::string str, msktutil_flags *flags);
+
 class Exception : public std::exception
 {
   protected:

@@ -88,6 +88,12 @@ bool ends_with(std::string const &str, std::string const &suffix)
     return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
 }
 
+bool is_in_realm(std::string s, msktutil_flags *flags)
+{
+    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+    return ends_with(s, '@' + flags->lower_realm_name);
+}
+
 void remove_files_at_exit()
 {
     remove_fake_krb5_conf();
