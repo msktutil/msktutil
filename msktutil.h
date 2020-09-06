@@ -124,6 +124,9 @@
 
 #define DEFAULT_SAMBA_CMD "net changesecretpw -f -i"
 
+/* Default candidate SASL mechanisms */
+#define DEFAULT_SASL_MECHANISMS "GSS-SPNEGO GSSAPI"
+
 /* Ways we can authenticate */
 enum auth_types {
     AUTH_NONE = 0,
@@ -211,6 +214,7 @@ public:
     bool allow_weak_crypto;
     bool password_expired;
     int auto_update_interval;
+    std::string sasl_mechanisms;
     krb5_kvno kvno;
     int cleanup_days;
     int cleanup_enctype;

@@ -185,6 +185,12 @@ credentials (description, userAccountControl, userPrincipalName, in a default AD
 .TP
 --auto-update-interval <days>
 Number of <days> when REPLACE_PROGNAME auto-update will change the account password. Defaults to 30 days.
+.TP
+-m, --sasl-mechanisms <mechanisms list>
+A space-separated list of candidate SASL mechanisms to use when performing the LDAP bind.  The first mechanism in
+the list that is supported by both the client (the host running REPLACE_PROGNAME) and the server (Active Directory)
+will be used. If providing more than one candidate mechanism, make sure to quote the list to protect the whitespace
+from the shell.  Default: "GSS-SPNEGO GSSAPI".
 .SS OBJECT TYPE/ATTRIBUTE-SETTING OPTIONS
 .TP
 --use-service-account

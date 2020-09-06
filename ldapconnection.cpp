@@ -55,6 +55,7 @@ static int sasl_interact(ATTRUNUSED LDAP *ld, ATTRUNUSED unsigned flags,
 }
 
 LDAPConnection::LDAPConnection(const std::string &server,
+        const std::string &sasl_mechanisms,
         bool no_reverse_lookups) :
         m_ldap()
 {
@@ -105,9 +106,9 @@ LDAPConnection::LDAPConnection(const std::string &server,
             "reverse lookups");
 #endif
 
-    VERBOSEldap("calling ldap_sasl_interactive_bind_s");
+    VERBOSEldap("calling ldap_sasl_interactive_bind_s with mechs = %s", sasl_mechanisms.c_str());
 
-    ret = ldap_sasl_interactive_bind_s(m_ldap, NULL, "GSSAPI", NULL, NULL,
+    ret = ldap_sasl_interactive_bind_s(m_ldap, NULL, sasl_mechanisms.c_str(), NULL, NULL,
 #ifdef LDAP_SASL_QUIET
             g_verbose ? 0 : LDAP_SASL_QUIET,
 #else
