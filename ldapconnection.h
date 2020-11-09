@@ -60,7 +60,7 @@ private:
 
 
 public:
-    LDAPConnection(const std::string &server, bool no_reverse_lookups = false);
+    LDAPConnection(const std::string &server, const std::string &sasl_mechanisms, bool no_reverse_lookups = false);
     void set_option(int option, const void *invalue);
     void get_option(int option, void *outvalue);
 

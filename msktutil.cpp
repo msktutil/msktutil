@@ -319,6 +319,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     VERBOSE("Authenticated using method %d", flags->auth_type);
 
     flags->ldap = new LDAPConnection(flags->server,
+                                     flags->sasl_mechanisms,
                                      flags->no_reverse_lookups);
 
     if (!flags->ldap->is_connected()) {
@@ -466,6 +467,9 @@ void do_help()
     fprintf(stdout, "  --auto-update-interval <days>\n");
     fprintf(stdout, "                         Number of <days> when auto-update will change the\n");
     fprintf(stdout, "                         account password. Defaults to 30 days.\n");
+    fprintf(stdout, "  -m, --sasl-mechanisms <mechanisms list>\n");
+    fprintf(stdout, "                         Candidate SASL mechanisms to use when performing\n");
+    fprintf(stdout, "                         the LDAP bind. Defaults to \"GSS-SPNEGO GSSAPI\".\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Object type/attribute-setting options:\n");
     fprintf(stdout, "  --use-service-account  Create and maintain service account instead of\n");
@@ -1157,6 +1161,19 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        if (!strcmp(argv[i], "--sasl-mechanisms") || !strcmp(argv[i], "-m")) {
+            if (++i < argc) {
+                flags->sasl_mechanisms = argv[i];
+            } else {
+                fprintf(stderr,
+                        "Error: No SASL candidate mechanisms list given after '%s'\n",
+                        argv[i - 1]
+                    );
+                goto error;
+            }
+            continue;
+        }
+
         if (!strcmp(argv[i], "--remove-old")) {
             if (++i < argc) {
                 flags->cleanup_days = atoi(argv[i]);
@@ -1360,6 +1377,7 @@ msktutil_flags::msktutil_flags() :
     allow_weak_crypto(false),
     password_expired(false),
     auto_update_interval(30),
+    sasl_mechanisms(DEFAULT_SASL_MECHANISMS),
     kvno(0),
     cleanup_days(-1),
     cleanup_enctype(VALUE_IGNORE)
