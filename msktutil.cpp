@@ -843,7 +843,7 @@ int main(int argc, char *argv [])
         if (!strcmp(argv[i], "--service") || !strcmp(argv[i], "-s")) {
             if (++i < argc) {
                 exec->add_principals.push_back(argv[i]);
-               flags->add_only_default_spns = false;
+                flags->add_only_default_spns = false;
             } else {
                 fprintf(stderr,
                         "Error: No service principal given after '%s'\n",
