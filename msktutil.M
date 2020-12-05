@@ -265,7 +265,9 @@ administrator credentials.
 -s, --service <principal>
 Specifies a service principal to add to the account (and thus keytab, if appropriate).  The service is of
 the form <service>/<hostname>.  If the hostname is omitted, assumes current hostname.  May be specified
-multiple times.
+multiple times. When creating machine accounts without --service ... the default service principals are
+host/long_hostname and host/short_hostname. When creating service accounts without --service ...
+no service principals are added.
 .TP
 --remove-service <principal>
 Specifies a service principal to remove from the account (and keytab if appropriate).
