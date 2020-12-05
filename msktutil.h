@@ -196,6 +196,7 @@ public:
     std::string samba_cmd;
     bool check_replication;
     bool dont_change_password;
+    bool add_only_default_spns;
 
     msktutil_val dont_expire_password;
     msktutil_val dont_update_dnshostname;

@@ -282,6 +282,11 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     }
     VERBOSE("SAM Account Name is: %s", flags->sAMAccountName.c_str());
 
+    if (exec->mode == MODE_CREATE && !flags->use_service_account && flags->add_only_default_spns) {
+      exec->add_principals.push_back("host/" + flags->hostname);
+      exec->add_principals.push_back("host/" + get_short_hostname(flags));
+    }
+
     /* Qualify entries in the principals list */
     qualify_principal_vec(exec->add_principals, flags->hostname);
     qualify_principal_vec(exec->remove_principals, flags->hostname);
@@ -495,6 +500,9 @@ void do_help()
     fprintf(stdout, "                         given service account. The service is of the form\n");
     fprintf(stdout, "                         <service>/<hostname>.\n");
     fprintf(stdout, "                         If the hostname is omitted, assumes current hostname.\n");
+    fprintf(stdout, "                         Default for machine accounts:\n");
+    fprintf(stdout, "                         host/long_hostname and host/short_hostname.\n");
+    fprintf(stdout, "                         Default for service accounts: None");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
     fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>.\n");
     fprintf(stdout, "                         The realm name will be appended to this principal.\n");
@@ -835,6 +843,7 @@ int main(int argc, char *argv [])
         if (!strcmp(argv[i], "--service") || !strcmp(argv[i], "-s")) {
             if (++i < argc) {
                 exec->add_principals.push_back(argv[i]);
+               flags->add_only_default_spns = false;
             } else {
                 fprintf(stderr,
                         "Error: No service principal given after '%s'\n",
@@ -1292,10 +1301,6 @@ int main(int argc, char *argv [])
         }
     }
 
-    if (exec->mode == MODE_CREATE && !flags->use_service_account) {
-        exec->add_principals.push_back("host");
-    }
-
     if (exec->mode == MODE_NONE && !exec->add_principals.empty()) {
         exec->set_mode(MODE_UPDATE);
     }
@@ -1358,6 +1363,7 @@ msktutil_flags::msktutil_flags() :
     samba_cmd(DEFAULT_SAMBA_CMD),
     check_replication(false),
     dont_change_password(false),
+    add_only_default_spns(true),
     dont_expire_password(VALUE_IGNORE),
     dont_update_dnshostname(VALUE_OFF),
     disable_account(VALUE_IGNORE),
