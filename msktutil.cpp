@@ -287,9 +287,9 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     }
     VERBOSE("SAM Account Name is: %s", flags->sAMAccountName.c_str());
 
-    if (exec->mode == MODE_CREATE && !flags->use_service_account && flags->add_only_default_spns) {
-      exec->add_principals.push_back("host/" + flags->hostname);
-      exec->add_principals.push_back("host/" + get_short_hostname(flags));
+    if (exec->mode == MODE_CREATE && !flags->use_service_account) {
+      exec->add_principals.push_back("host");
+       exec->add_principals.push_back("host/" + get_short_hostname(flags));
     }
 
     /* Qualify entries in the principals list */
@@ -883,7 +883,6 @@ int main(int argc, char *argv [])
         if (!strcmp(argv[i], "--service") || !strcmp(argv[i], "-s")) {
             if (++i < argc) {
                 exec->add_principals.push_back(argv[i]);
-                flags->add_only_default_spns = false;
             } else {
                 fprintf(stderr,
                         "Error: No service principal given after '%s'\n",
@@ -1407,7 +1406,6 @@ msktutil_flags::msktutil_flags() :
     samba_cmd(DEFAULT_SAMBA_CMD),
     check_replication(false),
     dont_change_password(false),
-    add_only_default_spns(true),
     dont_expire_password(VALUE_IGNORE),
     dont_update_dnshostname(VALUE_OFF),
     disable_account(VALUE_IGNORE),
