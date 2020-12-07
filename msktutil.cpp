@@ -147,20 +147,37 @@ void do_verbose()
 
 
 void qualify_principal_vec(std::vector<std::string> &principals,
-                           const std::string &hostname)
+                           msktutil_flags *flags)
 {
-    for(size_t i = 0; i < principals.size(); ++i) {
-        /* If no hostname part, add it: */
-        if (principals[i].find('/') == std::string::npos) {
-            if (hostname.empty()) {
-                fprintf(stderr,
-                        "Error: default hostname unspecified, "
-                        "and service argument missing hostname.\n"
-                    );
-                exit(1);
-            }
-            principals[i].append("/").append(hostname);
+    std::string short_hostname;
+    std::string::size_type len = principals.size();
+
+    if (!flags->hostname.empty()) {
+        short_hostname = get_short_hostname(flags);
+        if (flags->hostname == short_hostname)
+            short_hostname = "";
+    }
+
+    for(size_t i = 0; i < len; ++i) {
+        if (principals[i].find('/') != std::string::npos) {
+            /* Nothing to do for principals that are already qualified */
+            continue;
         }
+
+        if (flags->hostname.empty()) {
+            fprintf(stderr,
+                    "Error: default hostname unspecified, "
+                    "and service argument missing hostname.\n"
+                );
+            exit(1);
+        }
+
+        /* Modify unqualified entry in-place by appending (full) hostname
+         * and add another entry to the back of the list qualified with
+         * the short hostname (if different from long hostname) */
+        if (!short_hostname.empty())
+            principals.push_back(principals[i] + "/" + short_hostname);
+        principals[i].append("/").append(flags->hostname);
     }
 }
 
@@ -283,13 +300,12 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     VERBOSE("SAM Account Name is: %s", flags->sAMAccountName.c_str());
 
     if (exec->mode == MODE_CREATE && !flags->use_service_account) {
-      exec->add_principals.push_back("host");
-       exec->add_principals.push_back("host/" + get_short_hostname(flags));
+        exec->add_principals.push_back("host");
     }
 
     /* Qualify entries in the principals list */
-    qualify_principal_vec(exec->add_principals, flags->hostname);
-    qualify_principal_vec(exec->remove_principals, flags->hostname);
+    qualify_principal_vec(exec->add_principals, flags);
+    qualify_principal_vec(exec->remove_principals, flags);
 
     /* Now, try to get kerberos credentials in order to connect to
      * LDAP. */
@@ -499,9 +515,8 @@ void do_help()
     fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host or the\n");
     fprintf(stdout, "                         given service account. The service is of the form\n");
     fprintf(stdout, "                         <service>/<hostname>.\n");
-    fprintf(stdout, "                         If the hostname is omitted, assumes current hostname.\n");
-    fprintf(stdout, "                         Default for machine accounts:\n");
-    fprintf(stdout, "                         host/long_hostname and host/short_hostname.\n");
+    fprintf(stdout, "                         If the hostname is omitted, assumes current hostname,\n");
+    fprintf(stdout, "                         and adds the short and the full hostname.\n");
     fprintf(stdout, "                         Default for service accounts: None");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
     fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>.\n");
