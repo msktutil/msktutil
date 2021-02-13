@@ -49,7 +49,6 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <sys/utsname.h>
 #include <ldap.h>
 #include <list>
 
@@ -284,7 +283,6 @@ extern int ldap_add_principal(const std::string &, msktutil_flags *);
 int ldap_remove_principal(const std::string &principal, msktutil_flags *flags);
 extern std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
                                const bool);
-extern std::string get_host_os();
 extern bool ldap_check_account(msktutil_flags *);
 extern void ldap_create_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);
