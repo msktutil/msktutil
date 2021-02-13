@@ -332,20 +332,6 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     return bestdc;
 }
 
-std::string get_host_os()
-{
-    struct utsname info;
-    int ret;
-
-
-    ret = uname(&info);
-    if (ret == -1) {
-        fprintf(stderr, "Error: uname failed (%d)\n", ret);
-        return NULL;
-    }
-    return std::string(info.sysname);
-}
-
 /* Return true if <str> ends with <suffix>, false otherwise */
 static bool ends_with(std::string const &str, std::string const &suffix)
 {
