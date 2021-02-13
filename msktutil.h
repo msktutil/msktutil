@@ -49,7 +49,6 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <sys/utsname.h>
 #include <ldap.h>
 #include <list>
 
