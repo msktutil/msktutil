@@ -176,6 +176,8 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
         /* Now let's try and open and close a socket to see if the domain controller is up or not */
         if (sock != -1) {
             close(sock);
+            // do not potentially close sock several times.
+            sock = -1;
         }
         if ((sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
             VERBOSE("Failed to open socket (%s)", strerror(errno));
