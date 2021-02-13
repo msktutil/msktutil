@@ -489,8 +489,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
     ldap_set_supportedEncryptionTypes(dn, flags);
 
     msktutil_val des_only;
-    if (flags->supportedEncryptionTypes == (MS_KERB_ENCTYPE_DES_CBC_CRC |
-                                            MS_KERB_ENCTYPE_DES_CBC_MD5)) {
+    if (flags->supportedEncryptionTypes == MS_KERB_DES_ENCTYPES) {
         des_only = VALUE_ON;
     } else {
         des_only = VALUE_OFF;
@@ -501,10 +500,8 @@ void ldap_check_account_strings(msktutil_flags *flags)
      * VALUE_OFF. In that case, reset ad_supportedEncryptionTypes
      * according to the DES flag, in case we changed it. */
     if (flags->ad_enctypes == VALUE_OFF) {
-        flags->ad_supportedEncryptionTypes =
-            MS_KERB_ENCTYPE_DES_CBC_CRC |
-            MS_KERB_ENCTYPE_DES_CBC_MD5;
-        if (! (flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
+        flags->ad_supportedEncryptionTypes = MS_KERB_DES_ENCTYPES;
+        if (!(flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
             flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
         }
     }
@@ -604,10 +601,8 @@ bool ldap_check_account(msktutil_flags *flags)
                 flags->ad_supportedEncryptionTypes);
     } else {
         /* Not in current LDAP entry set defaults */
-        flags->ad_supportedEncryptionTypes =
-            MS_KERB_ENCTYPE_DES_CBC_CRC |
-            MS_KERB_ENCTYPE_DES_CBC_MD5;
-        if (! (flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
+        flags->ad_supportedEncryptionTypes = MS_KERB_DES_ENCTYPES;
+        if (!(flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
             flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
         }
         flags->ad_enctypes = VALUE_OFF; /* this is the assumed default */
@@ -712,8 +707,7 @@ void ldap_create_account(msktutil_flags *flags)
 
     /* Defaults, will attempt to reset later */
     flags->ad_supportedEncryptionTypes =
-        MS_KERB_ENCTYPE_DES_CBC_CRC |
-        MS_KERB_ENCTYPE_DES_CBC_MD5 |
+        MS_KERB_DES_ENCTYPES |
         MS_KERB_ENCTYPE_RC4_HMAC_MD5;
     flags->ad_enctypes = VALUE_OFF;
     flags->ad_userAccountControl = userAcctFlags;
