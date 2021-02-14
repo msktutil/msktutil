@@ -138,16 +138,15 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
     int ret, sock = -1;
     /* used to call into C function, so we prefer char[] over std::string */
     char host[NI_MAXHOST];
-    struct addrinfo *hostaddrinfo = NULL, hints = {
-        .ai_flags = 0,
-        .ai_family = AF_UNSPEC,
-        .ai_socktype = SOCK_STREAM,
-        .ai_protocol = IPPROTO_TCP,
-        .ai_addrlen = (socklen_t) 0,
-        .ai_addr = NULL,
-        .ai_canonname = NULL,
-        .ai_next = NULL,
-    };
+    struct addrinfo *hostaddrinfo = NULL;
+    // The order of the struct addrinfo members is not portable,
+    // therefore it is not possible to use struct initialization here.
+    // Use default initialization and set potentially nonzero members explicitly.
+    // See issue #161
+    struct addrinfo hints = {};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
 
     if (!validated_name.empty()) {
         return true;
