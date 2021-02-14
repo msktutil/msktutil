@@ -1,0 +1,48 @@
+name: linters
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  # see https://github.com/koalaman/shellcheck
+  shellcheck:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install linters on ubuntu
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install shellcheck
+
+      - name: run Shellcheck
+        run: |
+          shellcheck --version
+          find . -name "*.sh" | xargs shellcheck || true
+
+  # see https://github.com/danmar/cppcheck
+  cppcheck:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install linters on ubuntu
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install cppcheck
+
+      - name: run cppcheck
+        run: |
+          # cppcheck
+          if ! [ -x "$(command -v cppcheck)" ]; then
+            echo 'Error: cppcheck is not installed.' >&2
+            exit 1
+          fi
+          CPPCHECK_OPTS='--error-exitcode=0 --force --quiet'
+          echo "$(cppcheck --version):";
+          cppcheck $CPPCHECK_OPTS .;
