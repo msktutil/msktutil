@@ -1,0 +1,45 @@
+name: msktutil FreeBSD
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    name: Build on FreeBSD
+    strategy:
+      fail-fast: false
+      matrix:
+        cfg:
+          - { cc-version: gcc }
+          - { cc-version: clang }
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Build msktutil with ${{ matrix.cfg.cc-version }}
+      id: build
+      uses: vmactions/freebsd-vm@main
+      with:
+        mem: 2048
+        usesh: true
+        run: |
+          freebsd-version
+          # basic dependencies
+          pkg install -y autoconf cyrus-sasl-gssapi gmake openldap-sasl-client
+          case "${{ matrix.cfg.cc-version }}" in
+            gcc)
+              pkg install -y gcc
+              export CC=gcc
+              export CXX=g++
+              ;;
+            clang)
+              export CC=clang
+              export CXX=clang++
+              ;;
+          esac
+          ${CC} --version
+          ./autogen.sh
+          ./configure && make
