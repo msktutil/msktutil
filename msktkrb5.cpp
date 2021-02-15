@@ -394,7 +394,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 
     prune_keytab(keytab, princ, min_keep_timestamp);
 
-    std::vector<uint32_t> enc_types;
+    std::vector<krb5_enctype> enc_types;
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_CRC) {
         enc_types.push_back(ENCTYPE_DES_CBC_CRC);
     }
@@ -428,7 +428,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
         for(size_t i = 0; i < enc_types.size(); ++i) {
             VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
             keytab.addEntry(princ, flags->kvno,
-                            static_cast<krb5_enctype>(enc_types[i]),
+                            enc_types[i],
                             password, salt);
         }
     }
