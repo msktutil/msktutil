@@ -42,6 +42,8 @@
 #if !defined(NS_MAXMSG)
 #define NS_MAXMSG 65535
 #endif
+#else
+#include <arpa/inet.h>
 #endif
 
 #ifndef stringify
