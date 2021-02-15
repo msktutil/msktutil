@@ -22,10 +22,13 @@ jobs:
     - name: Build msktutil ${{ matrix.cfg.cc-version }}
       shell: sh
       run: |
+        # silence Apple deprecation notices
+        brew install krb5 openldap
         case "${{ matrix.cfg.cc-version }}" in
           gcc)
-            export CC=gcc
-            export CXX=g++
+            brew install gcc@10
+            export CC=gcc-10
+            export CXX=g++-10
             ;;
           clang)
             export CC=clang
@@ -34,4 +37,6 @@ jobs:
         esac
         ${CC} --version
         ./autogen.sh
-        ./configure && make
+        ./configure \
+           --with-ldapdir=/usr/local/opt/openldap \
+           --with-krb5-config=/usr/local/opt/krb5/bin/krb5-config && make
