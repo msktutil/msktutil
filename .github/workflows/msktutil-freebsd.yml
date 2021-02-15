@@ -38,6 +38,8 @@ jobs:
             clang)
               export CC=clang
               export CXX=clang++
+              export CPPFLAGS=-I/usr/local/include
+              export LDFLAGS=-L/usr/local/lib
               ;;
           esac
           ${CC} --version
