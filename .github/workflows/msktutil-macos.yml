@@ -32,5 +32,6 @@ jobs:
             export CXX=clang++
             ;;
         esac
+        ${CC} --version
         ./autogen.sh
         ./configure && make

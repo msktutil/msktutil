@@ -67,5 +67,6 @@ jobs:
             esac
 
           run: |
+            ${CC} --version
             ./autogen.sh
             ./configure && make
