@@ -99,7 +99,7 @@
 #define UF_USE_DES_KEY_ONLY             0x00200000
 #define UF_NO_AUTH_DATA_REQUIRED        0x02000000
 
-/* for msDs-supportedEncryptionTypes  bit defines */
+/* for msDs-supportedEncryptionTypes bit defines */
 #define MS_KERB_ENCTYPE_DES_CBC_CRC             0x01
 #define MS_KERB_ENCTYPE_DES_CBC_MD5             0x02
 #define MS_KERB_ENCTYPE_RC4_HMAC_MD5            0x04
@@ -116,6 +116,21 @@
 #else
 #define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0
 #endif
+
+#define MS_KERB_DES_ENCTYPES \
+    ( MS_KERB_ENCTYPE_DES_CBC_CRC | \
+      MS_KERB_ENCTYPE_DES_CBC_MD5 )
+
+#define DEFAULT_MS_KERB_ENCTYPES \
+    ( MS_KERB_ENCTYPE_RC4_HMAC_MD5 | \
+      MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 | \
+      MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 )
+
+#define ALL_MS_KERB_ENCTYPES \
+    ( MS_KERB_DES_ENCTYPES | \
+      MS_KERB_ENCTYPE_RC4_HMAC_MD5 | \
+      MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 | \
+      MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 )
 
 /* Some KVNO Constansts */
 #define KVNO_FAILURE                    -1

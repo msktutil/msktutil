@@ -1272,17 +1272,11 @@ int main(int argc, char *argv [])
     }
 
     if (flags->enctypes == VALUE_ON) {
-        unsigned known= MS_KERB_ENCTYPE_DES_CBC_CRC |
-                        MS_KERB_ENCTYPE_DES_CBC_MD5 |
-                        MS_KERB_ENCTYPE_RC4_HMAC_MD5 |
-                        MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 |
-                        MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
-
-        if ((flags->supportedEncryptionTypes|known) != known) {
+        if ((flags->supportedEncryptionTypes | ALL_MS_KERB_ENCTYPES) != ALL_MS_KERB_ENCTYPES) {
             fprintf(stderr,
                     "Error: Unsupported --enctypes must be integer that "
                     "fits mask=0x%x\n",
-                    known
+                    ALL_MS_KERB_ENCTYPES
                 );
             goto error;
         }
@@ -1368,9 +1362,7 @@ msktutil_flags::msktutil_flags() :
     ad_supportedEncryptionTypes(0),
     enctypes(VALUE_IGNORE),
     /* default values we *want* to support */
-    supportedEncryptionTypes(MS_KERB_ENCTYPE_RC4_HMAC_MD5 |
-                             MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 |
-                             MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96),
+    supportedEncryptionTypes(DEFAULT_MS_KERB_ENCTYPES),
     auth_type(0),
     user_creds_only(false),
     use_service_account(false),
