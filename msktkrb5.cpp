@@ -394,7 +394,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 
     prune_keytab(keytab, princ, min_keep_timestamp);
 
-    std::vector<uint32_t> enc_types;
+    std::vector<int32_t> enc_types;
     if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_CRC) {
         enc_types.push_back(ENCTYPE_DES_CBC_CRC);
     }
