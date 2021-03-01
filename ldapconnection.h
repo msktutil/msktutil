@@ -84,6 +84,7 @@ public:
     int flush_attr_no_check(const std::string &dn, const std::string& type);
 
     int add(const std::string &dn, const LDAP_mod& mod);
+    int del(const std::string &dn);
 
     void print_diagnostics(const char *msg, int err);
     std::string get_one_val(LDAPMessage *msg, const std::string& name);
