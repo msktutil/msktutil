@@ -43,7 +43,7 @@ static bool endswith(std::string const &s, std::string const &suffix)
                      suffix.length(), suffix) == 0;
 }
 
-void get_default_ou(msktutil_flags *flags)
+void get_default_ou(LDAPConnection *ldap, msktutil_flags *flags)
 {
     /* If OU was given explicitly, we just need to make sure it's a
      * valid dn below our base dn.
@@ -56,8 +56,6 @@ void get_default_ou(msktutil_flags *flags)
     }
 
     /* Otherwise, probe AD for its default OU */
-
-    LDAPConnection *ldap = flags->ldap;
 
     std::string wkguid;
     if (flags->use_service_account) {
@@ -115,50 +113,45 @@ void ldap_get_base_dn(msktutil_flags *flags)
     }
 }
 
-void ldap_cleanup(msktutil_flags *flags)
-{
-    VERBOSE("Disconnecting from LDAP server");
-    delete flags->ldap;
-    flags->ldap = NULL;
-}
-
-LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
+LDAPMessage* ldap_get_account_attrs(LDAPConnection *ldap,
+                                    const msktutil_flags* flags,
                                     const char **attrs)
 {
     std::string filter = sform("(&(|(objectCategory=Computer)"
                                "(objectCategory=User))(sAMAccountName=%s))",
                                flags->sAMAccountName.c_str());
-    return flags->ldap->search(flags->base_dn,
+    return ldap->search(flags->base_dn,
                                LDAP_SCOPE_SUBTREE,
                                filter,
                                attrs);
 }
 
-LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
+LDAPMessage* ldap_get_account_attrs(LDAPConnection *ldap,
+                                    const msktutil_flags* flags,
                                     const std::string& attr)
 {
     std::string filter = sform("(&(|(objectCategory=Computer)"
                                "(objectCategory=User))"
                                "(sAMAccountName=%s))",
                                flags->sAMAccountName.c_str());
-    return flags->ldap->search(flags->base_dn,
+    return ldap->search(flags->base_dn,
                                LDAP_SCOPE_SUBTREE,
                                filter, attr);
 }
 
 
-int ldap_flush_principals(msktutil_flags *flags)
+int ldap_flush_principals(LDAPConnection *ldap, msktutil_flags *flags)
 {
     std::string dn;
 
     int ret;
 
     VERBOSE("Flushing principals from LDAP entry");
-    LDAPMessage *mesg = ldap_get_account_attrs(flags, "distinguishedName");
+    LDAPMessage *mesg = ldap_get_account_attrs(ldap, flags, "distinguishedName");
 
-    if (flags->ldap->count_entries(mesg) == 1) {
-        mesg = flags->ldap->first_entry(mesg);
-        dn = flags->ldap->get_one_val(mesg, "distinguishedName");
+    if (ldap->count_entries(mesg) == 1) {
+        mesg = ldap->first_entry(mesg);
+        dn = ldap->get_one_val(mesg, "distinguishedName");
     }
     ldap_msgfree(mesg);
     if (dn.empty()) {
@@ -169,12 +162,12 @@ int ldap_flush_principals(msktutil_flags *flags)
         return -1;
     }
 
-    ret = flags->ldap->flush_attr_no_check(dn, "servicePrincipalName");
+    ret = ldap->flush_attr_no_check(dn, "servicePrincipalName");
 
     /* Ignore if the attribute doesn't exist, that just means that
      * it's already empty */
     if (ret != LDAP_SUCCESS && ret != LDAP_NO_SUCH_ATTRIBUTE) {
-        flags->ldap->print_diagnostics("ldap_modify_ext_s failed", ret);
+        ldap->print_diagnostics("ldap_modify_ext_s failed", ret);
         return -1;
     }
 
@@ -182,15 +175,13 @@ int ldap_flush_principals(msktutil_flags *flags)
 }
 
 
-krb5_kvno ldap_get_kvno(msktutil_flags *flags)
+krb5_kvno ldap_get_kvno(LDAPConnection *ldap, msktutil_flags *flags)
 {
     krb5_kvno kvno = KVNO_FAILURE;
-    LDAPConnection *ldap = flags->ldap;
-
-    LDAPMessage *mesg = ldap_get_account_attrs(flags, "msDS-KeyVersionNumber");
+    LDAPMessage *mesg = ldap_get_account_attrs(ldap, flags, "msDS-KeyVersionNumber");
     if (ldap->count_entries(mesg) == 1) {
-        mesg = flags->ldap->first_entry(mesg);
-        std::string kvno_str = flags->ldap->get_one_val(mesg,
+        mesg = ldap->first_entry(mesg);
+        std::string kvno_str = ldap->get_one_val(mesg,
                                                         "msDS-KeyVersionNumber");
         if (!kvno_str.empty())
             kvno = (krb5_kvno) atoi(kvno_str.c_str());
@@ -210,14 +201,13 @@ krb5_kvno ldap_get_kvno(msktutil_flags *flags)
 }
 
 
-std::string ldap_get_pwdLastSet(msktutil_flags *flags)
+std::string ldap_get_pwdLastSet(LDAPConnection *ldap, msktutil_flags *flags)
 {
     std::string pwdLastSet;
 
     const char *attrs[] = {"pwdLastSet", NULL};
-    LDAPConnection *ldap = flags->ldap;
 
-    LDAPMessage *mesg = ldap_get_account_attrs(flags, attrs);
+    LDAPMessage *mesg = ldap_get_account_attrs(ldap, flags, attrs);
 
     if (ldap->count_entries(mesg) == 1) {
         mesg = ldap->first_entry(mesg);
@@ -229,12 +219,13 @@ std::string ldap_get_pwdLastSet(msktutil_flags *flags)
 }
 
 
-int ldap_simple_set_attr(const std::string &dn,
+int ldap_simple_set_attr(LDAPConnection *ldap,
+                         const std::string &dn,
                          const std::string &attrName,
                          const std::string &val,
                          msktutil_flags *flags)
 {
-    int ret = flags->ldap->simple_set_attr(dn, attrName, val);
+    int ret = ldap->simple_set_attr(dn, attrName, val);
 
     if (ret != LDAP_SUCCESS) {
         fprintf(stderr, "WARNING: ldap modification of %s\n", dn.c_str());
@@ -260,7 +251,8 @@ int ldap_simple_set_attr(const std::string &dn,
 }
 
 
-int ldap_set_supportedEncryptionTypes(const std::string &dn,
+int ldap_set_supportedEncryptionTypes(LDAPConnection *ldap,
+                                      const std::string &dn,
                                       msktutil_flags *flags)
 {
     int ret;
@@ -270,7 +262,7 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn,
         std::string supportedEncryptionTypes = sform("%d",
                                                      flags->supportedEncryptionTypes);
 
-        ret = ldap_simple_set_attr(dn, "msDs-supportedEncryptionTypes",
+        ret = ldap_simple_set_attr(ldap, dn, "msDs-supportedEncryptionTypes",
                                    supportedEncryptionTypes, flags);
         if (ret == LDAP_SUCCESS) {
             flags->ad_enctypes = VALUE_ON;
@@ -288,7 +280,8 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn,
 }
 
 
-int ldap_set_userAccountControl_flag(const std::string &dn,
+int ldap_set_userAccountControl_flag(LDAPConnection *ldap,
+                                     const std::string &dn,
                                      int mask,
                                      msktutil_val value,
                                      msktutil_flags *flags)
@@ -323,7 +316,7 @@ int ldap_set_userAccountControl_flag(const std::string &dn,
     if (new_userAcctFlags != flags->ad_userAccountControl) {
         std::string new_userAcctFlags_string = sform("%d", new_userAcctFlags);
 
-        ret = flags->ldap->simple_set_attr(dn,
+        ret = ldap->simple_set_attr(dn,
                                            "userAccountControl",
                                            new_userAcctFlags_string);
         if (ret == LDAP_SUCCESS) {
@@ -338,10 +331,9 @@ int ldap_set_userAccountControl_flag(const std::string &dn,
 }
 
 
-int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
+int ldap_add_principal(LDAPConnection *ldap, const std::string &principal, msktutil_flags *flags)
 {
     int ret;
-    LDAPConnection *ldap = flags->ldap;
     std::string dn = flags->ad_computerDn;
 
     VERBOSE("Checking that adding principal %s to %s won't cause a conflict",
@@ -374,7 +366,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             /* Check if we are the owner of the this principal or
              * not */
             mesg = ldap->first_entry(mesg);
-            std::string found_dn = flags->ldap->get_one_val(mesg,
+            std::string found_dn = ldap->get_one_val(mesg,
                                                             "distinguishedName");
             if (found_dn.empty()) {
                 fprintf(stderr,
@@ -406,13 +398,13 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
     return ret;
 }
 
-int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
+int ldap_remove_principal(LDAPConnection *ldap, const std::string &principal, msktutil_flags *flags)
 {
     VERBOSE("Removing servicePrincipalName %s from %s",
             principal.c_str(),
             flags->ad_computerDn.c_str());
 
-    int ret = flags->ldap->remove_attr(flags->ad_computerDn,
+    int ret = ldap->remove_attr(flags->ad_computerDn,
                                        "servicePrincipalName",
                                        principal);
     if (ret == LDAP_SUCCESS) {
@@ -427,10 +419,9 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
 }
 
 
-void ldap_check_account_strings(msktutil_flags *flags)
+void ldap_check_account_strings(LDAPConnection *ldap, msktutil_flags *flags)
 {
     const std::string &dn = flags->ad_computerDn;
-    LDAPConnection *ldap = flags->ldap;
 
     if (flags->use_service_account) {
         VERBOSE("Inspecting (and updating) service account attributes");
@@ -446,12 +437,12 @@ void ldap_check_account_strings(msktutil_flags *flags)
     if (!flags->use_service_account && !flags->dont_update_dnshostname) {
         if (!flags->hostname.empty() &&
             flags->hostname != flags->ad_dnsHostName) {
-            ldap_simple_set_attr(dn, "dNSHostName", flags->hostname, flags);
+            ldap_simple_set_attr(ldap, dn, "dNSHostName", flags->hostname, flags);
         }
     }
 
     if (!flags->description.empty()) {
-        ldap_simple_set_attr(dn, "description", flags->description, flags);
+        ldap_simple_set_attr(ldap, dn, "description", flags->description, flags);
     }
 
     if (flags->set_userPrincipalName) {
@@ -468,7 +459,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
         }
         /* let's see if userPrincipalName is already set to the
          * desired value in AD... */
-        LDAPMessage *mesg = ldap_get_account_attrs(flags, attrs);
+        LDAPMessage *mesg = ldap_get_account_attrs(ldap, flags, attrs);
         if (ldap->count_entries(mesg) == 1) {
             mesg = ldap->first_entry(mesg);
             upn_found = ldap->get_one_val(mesg, "userPrincipalName");
@@ -478,7 +469,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
         VERBOSE("userPrincipalName should be %s",
                 userPrincipalName_string.c_str());
         if (upn_found.compare(userPrincipalName_string)) {
-            ldap_simple_set_attr(dn,
+            ldap_simple_set_attr(ldap, dn,
                                  "userPrincipalName",
                                  userPrincipalName_string,
                                  flags);
@@ -486,7 +477,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
             VERBOSE("Nothing to do");
         }
     }
-    ldap_set_supportedEncryptionTypes(dn, flags);
+    ldap_set_supportedEncryptionTypes(ldap, dn, flags);
 
     msktutil_val des_only;
     if (flags->supportedEncryptionTypes == MS_KERB_DES_ENCTYPES) {
@@ -495,7 +486,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
         des_only = VALUE_OFF;
     }
 
-    ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, des_only, flags);
+    ldap_set_userAccountControl_flag(ldap, dn, UF_USE_DES_KEY_ONLY, des_only, flags);
     /* If msDS-supportedEncryptionTypes isn't set, ad_enctypes will be
      * VALUE_OFF. In that case, reset ad_supportedEncryptionTypes
      * according to the DES flag, in case we changed it. */
@@ -506,19 +497,19 @@ void ldap_check_account_strings(msktutil_flags *flags)
         }
     }
 
-    ldap_set_userAccountControl_flag(dn,
+    ldap_set_userAccountControl_flag(ldap, dn,
                                      UF_NO_AUTH_DATA_REQUIRED,
                                      flags->no_pac,
                                      flags);
-    ldap_set_userAccountControl_flag(dn,
+    ldap_set_userAccountControl_flag(ldap, dn,
                                      UF_TRUSTED_FOR_DELEGATION,
                                      flags->delegate,
                                      flags);
-    ldap_set_userAccountControl_flag(dn,
+    ldap_set_userAccountControl_flag(ldap, dn,
                                      UF_DONT_EXPIRE_PASSWORD,
                                      flags->dont_expire_password,
                                      flags);
-    ldap_set_userAccountControl_flag(dn,
+    ldap_set_userAccountControl_flag(ldap, dn,
                                      UF_ACCOUNT_DISABLE,
                                      flags->disable_account,
                                      flags);
@@ -529,7 +520,7 @@ T * myend(T (&ra)[N]) {
     return ra + N;
 }
 
-bool ldap_check_account(msktutil_flags *flags)
+bool ldap_check_account(LDAPConnection *ldap, msktutil_flags *flags)
 {
     LDAPMessage *mesg;
     const char *machine_attrs[] = {"distinguishedName",
@@ -560,16 +551,14 @@ bool ldap_check_account(msktutil_flags *flags)
                                                    myend(vals_objectClass));
     v_machine_objectClass.push_back("computer");
 
-    LDAPConnection *ldap = flags->ldap;
-
     if (flags->use_service_account) {
         VERBOSE("Checking that a service account for %s exists",
                 flags->sAMAccountName.c_str());
-        mesg = ldap_get_account_attrs(flags, user_attrs);
+        mesg = ldap_get_account_attrs(ldap, flags, user_attrs);
     } else {
         VERBOSE("Checking that a computer account for %s exists",
                 flags->sAMAccountName.c_str());
-        mesg = ldap_get_account_attrs(flags, machine_attrs);
+        mesg = ldap_get_account_attrs(ldap, flags, machine_attrs);
     }
 
     if (ldap->count_entries(mesg) == 0) {
@@ -593,7 +582,7 @@ bool ldap_check_account(msktutil_flags *flags)
 
     /* save the current msDs-supportedEncryptionTypes */
     std::string supportedEncryptionTypes =
-        flags->ldap->get_one_val(mesg, "msDs-supportedEncryptionTypes");
+        ldap->get_one_val(mesg, "msDs-supportedEncryptionTypes");
     if (!supportedEncryptionTypes.empty()) {
         flags->ad_supportedEncryptionTypes = atoi(supportedEncryptionTypes.c_str());
         flags->ad_enctypes = VALUE_ON; /* actual value found in AD */
@@ -648,11 +637,11 @@ bool ldap_check_account(msktutil_flags *flags)
         }
     }
     ldap_msgfree(mesg);
-    ldap_check_account_strings(flags);
+    ldap_check_account_strings(ldap, flags);
     return true;
 }
 
-void ldap_create_account(msktutil_flags *flags)
+void ldap_create_account(LDAPConnection *ldap, msktutil_flags *flags)
 {
 
     const char *vals_objectClass[] = {"top",
@@ -665,7 +654,6 @@ void ldap_create_account(msktutil_flags *flags)
     std::vector<std::string> v_machine_objectClass(vals_objectClass,
                                                    myend(vals_objectClass));
     v_machine_objectClass.push_back("computer");
-    LDAPConnection *ldap = flags->ldap;
     /* No computer account found, so let's add one in the OU specified */
     if (flags->use_service_account) {
         VERBOSE("Service account not found, create the account");
@@ -711,5 +699,5 @@ void ldap_create_account(msktutil_flags *flags)
         MS_KERB_ENCTYPE_RC4_HMAC_MD5;
     flags->ad_enctypes = VALUE_OFF;
     flags->ad_userAccountControl = userAcctFlags;
-    ldap_check_account_strings(flags);
+    ldap_check_account_strings(ldap, flags);
 }

@@ -270,39 +270,38 @@ public:
 };
 
 /* Prototypes */
-extern std::string create_default_machine_password(const std::string &sAMAccountName);
-extern void ldap_cleanup(msktutil_flags *);
-extern void init_password(msktutil_flags *);
-extern std::string get_default_hostname(bool no_canonical_name = false);
-extern void get_default_keytab(msktutil_flags *);
-extern std::string get_salt(msktutil_flags *);
-extern void get_default_ou(msktutil_flags *);
-
-extern void ldap_get_base_dn(msktutil_flags *);
-extern std::string complete_hostname(const std::string &,
-                                     bool no_canonical_name = false);
-extern std::string get_default_samaccountname(msktutil_flags *);
-extern std::string get_short_hostname(msktutil_flags *);
-extern int flush_keytab(msktutil_flags *);
-extern void cleanup_keytab(msktutil_flags *);
-extern void update_keytab(msktutil_flags *);
-extern void add_keytab_entries(msktutil_flags *);
-extern void remove_keytab_entries(msktutil_flags *,std::vector<std::string>);
-extern void add_principal_keytab(const std::string &, msktutil_flags *);
-extern int ldap_flush_principals(msktutil_flags *);
-extern int set_password(msktutil_flags *);
-extern krb5_kvno ldap_get_kvno(msktutil_flags *);
-extern std::string ldap_get_pwdLastSet(msktutil_flags *);
-extern std::vector<std::string> ldap_list_principals(msktutil_flags *);
-extern int ldap_add_principal(const std::string &, msktutil_flags *);
-int ldap_remove_principal(const std::string &principal, msktutil_flags *flags);
-extern std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
+std::string create_default_machine_password(const std::string &sAMAccountName);
+void init_password(msktutil_flags *);
+std::string get_default_hostname(bool no_canonical_name = false);
+void get_default_keytab(msktutil_flags *);
+std::string get_salt(msktutil_flags *);
+void get_default_ou(LDAPConnection *, msktutil_flags *);
+void ldap_get_base_dn(msktutil_flags *);
+std::string complete_hostname(const std::string &,
+                              bool no_canonical_name = false);
+std::string get_default_samaccountname(msktutil_flags *);
+std::string get_short_hostname(msktutil_flags *);
+int flush_keytab(LDAPConnection *ldap, msktutil_flags *);
+void cleanup_keytab(msktutil_flags *);
+void update_keytab(msktutil_flags *);
+void add_keytab_entries(msktutil_flags *);
+void remove_keytab_entries(msktutil_flags *,std::vector<std::string>);
+void add_principal_keytab(const std::string &, msktutil_flags *);
+int ldap_flush_principals(LDAPConnection *, msktutil_flags *);
+int set_password(msktutil_flags *);
+krb5_kvno ldap_get_kvno(LDAPConnection *, msktutil_flags *);
+std::string ldap_get_pwdLastSet(LDAPConnection *, msktutil_flags *);
+bool ldap_check_account(LDAPConnection *, msktutil_flags *);
+void ldap_create_account(LDAPConnection *, msktutil_flags *);
+void remove_ccache();
+std::vector<std::string> ldap_list_principals(msktutil_flags *);
+int ldap_add_principal(LDAPConnection *, const std::string &, msktutil_flags *);
+int ldap_remove_principal(LDAPConnection *, const std::string &principal, msktutil_flags *flags);
+std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
                                const bool);
-extern bool ldap_check_account(msktutil_flags *);
-extern void ldap_create_account(msktutil_flags *);
-extern void create_fake_krb5_conf(msktutil_flags *);
-extern void remove_fake_krb5_conf();
-extern void remove_ccache();
+
+void create_fake_krb5_conf(msktutil_flags *);
+void remove_fake_krb5_conf();
 int find_working_creds(msktutil_flags *flags);
 bool get_creds(msktutil_flags *flags);
 int generate_new_password(msktutil_flags *flags);

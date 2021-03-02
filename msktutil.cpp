@@ -164,8 +164,9 @@ void qualify_principal_vec(std::vector<std::string> &principals,
     }
 }
 
-
-int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
+// Returns an LDAPConnection, unless we are in cleanup mode
+// NULL return are error, unless we are in cleanup mode
+LDAPConnection *finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 {
     int ret;
 
@@ -210,7 +211,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     if (exec->mode == MODE_CLEANUP) {
         VERBOSE("cleanup mode: nothing more to do");
-        return (0);
+        return NULL;
     }
 
     if (exec->mode == MODE_PRECREATE && flags->hostname.empty()) {
@@ -318,11 +319,11 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 
     VERBOSE("Authenticated using method %d", flags->auth_type);
 
-    flags->ldap = new LDAPConnection(flags->server,
+    LDAPConnection *ldap = new LDAPConnection(flags->server,
                                      flags->sasl_mechanisms,
                                      flags->no_reverse_lookups);
 
-    if (!flags->ldap->is_connected()) {
+    if (!ldap->is_connected()) {
         fprintf(stderr, "Error: ldap_connect failed\n");
         /* Print a hint as to the likely cause: */
         if (flags->auth_type == AUTH_FROM_USER_CREDS) {
@@ -339,13 +340,13 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
         exit(1);
     }
     ldap_get_base_dn(flags);
-    get_default_ou(flags);
+    get_default_ou(ldap, flags);
 
-    return 0;
+    return ldap;
 }
 
 
-int add_and_remove_principals(msktutil_exec *exec)
+int add_and_remove_principals(LDAPConnection *ldap, msktutil_exec *exec)
 {
     int ret = 0;
 
@@ -357,7 +358,7 @@ int add_and_remove_principals(msktutil_exec *exec)
                       cur_princs.end(),
                       principal) == cur_princs.end()) {
             /* Not already in the list, so add it. */
-            int loc_ret = ldap_add_principal(principal, Globals::flags());
+            int loc_ret = ldap_add_principal(ldap, principal, Globals::flags());
             if (loc_ret) {
                 fprintf(stderr, "Error: ldap_add_principal failed\n");
                 ret = 1;
@@ -370,7 +371,7 @@ int add_and_remove_principals(msktutil_exec *exec)
         std::string principal = exec->remove_principals[i];
         if (std::find(cur_princs.begin(), cur_princs.end(), principal)
             != cur_princs.end()) {
-            int loc_ret = ldap_remove_principal(principal, Globals::flags());
+            int loc_ret = ldap_remove_principal(ldap, principal, Globals::flags());
             if (loc_ret) {
                 fprintf(stderr, "Error: ldap_remove_principal failed\n");
                 ret = 1;
@@ -520,7 +521,7 @@ void do_version()
 }
 
 
-static int wait_for_new_kvno(msktutil_flags *flags)
+static int wait_for_new_kvno(LDAPConnection *ldap, msktutil_flags *flags)
 {
     if (!flags->check_replication) {
         return 0;
@@ -536,7 +537,7 @@ static int wait_for_new_kvno(msktutil_flags *flags)
 
     /* Loop and wait for the account and password set to replicate */
     for (int this_time = 0; ; this_time += 5) {
-        krb5_kvno current_kvno = ldap_get_kvno(flags);
+        krb5_kvno current_kvno = ldap_get_kvno(ldap, flags);
         if (current_kvno == flags->kvno) {
             return 0;
         }
@@ -569,7 +570,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
             return ret;
         }
     }
-    ret = finalize_exec(exec, flags);
+    LDAPConnection *ldap = finalize_exec(exec, flags);
 
     if (ret) {
         fprintf(stderr, "Error: finalize_exec failed\n");
@@ -587,7 +588,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                     flags->hostname.c_str(),
                     flags->keytab_writename.c_str());
         }
-        ret = flush_keytab(flags);
+        ret = flush_keytab(ldap, flags);
+        delete ldap;
         return ret;
     } else if (exec->mode == MODE_CREATE ||
                exec->mode == MODE_UPDATE ||
@@ -596,7 +598,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
             if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
                 flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
                 flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
-                std::string pwdLastSet = ldap_get_pwdLastSet(flags);
+                std::string pwdLastSet = ldap_get_pwdLastSet(ldap, flags);
                 /* Windows timestamp is in
                  * 100-nanoseconds-since-1601. (or, tenths of
                  * microseconds) */
@@ -626,7 +628,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
 
         /* Check if computer account exists, update if so, create if
          * not. */
-        if (! ldap_check_account(flags)) {
+        if (! ldap_check_account(ldap, flags)) {
             if (flags->password.empty()) {
                 fprintf(stderr,
                         "Error: a new AD account needs to be created "
@@ -639,14 +641,14 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                 fprintf(stderr, "\n");
                 exit(1);
             } else {
-                ldap_create_account(flags);
-                flags->kvno = ldap_get_kvno(flags);
+                ldap_create_account(ldap, flags);
+                flags->kvno = ldap_get_kvno(ldap, flags);
             }
 
         } else {
             /* We retrieve the kvno _before_ the password change and
              * increment it. */
-            flags->kvno = ldap_get_kvno(flags);
+            flags->kvno = ldap_get_kvno(ldap, flags);
             if ((flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) &&
                 (!flags->dont_change_password)) {
                 flags->kvno++;
@@ -679,13 +681,15 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                             );
                         fprintf(stderr, "      for that.\n");
                     }
+                    delete ldap;
+                    ldap = NULL;
                     return ret;
                 }
             }
         }
 
         /* Add and remove principals to servicePrincipalName in LDAP.*/
-        add_and_remove_principals(exec);
+        add_and_remove_principals(ldap, exec);
 
         remove_keytab_entries(flags, exec->remove_principals);
 
@@ -703,7 +707,9 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
 
         add_keytab_entries(flags);
 
-        wait_for_new_kvno(flags);
+        wait_for_new_kvno(ldap, flags);
+        delete ldap;
+        ldap = NULL;
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
         /* Change account password to default value: */
@@ -711,8 +717,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
             flags->sAMAccountName);
         /* Check if computer account exists, update if so, create if
          * not. */
-        if (! ldap_check_account(flags)) {
-            ldap_create_account(flags);
+        if (! ldap_check_account(ldap, flags)) {
+            ldap_create_account(ldap, flags);
         }
 
         /* Set the password. */
@@ -724,16 +730,21 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
 
         /* And add and remove principals to servicePrincipalName in
          * LDAP. */
-        add_and_remove_principals(exec);
-        wait_for_new_kvno(flags);
+        add_and_remove_principals(ldap, exec);
+        wait_for_new_kvno(ldap, flags);
+        delete ldap;
+        ldap = NULL;
         return ret;
     } else if (exec->mode == MODE_CLEANUP) {
         fprintf(stdout, "Cleaning keytab %s\n",
                 flags->keytab_writename.c_str());
         cleanup_keytab(flags);
+        delete ldap;
+        ldap = NULL;
         return 0;
     }
-
+    delete ldap;
+    ldap = NULL;
     return 0;
 }
 
@@ -1343,7 +1354,6 @@ Globals::set_supportedEncryptionTypes(char * value)
 msktutil_flags::msktutil_flags() :
     password(),
     password_from_cmdline(false),
-    ldap(NULL),
     set_userPrincipalName(false),
     no_reverse_lookups(false),
     no_canonical_name(false),
@@ -1399,7 +1409,6 @@ msktutil_flags::msktutil_flags() :
 
 msktutil_flags::~msktutil_flags()
 {
-    ldap_cleanup(this);
     init_password(this);
 }
 

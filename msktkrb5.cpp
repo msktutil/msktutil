@@ -126,7 +126,7 @@ std::string get_salt(msktutil_flags *flags)
 }
 
 
-int flush_keytab(msktutil_flags *flags)
+int flush_keytab(LDAPConnection *ldap, msktutil_flags *flags)
 {
     VERBOSE("Flushing the keytab");
     KRB5Keytab keytab(flags->keytab_writename);
@@ -155,7 +155,7 @@ int flush_keytab(msktutil_flags *flags)
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 
-    return ldap_flush_principals(flags);
+    return ldap_flush_principals(ldap, flags);
 }
 
 
