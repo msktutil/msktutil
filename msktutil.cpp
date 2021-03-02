@@ -572,9 +572,15 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
     }
     LDAPConnection *ldap = finalize_exec(exec, flags);
 
-    if (ret) {
+    if (exec->mode == MODE_CLEANUP) {
+        fprintf(stdout, "Cleaning keytab %s\n",
+                flags->keytab_writename.c_str());
+        cleanup_keytab(flags);
+        return 0;
+    }
+    if (ldap == NULL) {
         fprintf(stderr, "Error: finalize_exec failed\n");
-        exit(ret);
+        exit(1);
     }
     if (exec->mode == MODE_FLUSH) {
         if (flags->use_service_account) {
@@ -735,13 +741,6 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         delete ldap;
         ldap = NULL;
         return ret;
-    } else if (exec->mode == MODE_CLEANUP) {
-        fprintf(stdout, "Cleaning keytab %s\n",
-                flags->keytab_writename.c_str());
-        cleanup_keytab(flags);
-        delete ldap;
-        ldap = NULL;
-        return 0;
     }
     delete ldap;
     ldap = NULL;
