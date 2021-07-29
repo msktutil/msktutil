@@ -145,7 +145,6 @@ int set_password(msktutil_flags *flags)
     krb5_data resp_code_string;
     krb5_data resp_string;
     int response = 0;
-    std::string old_pwdLastSet;
 
     /* Zero out these data structures, because we attempt to free them
      * below, and sometimes, upon error conditions, the called API
@@ -166,7 +165,6 @@ int set_password(msktutil_flags *flags)
         KRB5CCache ccache(KRB5CCache::defaultName());
         KRB5Principal principal(flags->sAMAccountName);
 
-        old_pwdLastSet = ldap_get_pwdLastSet(flags);
         ret = krb5_set_password_using_ccache(g_context,
                                              ccache.get(),
                                              const_cast<char*>(flags->password.c_str()),
@@ -252,10 +250,6 @@ int set_password(msktutil_flags *flags)
             creds.move_from(local_creds);
         } else /* shouldn't happen */
             throw Exception("Error: unknown auth_type.");
-
-        if (flags->auth_type != AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
-            old_pwdLastSet = ldap_get_pwdLastSet(flags);
-        }
 
         ret = krb5_change_password(g_context,
                                    creds.get(),
