@@ -727,7 +727,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         /* reset mode will only work for machine accounts:*/
         if (flags->use_service_account) {
             fprintf(stderr, "Error: \"reset\" mode and "
-                            "\"--use-service-accounts\" are "
+                            "\"--use-service-account\" are "
                             "mutually exclusive\n");
             return 1;
         }
@@ -741,7 +741,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         if (!ldap_check_account(flags)) {
             fprintf(stderr, "Error: the account %s does "
                             "not exist and cannot be "
-                            "reseted\n", flags->sAMAccountName.c_str());
+                            "reset\n", flags->sAMAccountName.c_str());
             return 1;
         }
 

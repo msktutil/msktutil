@@ -715,7 +715,7 @@ int ldap_delete_account(msktutil_flags *flags)
     ldap_msgfree(mesg);
     if (dn.empty()) {
         fprintf(stderr,
-                "Error: an account for %s was not found\n",
+                "Error: account for %s was not found\n",
                 flags->sAMAccountName.c_str()
             );
         return -1;
