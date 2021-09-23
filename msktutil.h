@@ -172,7 +172,8 @@ enum msktutil_mode {
     MODE_FLUSH,
     MODE_CLEANUP,
     MODE_PRECREATE,
-    MODE_DELETE
+    MODE_DELETE,
+    MODE_RESET
 };
 
 
@@ -300,6 +301,7 @@ extern std::string get_dc_host(const std::string &realm_name, const std::string 
                                const bool);
 extern bool ldap_check_account(msktutil_flags *);
 extern void ldap_create_account(msktutil_flags *);
+extern int ldap_delete_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);
 extern void remove_fake_krb5_conf();
 extern void remove_ccache();

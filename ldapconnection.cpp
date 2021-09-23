@@ -333,6 +333,16 @@ int LDAPConnection::add(const std::string &dn, const LDAP_mod& mod)
     return ret;
 }
 
+int LDAPConnection::del(const std::string &dn)
+{
+    int ret = ldap_delete_ext_s(m_ldap, dn.c_str(), NULL, NULL);
+    if (ret) {
+        print_diagnostics("ldap_delete_ext_s failed", ret);
+        throw LDAPException("ldap_delete_ext_s", ret);
+    }
+    return ret;
+}
+
 void LDAP_mod::add(const std::string& type, const std::string& val,
         bool ucs)
 {

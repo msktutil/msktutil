@@ -589,6 +589,9 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         }
         ret = flush_keytab(flags);
         return ret;
+    } else if (exec->mode == MODE_DELETE) {
+        ret = ldap_delete_account(flags);
+        return ret;
     } else if (exec->mode == MODE_CREATE ||
                exec->mode == MODE_UPDATE ||
                exec->mode == MODE_AUTO_UPDATE) {
@@ -727,6 +730,36 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         add_and_remove_principals(exec);
         wait_for_new_kvno(flags);
         return ret;
+    } else if (exec->mode == MODE_RESET) {
+        /* reset mode will only work for machine accounts:*/
+        if (flags->use_service_account) {
+            fprintf(stderr, "Error: \"reset\" mode and "
+                            "\"--use-service-account\" are "
+                            "mutually exclusive\n");
+            return 1;
+        }
+
+        /* Change account password to default value: */
+        flags->password = create_default_machine_password(
+            flags->sAMAccountName);
+
+        /* Check if computer account exists, update if so, error if
+         * not. */
+        if (!ldap_check_account(flags)) {
+            fprintf(stderr, "Error: the account %s does "
+                            "not exist and cannot be "
+                            "reset\n", flags->sAMAccountName.c_str());
+            return 1;
+        }
+
+        /* Set the password. */
+        ret = set_password(flags);
+        if (ret) {
+            fprintf(stderr, "Error: set_password failed\n");
+            return ret;
+        }
+        wait_for_new_kvno(flags);
+        return ret;
     } else if (exec->mode == MODE_CLEANUP) {
         fprintf(stdout, "Cleaning keytab %s\n",
                 flags->keytab_writename.c_str());
@@ -777,6 +810,8 @@ int main(int argc, char *argv [])
             exec->set_mode(MODE_CLEANUP);
         } else if (!strcmp(argv[1], "delete")) {
             exec->set_mode(MODE_DELETE);
+        } else if (!strcmp(argv[1], "reset")) {
+            exec->set_mode(MODE_RESET);
         }
     }
 
@@ -1308,6 +1343,16 @@ int main(int argc, char *argv [])
         /* Default, no options present */
         fprintf(stderr, "Error: No command given\n");
         goto error;
+    }
+
+    /* delete mode will only work with admin credentials */
+    if (exec->mode == MODE_DELETE) {
+        flags->user_creds_only = true;
+    }
+
+    /* reset mode will only work with admin credentials */
+    if (exec->mode == MODE_RESET) {
+        flags->user_creds_only = true;
     }
 
     try {
