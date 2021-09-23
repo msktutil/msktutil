@@ -22,7 +22,7 @@ jobs:
       - name: run Shellcheck
         run: |
           shellcheck --version
-          find . -name "*.sh" | xargs shellcheck || true
+          find . -name "*.sh" | xargs shellcheck
 
   # see https://github.com/danmar/cppcheck
   cppcheck:
