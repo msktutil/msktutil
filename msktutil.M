@@ -304,8 +304,8 @@ is not to check LDAP replication.
 Removes entries from the keytab that are older than <number> days. The newest keytab entries will be kept
 to prevent a total cleanup. I.e. it is not possible to produce an empty keytab with the --remove-old option.
 .TP
---remove-enctype <int>
-Removes entries from the keytab with given encryption type. (See --enctypes for supported encryption types.)
+--remove-enctype <enctype>
+Removes entries from the keytab with given encryption type.
 Warning: it is possible to produce empty keytabs with the --remove-empty option by successively removing
 all encryption types. Supported enctype strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128 and aes256.
 .SH NOTES
