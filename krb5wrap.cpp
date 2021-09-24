@@ -210,20 +210,73 @@ void KRB5Keytab::addEntry(const KRB5Principal &princ,
         throw KRB5Exception("krb5_string_to_key_data_salt", ret);
     }
 #else
+    krb5_error_code ret;
+
     krb5_data salt_data, pass_data;
+
+    krb5_data *saltparam = &salt_data;
+    krb5_data *s2kparams = NULL;
+
     salt_data.data = const_cast<char *>(salt.c_str());
     salt_data.length = salt.length();
 
     pass_data.data = const_cast<char *>(password.c_str());
     pass_data.length = password.length();
 
-    krb5_error_code ret = krb5_c_string_to_key(g_context,
-                                               enctype,
-                                               &pass_data,
-                                               &salt_data,
-                                               &keyblock);
+/* MIT Kerberos v1.17+ allows us to replace the supplied salt (guessed by
+ * heuristics) with proper salt info as returned by the KDC. We'll always
+ * fall back to the previous behaviour for backward compatibility.
+ */
+# if HAVE_KRB5_GET_ETYPE_INFO
+    krb5_get_init_creds_opt *opt = NULL;
+    ret = krb5_get_init_creds_opt_alloc(g_context, &opt);
     if (ret) {
-        throw KRB5Exception("krb5_c_string_to_key", ret);
+        throw KRB5Exception("krb5_get_init_creds_opt_alloc", ret);
+    }
+
+    krb5_get_init_creds_opt_set_etype_list(opt, &enctype, 1);
+
+    krb5_enctype kdc_enctype;
+    krb5_data kdc_salt;
+    krb5_data kdc_s2kparams;
+
+    ret = krb5_get_etype_info(g_context,
+                              princ.get(),
+                              opt,
+                              &kdc_enctype,
+                              &kdc_salt,
+                              &kdc_s2kparams);
+
+    krb5_get_init_creds_opt_free(g_context, opt);
+
+    /* We query info for a single enctype, so this test should only ever fail
+     * if the KDC returns ENCTYPE_NULL, indicating that the requested enctype
+     * is not supported on its end. At this point, we could refuse to add
+     * the requested enctype to the keytab. For consistency with previous
+     * behaviour, though, we just keep going and add an entry with the salt
+     * value supplied by the caller.
+     */
+    if (!ret && kdc_enctype == enctype) {
+        s2kparams = (kdc_s2kparams.length > 0) ? &kdc_s2kparams : NULL;
+        saltparam = &kdc_salt;        
+    }
+# endif
+
+    ret = krb5_c_string_to_key_with_params(g_context,
+                                           enctype,
+                                           &pass_data,
+                                           saltparam,
+                                           s2kparams,
+                                           &keyblock);
+
+    if (s2kparams) {
+        krb5_free_data_contents(g_context, s2kparams);
+    }
+    if (saltparam != &salt_data) {
+        krb5_free_data_contents(g_context, saltparam);
+    }
+    if (ret) {
+        throw KRB5Exception("krb5_c_string_to_key_with_params", ret);
     }
 #endif
 

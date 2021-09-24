@@ -306,7 +306,7 @@ fi
 fi
 
 # Check for functions
-AC_CHECK_FUNCS(vasprintf vsnprintf setenv strtoll ldap_initialize)
+AC_CHECK_FUNCS(vasprintf vsnprintf setenv strtoll ldap_initialize krb5_get_etype_info)
 
 # Check that the AES enctypes are found
 AC_CHECK_DECLS([ENCTYPE_AES256_CTS_HMAC_SHA1_96, ENCTYPE_AES128_CTS_HMAC_SHA1_96], [], [], [[#include <krb5.h>]])
