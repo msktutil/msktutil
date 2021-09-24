@@ -99,36 +99,40 @@ void set_supportedEncryptionTypes(msktutil_flags *flags, char * value)
     flags->supportedEncryptionTypes = strtol(value, NULL, 0);
 }
 
-void set_cleanup_enctype(msktutil_flags *flags, char * value)
+/* Parse string representation of enctype into numeric krb5 enctype
+ * (not to be mistaken with the numeric AD enctype!)
+ */
+int parse_enctype(const std::string &value)
 {
-    int enctype = -1;
-    if (sform(value).compare(sform("des-cbc-crc")) == 0) {
+    int enctype;
+
+    if ("des-cbc-crc" == value)
         enctype = 1;
-    } else if (sform(value).compare(sform("des-cbc-md5")) == 0) {
+    else if ("des-cbc-md5" == value)
         enctype = 3;
-    } else if ((sform(value).compare(sform("arcfour-hmac-md5")) == 0) ||
-               (sform(value).compare(sform("arcfour-hmac")) == 0) ||
-               (sform(value).compare(sform("arcfour")) == 0) ||
-               (sform(value).compare(sform("rc4-hmac-md5")) == 0) ||
-               (sform(value).compare(sform("rc4-hmac")) == 0) ||
-               (sform(value).compare(sform("rc4")) == 0)) {
+    else if ("arcfour-hmac-md5" == value ||
+             "arcfour-hmac" == value ||
+             "arcfour" == value ||
+             "rc4-hmac-md5" == value ||
+             "rc4-hmac" == value ||
+             "rc4" == value)
         enctype = 23;
-    } else if ((sform(value).compare(sform("aes128-cts-hmac-sha1-96")) == 0) ||
-               (sform(value).compare(sform("aes128-cts-hmac-sha1")) == 0) ||
-               (sform(value).compare(sform("aes128-cts-hmac")) == 0) ||
-               (sform(value).compare(sform("aes128-cts")) == 0) ||
-               (sform(value).compare(sform("aes128")) == 0)) {
+    else if ("aes128-cts-hmac-sha1-96" == value ||
+             "aes128-cts-hmac-sha1" == value ||
+             "aes128-cts-hmac" == value ||
+             "aes128-cts" == value ||
+             "aes128" == value)
         enctype = 17;
-    } else if ((sform(value).compare(sform("aes256-cts-hmac-sha1-96")) == 0) ||
-               (sform(value).compare(sform("aes256-cts-hmac-sha1")) == 0) ||
-               (sform(value).compare(sform("aes256-cts-hmac")) == 0) ||
-               (sform(value).compare(sform("aes256-cts")) == 0) ||
-               (sform(value).compare(sform("aes256")) == 0)) {
+    else if ("aes256-cts-hmac-sha1-96" == value ||
+             "aes256-cts-hmac-sha1" == value ||
+             "aes256-cts-hmac" == value ||
+             "aes256-cts" == value ||
+             "aes256" == value)
         enctype = 18;
-    } else {
+    else {
         fprintf(stderr,
                 "Error: enctype = %s not supported. "
-                "Supported enctype strings are\n", value
+                "Supported enctype strings are\n", value.c_str()
             );
         fprintf(stderr, "  des-cbc-crc\n");
         fprintf(stderr, "  des-cbc-md5\n");
@@ -137,7 +141,8 @@ void set_cleanup_enctype(msktutil_flags *flags, char * value)
         fprintf(stderr, "  aes256\n");
         exit(1);
     }
-    flags->cleanup_enctype = enctype;
+
+    return enctype;
 }
 
 void do_verbose()
@@ -1224,7 +1229,7 @@ int main(int argc, char *argv [])
 
         if (!strcmp(argv[i], "--remove-enctype")) {
             if (++i < argc) {
-                set_cleanup_enctype(flags, argv[i]);
+                flags->cleanup_enctype = parse_enctype(argv[i]);
             } else {
                 fprintf(stderr,
                         "Error: No number given after '%s'\n",
