@@ -225,7 +225,7 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE, 1, [define
 			]],[[
 	ns_initparse(0, 0, 0);
 			]])],
-			[ AC_DEFINE(HAVE_NS_INITPARSE,1)
+			[AC_DEFINE(HAVE_NS_INITPARSE,1)
 			AC_MSG_RESULT([yes])], [
 			# glibc versions prior to 2.9 include ns_initparse in
 			# libresolve but do not export it. Try to circumvent
@@ -241,8 +241,8 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE, 1, [define
 	ns_initparse(0, 0, 0);
 				]])],
 				[AC_DEFINE(HAVE_NS_INITPARSE,1)
-				AC_MSG_RESULT([yes])],
-				[LIBS="$saved_LIBS"
+				AC_MSG_RESULT([yes])], [
+				LIBS="$saved_LIBS"
 				AC_MSG_RESULT([no])])])])])
 
 # finally check if res_search is present as well just as a sanity check
