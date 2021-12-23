@@ -212,7 +212,8 @@ AC_SEARCH_LIBS([ns_initparse], [resolv], AC_DEFINE(HAVE_NS_INITPARSE, 1, [define
 		]],[[
 	ns_initparse(0, 0, 0);
 		]])],
-		AC_MSG_RESULT([yes]), [
+		[AC_DEFINE(HAVE_NS_INITPARSE,1)
+		AC_MSG_RESULT([yes])], [
 		# now try libresolv again
 		AC_MSG_RESULT([no])
 		saved_LIBS="$LIBS"
