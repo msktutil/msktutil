@@ -1,6 +1,7 @@
 *.o
 msktutil
 msktutil.1
+msktutil-*.tar*
 *~
 Makefile
 TAGS

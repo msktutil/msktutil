@@ -48,7 +48,7 @@ clean:
 	$(RM) $(PROG) $(OBJECTS) $(MAN)
 
 distclean: clean
-	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in
+	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in msktutil-@PACKAGE_VERSION@.tar*
 
 configure config.h.in: configure.ac
 	./autogen.sh
@@ -62,7 +62,12 @@ install: all
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
-dist: config.h.in configure
-	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -jcvf msktutil-@PACKAGE_VERSION@.tar.bz2 \
+tar: config.h.in configure
+	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -cvf msktutil-@PACKAGE_VERSION@.tar \
                 $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
                 Makefile.in configure.ac config.h.in msktutil.M autogen.sh
+
+dist: tar
+	gzip -kf msktutil-@PACKAGE_VERSION@.tar
+	bzip2 -zkf msktutil-@PACKAGE_VERSION@.tar
+
