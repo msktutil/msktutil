@@ -20,12 +20,15 @@ SED=@SED@
 CAT=@CAT@
 ECHO=@ECHO@
 MKDIR=@MKDIR@
+TAR=@TAR@
 MAN=$(PROG).1
 SOURCES_CPP=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msktpass.cpp msktconf.cpp ldapconnection.cpp
 SOURCES_C=strtoll.c
 SOURCES=$(SOURCES_CPP) $(SOURCES_C)
 HEADERS=msktutil.h msktname.h krb5wrap.h ldapconnection.h
 OBJECTS=$(SOURCES_CPP:.cpp=.o) $(SOURCES_C:.c=.o)
+DISTARCHIVE=@PACKAGE_NAME@-@PACKAGE_VERSION@
+EXTRA_DIST=README LICENSE ChangeLog INSTALL Makefile.in configure.ac msktutil.M autogen.sh
 
 .SUFFIXES: .c .cpp .o
 
@@ -48,7 +51,9 @@ clean:
 	$(RM) $(PROG) $(OBJECTS) $(MAN)
 
 distclean: clean
-	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache config.h~ config.h.in~ config.h.in msktutil-@PACKAGE_VERSION@.tar*
+	$(RM) Makefile config.h config.log config.cache config.status autom4te.cache \
+	      config.h~ config.h.in~ config.h.in \
+	      $(DISTARCHIVE).tar.gz $(DISTARCHIVE).tar.bz2
 
 configure config.h.in: configure.ac
 	./autogen.sh
@@ -62,12 +67,10 @@ install: all
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
-tar: config.h.in configure
-	tar -s +^+msktutil-@PACKAGE_VERSION@/+ -cvf msktutil-@PACKAGE_VERSION@.tar \
-                $(SOURCES) $(HEADERS) configure README LICENSE ChangeLog INSTALL \
-                Makefile.in configure.ac config.h.in msktutil.M autogen.sh
+$(DISTARCHIVE).tar.gz: $(SOURCES) $(HEADERS) config.h.in configure
+	$(TAR) --transform=s+^+$(DISTARCHIVE)/+ -zcf $@ $^ $(EXTRA_DIST)
 
-dist: tar
-	gzip -kf msktutil-@PACKAGE_VERSION@.tar
-	bzip2 -zkf msktutil-@PACKAGE_VERSION@.tar
+$(DISTARCHIVE).tar.bz2: $(SOURCES) $(HEADERS) config.h.in configure
+	$(TAR) --transform=s+^+$(DISTARCHIVE)/+ -jcf $@ $^ $(EXTRA_DIST)
 
+dist: $(DISTARCHIVE).tar.gz $(DISTARCHIVE).tar.bz2
