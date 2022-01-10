@@ -86,7 +86,15 @@ jobs:
             apt-get install -q -y \
               libldap2-dev libkrb5-dev libsasl2-dev
             ;;
-          fedora*|centos:8)
+          fedora*)
+            # basic packages
+            dnf -y install \
+              autoconf automake gcc-c++ libtool make pkgconfig which redhat-rpm-config
+            # install dependencies
+            dnf -y install \
+              cyrus-sasl-devel krb5-devel openldap-devel
+            ;;
+          centos:8)
             # basic packages
             dnf -y install \
               autoconf automake gcc-c++ libtool make pkgconfig which
