@@ -1,20 +1,20 @@
-.TH REPLACE_PROGNAME 1 REPLACE_VERSION
+.TH @PACKAGE_NAME@ 1 @PACKAGE_VERSION@
 .SH NAME
-REPLACE_PROGNAME \- fetches and manages kerberos keytabs in an Active Directory environment
+@PACKAGE_NAME@ \- fetches and manages kerberos keytabs in an Active Directory environment
 .SH SYNOPSIS
-.B REPLACE_PROGNAME
+.B @PACKAGE_NAME@
 [mode] [parameter 1] [parameter 2] ...
 .SH DESCRIPTION
-REPLACE_PROGNAME is a Unix/Linux keytab utility for Microsoft Active Directory environments.  This program is
+@PACKAGE_NAME@ is a Unix/Linux keytab utility for Microsoft Active Directory environments.  This program is
 capable of creating accounts in Active Directory, adding service principals to those accounts, and
 creating local keytab files so that kerberizied services can utilize Active Directory as a Kerberos infrastructure.
-REPLACE_PROGNAME will create and manage machine accounts by default.  The --use-service-account option
-lets REPLACE_PROGNAME operate on service accounts.  REPLACE_PROGNAME requires that the Kerberos client
+@PACKAGE_NAME@ will create and manage machine accounts by default.  The --use-service-account option
+lets @PACKAGE_NAME@ operate on service accounts.  @PACKAGE_NAME@ requires that the Kerberos client
 libraries are properly installed and configured to use Active Directory as a realm.
 .PP
 Whenever a principal is added or a keytab is updated, the secret password for the corresponding
 account is changed.  By default, the password is not stored, so it needs to be reset each time
-REPLACE_PROGNAME is executed.  All entries in the keytab will be automatically updated whenever the
+@PACKAGE_NAME@ is executed.  All entries in the keytab will be automatically updated whenever the
 password is reset.  The previous entries will be left in the keytab, so sessions using the older key
 versions will not break.  This behavior is similar to the way Windows hosts handle machine password
 changes.
@@ -25,18 +25,18 @@ credentials which have permission to create computer objects in your Active Dire
 invoke the program with such credentials, you can create a new computer account or service account
 from scratch.
 .PP
-The second is to pre-create the accounts with such credentials, and then invoke REPLACE_PROGNAME on
+The second is to pre-create the accounts with such credentials, and then invoke @PACKAGE_NAME@ on
 a machine without any special permissions.  When the computer account or service account exists already,
-REPLACE_PROGNAME will attempt to authenticate as that account using either the existing keytab, or
+@PACKAGE_NAME@ will attempt to authenticate as that account using either the existing keytab, or
 if that fails, a default password.  When that default password is not specified with the option
---old-account-password, REPLACE_PROGNAME will use the default machine password.  It will then change
+--old-account-password, @PACKAGE_NAME@ will use the default machine password.  It will then change
 the password and update the keytab appropriately.  This is usually the more convenient option when joining
 many computers to the domain.
 .PP
 To pre-create a computer account, you may use the Active Directory Users and Computers GUI, select
 "new computer" from the right click menu, and type the short DNS name, then right click on the newly
 created object and select "Reset account" to set the password to the default value.  Another
-alternative is to run REPLACE_PROGNAME in the pre-create mode.  Both methods accomplish the
+alternative is to run @PACKAGE_NAME@ in the pre-create mode.  Both methods accomplish the
 same thing.
 .PP
 To pre-create a service account, you may use the Active Directory Users and Computers GUI, select
@@ -56,7 +56,7 @@ as specified.
 .TP
 .B auto-update
 Checks if the password is at least 30 days old (from pwdLastSet attribute), and that the account
-does not have password expiry disabled.  If those conditions are met, acts just like REPLACE_PROGNAME
+does not have password expiry disabled.  If those conditions are met, acts just like @PACKAGE_NAME@
 update. Will also update if the keytab failed to authenticate but the default password did work (e.g.
 after resetting the account in AD).  Otherwise, exits without doing anything (even if attribute modifying
 options are given).  This option is intended for use from a daily crontab to ensure that the password
@@ -112,7 +112,7 @@ will not be automatically appended to the SAM Account Name when using service ac
 .TP
 --old-account-password <password>
 Use supplied account password for authentication.  This is useful if the keytab does not yet exist 
-but the password of the computer account is known.  This password will be changed by REPLACE_PROGNAME in order 
+but the password of the computer account is known.  This password will be changed by @PACKAGE_NAME@ in order
 to create or update the keytab
 .TP
 --password <new_password>
@@ -140,8 +140,8 @@ account password.  Default: /etc/krb5.keytab
 .TP
 --keytab-auth-as <name>
 Specifies which principal name we should try to use, when we authenticate from a keytab. Normally,
-REPLACE_PROGNAME will try to use the account name or the host principal for the current host. If
-this option is specified, instead REPLACE_PROGNAME will try to use the given principal name first,
+@PACKAGE_NAME@ will try to use the account name or the host principal for the current host. If
+this option is specified, instead @PACKAGE_NAME@ will try to use the given principal name first,
 and only fall back to the default behavior if we fail to authenticate with the given name. This
 option can be useful if you do not know the current password for the relevant account, do not have
 a keytab with the account principal, but you do have a keytab with a service principal associated
@@ -184,11 +184,11 @@ e.g. kinit).  You may need to do this to modify certain attributes that require 
 credentials (description, userAccountControl, userPrincipalName, in a default AD setup).
 .TP
 --auto-update-interval <days>
-Number of <days> when REPLACE_PROGNAME auto-update will change the account password. Defaults to 30 days.
+Number of <days> when @PACKAGE_NAME@ auto-update will change the account password. Defaults to 30 days.
 .TP
 -m, --sasl-mechanisms <mechanisms list>
 A space-separated list of candidate SASL mechanisms to use when performing the LDAP bind.  The first mechanism in
-the list that is supported by both the client (the host running REPLACE_PROGNAME) and the server (Active Directory)
+the list that is supported by both the client (the host running @PACKAGE_NAME@) and the server (Active Directory)
 will be used. If providing more than one candidate mechanism, make sure to quote the list to protect the whitespace
 from the shell.  Default: "GSS-SPNEGO GSSAPI".
 .SS OBJECT TYPE/ATTRIBUTE-SETTING OPTIONS
@@ -317,19 +317,19 @@ Be aware that Windows machines will, by default, automatically change their acco
 30 days, and thus many domains have a 90-day password expiry window, after which your keytab will
 stop working.  There are two ways to deal with this:
 .PP
-a) (Preferred): Make sure you're running a daily cron job to run REPLACE_PROGNAME auto-update, which
+a) (Preferred): Make sure you're running a daily cron job to run @PACKAGE_NAME@ auto-update, which
 will change the password automatically 30 days after it was last changed and update the keytab.
 .PP
 b) (Not preferred): disable password expiry for the account via the --dont-expire-password option (or
 otherwise setting DONT_EXPIRE_PASSWORD flag in userAccountControl in AD).
 .SS PASSWORD POLICY ISSUES
 .PP
-This section only applies to REPLACE_PROGNAME --use-service-account.
+This section only applies to @PACKAGE_NAME@ --use-service-account.
 .PP
 While machine account passwords may be changed at any time, service accounts are user accounts and
 your Active Directory domain may have special password policies for those user accounts.  E.g.,
 "minimum password age" is typically set to 1 day, which means that you will have to wait for that
-time to pass until you may invoke REPLACE_PROGNAME update --use-service-account.
+time to pass until you may invoke @PACKAGE_NAME@ update --use-service-account.
 .SS OTHER NOTES
 .PP
 Unlike other kerberos implementations, Active Directory has only a single key for all of the
@@ -348,15 +348,15 @@ argument to set the userPrincipalName attribute (generally requires administrato
 computer account credentials).  Both 'computername$' and the value of userPrincipalName are treated
 as valid account names to kinit as.
 .PP
-REPLACE_PROGNAME will use kerberized LDAP operations to talk to domain controllers.  To obtain a LDAP service
+@PACKAGE_NAME@ will use kerberized LDAP operations to talk to domain controllers.  To obtain a LDAP service
 ticket, the DNS service will be used to construct the domain controllers LDAP principal name.  If DNS is
 misconfigured, this construction may fail.  To work around this issue,  you may specify the fully
 qualified DNS name of your domain controller with the --server option and additionally use the
 --no-reverse-lookups option.
 .PP
 Samba (www.samba.org) provides the net command that can be used to manage kerberos keytabs as
-well.  Using REPLACE_PROGNAME and commands like "net ads join" or "net ads keytab" together can lead to
-trouble.  With the --set-samba-secret option, REPLACE_PROGNAME can be used as a replacement for net.
+well.  Using @PACKAGE_NAME@ and commands like "net ads join" or "net ads keytab" together can lead to
+trouble.  With the --set-samba-secret option, @PACKAGE_NAME@ can be used as a replacement for net.
 .PP
 Active Directory includes authorization data (e.g. information about group memberships) in Kerberos tickets.
 This information is called PAC and may lead to very large ticket sizes.  Especially HTTP services are
@@ -367,26 +367,26 @@ the --no-pac option.
 For unprivileged users the most common invocations are:
 .PP
 .nf
-REPLACE_PROGNAME create
+@PACKAGE_NAME@ create
 .fi
 .PP
 This will create a computer account in Active Directory with a new password and write out a new keytab.
 .PP
 .nf
-REPLACE_PROGNAME update --service host --service HTTP
+@PACKAGE_NAME@ update --service host --service HTTP
 .fi
 .PP
 This will update a computer account in Active Directory with a new password, write out a new keytab,
 and ensure that it has both "host" and "HTTP" service principals are on it for the hostname.
 .PP
 .nf
-REPLACE_PROGNAME update  --dont-change-password --service host --service HTTP
+@PACKAGE_NAME@ update  --dont-change-password --service host --service HTTP
 .fi
 .PP
 This will do the same as the last example but without changing the password.
 .PP
 .nf
-REPLACE_PROGNAME auto-update
+@PACKAGE_NAME@ auto-update
 .fi
 .PP
 This is useful in a daily cron job to check and rotate the password automatically when it's 30 days
@@ -396,30 +396,30 @@ old.
 For users with admin privileges in AD, some common uses:
 .PP
 .nf
-REPLACE_PROGNAME create --service host --service HTTP
+@PACKAGE_NAME@ create --service host --service HTTP
 .fi
 .PP
 This will create a computer account in Active Directory with a new password, write out a new keytab,
 and ensure that it has both "host" and "HTTP" service principals are on it for the hostname.
 .PP
 .nf
-REPLACE_PROGNAME pre-create --host computer1.example.com
+@PACKAGE_NAME@ pre-create --host computer1.example.com
 .fi
 .PP
 This will pre-create an account for computer1 with the default password using your credentials.  This
 can be done on a central host, e.g. to script the addition of many hosts.  You can then use
-REPLACE_PROGNAME create on the hosts themselves (without special credentials) to join them to the
+@PACKAGE_NAME@ create on the hosts themselves (without special credentials) to join them to the
 domain.
 .PP
 .nf
-REPLACE_PROGNAME create --host afs --service afs --enctypes 0x03
+@PACKAGE_NAME@ create --host afs --service afs --enctypes 0x03
 .fi
 .PP
 This will create an afs/cell.name@REALM principal, and associate that principal with a computer
 account called 'afs'.  The principal will be marked as DES-only, which is required for AFS.
 .PP
 .nf
-REPLACE_PROGNAME create --use-service-account --service HTTP/hostname.example.com --keytab /etc/apache/krb5.keytab --account-name srv-http --no-pac
+@PACKAGE_NAME@ create --use-service-account --service HTTP/hostname.example.com --keytab /etc/apache/krb5.keytab --account-name srv-http --no-pac
 .fi
 .PP
 This will create an HTTP/hostname.example.com@REALM principal, and associate that principal with a service
@@ -427,13 +427,13 @@ account called 'srv-http'.  Corresponding Kerberos keys will be written to the k
 The size of Kerberos tickets for that service will stay small because no PAC information will be included.
 .PP
 .nf
-REPLACE_PROGNAME create --keytab /etc/krb5/user/10123/client.keytab --use-service-account --account-name johndoe --dont-change-password --old-account-password <John Doe's Password>
+@PACKAGE_NAME@ create --keytab /etc/krb5/user/10123/client.keytab --use-service-account --account-name johndoe --dont-change-password --old-account-password <John Doe's Password>
 .fi
 .PP
 This will create a keytab for johndoe without changing John Doe's password
 .PP
 .nf
-REPLACE_PROGNAME create --service host/hostname --service host/hostname.example.com --set-samba-secret --enctypes 0x4
+@PACKAGE_NAME@ create --service host/hostname --service host/hostname.example.com --set-samba-secret --enctypes 0x4
 .fi
 .PP
 This will create a computer account in Active Directory that is compatible with Samba.  The command creates
@@ -444,7 +444,7 @@ As Samba (version 3) only supports arcfour encrypted Kerberos tickets the --enct
 to select only that encryption type.
 .PP
 .nf
-REPLACE_PROGNAME cleanup --remove-old 10
+@PACKAGE_NAME@ cleanup --remove-old 10
 .fi
 .PP
 Deletes all entries older than 10 days, keeping at least the last entry.
