@@ -67,10 +67,10 @@ install: all
 distcheck:
 	@$(ECHO) @PACKAGE_VERSION@
 
-$(DISTARCHIVE).tar.gz: $(SOURCES) $(HEADERS) config.h.in configure
-	$(TAR) --transform=s+^+$(DISTARCHIVE)/+ -zcf $@ $^ $(EXTRA_DIST)
+$(DISTARCHIVE).tar.gz: $(SOURCES) $(HEADERS) config.h.in configure $(EXTRA_DIST)
+	$(TAR) --transform=s+^+$(DISTARCHIVE)/+ -zcf $@ $(SOURCES) $(HEADERS) config.h.in configure $(EXTRA_DIST)
 
-$(DISTARCHIVE).tar.bz2: $(SOURCES) $(HEADERS) config.h.in configure
-	$(TAR) --transform=s+^+$(DISTARCHIVE)/+ -jcf $@ $^ $(EXTRA_DIST)
+$(DISTARCHIVE).tar.bz2: $(SOURCES) $(HEADERS) config.h.in configure $(EXTRA_DIST)
+	$(TAR) --transform=s+^+$(DISTARCHIVE)/+ -jcf $@ $(SOURCES) $(HEADERS) config.h.in configure $(EXTRA_DIST)
 
 dist: $(DISTARCHIVE).tar.gz $(DISTARCHIVE).tar.bz2
