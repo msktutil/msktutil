@@ -348,7 +348,7 @@ class KRB5Exception : public Exception
     krb5_error_code m_err;
   public:
     explicit KRB5Exception(const std::string &func, krb5_error_code err) :
-        Exception(sform("Error: %s failed (%s)", func.c_str(), error_message(err)))
+        Exception(sform("Error: %s failed: %s", func.c_str(), error_message(err)))
     { m_err = err; }
     krb5_error_code err() const throw() { return m_err; }
 
@@ -358,7 +358,7 @@ class LDAPException : public Exception
 {
   public:
     explicit LDAPException(const std::string &func, int err) :
-        Exception(sform("Error: %s failed (%s)", func.c_str(), ldap_err2string(err)))
+        Exception(sform("Error: %s failed: %s", func.c_str(), ldap_err2string(err)))
     {}
 };
 

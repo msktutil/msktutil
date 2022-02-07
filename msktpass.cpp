@@ -77,7 +77,7 @@ int generate_new_password(msktutil_flags *flags)
             curr = 0;
             while (curr < 33 || curr > 126) {
                 if ((curr = getc(fp)) == EOF) {
-                    error_exit("failed to read from /dev/urandom");
+                    error_exit("Failed to read from /dev/urandom");
                 }
                 curr &= 0x7f;
                 chars_used++;
@@ -93,7 +93,7 @@ int generate_new_password(msktutil_flags *flags)
         }
     }
     fclose(fp);
-    VERBOSE(" Characters read from /dev/urandom = %d", chars_used);
+    VERBOSE("Characters read from /dev/urandom: %d", chars_used);
     return 0;
 }
 
@@ -101,7 +101,7 @@ int generate_new_password(msktutil_flags *flags)
 /* Try to set the the new Samba secret to <flags->password>. */
 static int set_samba_secret(msktutil_flags *flags)
 {
-    VERBOSE("Setting samba machine trust account password using '%s' command",
+    VERBOSE("Setting samba machine trust account password using command: %s",
             flags->samba_cmd.c_str());
 
     FILE *pipe;
@@ -109,7 +109,7 @@ static int set_samba_secret(msktutil_flags *flags)
 
     if (pipe == NULL) {
         fprintf(stdout,
-                "Could not execute '%s' command\n",
+                "Could not execute command: %s\n",
                 flags->samba_cmd.c_str()
             );
         return 1;
@@ -118,7 +118,7 @@ static int set_samba_secret(msktutil_flags *flags)
     size_t len = flags->password.length();
     if (fwrite(flags->password.c_str(), sizeof(char), len, pipe) != len) {
         fprintf(stdout,
-                "Write error putting password to '%s' command\n",
+                "Write error passing password to command: %s\n",
                 flags->samba_cmd.c_str()
             );
         return 1;
@@ -192,14 +192,14 @@ int set_password(msktutil_flags *flags)
                 if (!flags->server_behind_nat) {
                     fprintf(stderr,
                             "Error: krb5_set_password_using_ccache "
-                            "failed (%s)\n",
+                            "failed: %s\n",
                             error_message(ret)
                         );
                     return ret;
                 }
             } else {
                 fprintf(stderr,
-                        "Error: krb5_set_password_using_ccache failed (%s)\n",
+                        "Error: krb5_set_password_using_ccache failed: %s\n",
                         error_message(ret)
                     );
                 return ret;
@@ -222,7 +222,7 @@ int set_password(msktutil_flags *flags)
             } else {
                 princ_name = "host/" + flags->hostname;
             }
-            VERBOSE("Try using keytab for %s to change password",
+            VERBOSE("Trying to use keytab for %s to change password",
                     princ_name.c_str());
 
             KRB5Keytab keytab(flags->keytab_readname);
@@ -230,7 +230,7 @@ int set_password(msktutil_flags *flags)
             KRB5Creds local_creds(principal, keytab, "kadmin/changepw");
             creds.move_from(local_creds);
         } else if (flags->auth_type == AUTH_FROM_PASSWORD) {
-            VERBOSE("Try using default password for %s to change password",
+            VERBOSE("Trying to use default password for %s to change password",
                     flags->sAMAccountName.c_str());
 
             KRB5Principal principal(flags->sAMAccountName);
@@ -241,7 +241,7 @@ int set_password(msktutil_flags *flags)
             creds.move_from(local_creds);
         } else if ((flags->auth_type == AUTH_FROM_SUPPLIED_PASSWORD) ||
                    (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD)) {
-            VERBOSE("Try using supplied password for %s to change password",
+            VERBOSE("Trying to use supplied password for %s to change password",
                     flags->sAMAccountName.c_str());
             KRB5Principal principal(flags->sAMAccountName);
             KRB5Creds local_creds(principal,
@@ -249,7 +249,7 @@ int set_password(msktutil_flags *flags)
                                   "kadmin/changepw");
             creds.move_from(local_creds);
         } else /* shouldn't happen */
-            throw Exception("Error: unknown auth_type.");
+            throw Exception("Error: unknown auth_type");
 
         ret = krb5_change_password(g_context,
                                    creds.get(),
@@ -274,14 +274,14 @@ int set_password(msktutil_flags *flags)
                         "failed validation");
                 if (!flags->server_behind_nat) {
                     fprintf(stderr,
-                            "Error: krb5_change_password failed (%s)\n",
+                            "Error: krb5_change_password failed: %s\n",
                             error_message(ret)
                         );
                     return ret;
                 }
             } else {
                 fprintf(stderr,
-                        "Error: krb5_change_password failed (%s)\n",
+                        "Error: krb5_change_password failed: %s\n",
                         error_message(ret)
                     );
                 return ret;

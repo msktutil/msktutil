@@ -131,7 +131,7 @@ int parse_enctype(const std::string &value)
         enctype = 18;
     else {
         fprintf(stderr,
-                "Error: enctype = %s not supported. "
+                "Error: enctype %s not supported. "
                 "Supported enctype strings are\n", value.c_str()
             );
         fprintf(stderr, "  des-cbc-crc\n");
@@ -292,7 +292,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
      * than MAX_SAM_ACCOUNT_LEN characters */
     if (flags->sAMAccountName.length() > MAX_SAM_ACCOUNT_LEN) {
         fprintf(stderr,
-                "Error: The SAM name (%s) for this host is longer "
+                "Error: The sAMAccountName %s for this host is longer "
                 "than the maximum of MAX_SAM_ACCOUNT_LEN characters\n",
                 flags->sAMAccountName.c_str()
             );
@@ -302,7 +302,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
             );
         exit(1);
     }
-    VERBOSE("SAM Account Name is: %s", flags->sAMAccountName.c_str());
+    VERBOSE("sAMAccountName: %s", flags->sAMAccountName.c_str());
 
     if (exec->mode == MODE_CREATE && !flags->use_service_account) {
         exec->add_principals.push_back("host");
@@ -317,7 +317,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     flags->auth_type = find_working_creds(flags);
     if (flags->auth_type == AUTH_NONE) {
         fprintf(stderr,
-                "Error: could not find any credentials to authenticate with. "
+                "Error: Could not find any credentials to authenticate with. "
                 "Neither keytab,\n"
                 "default machine password, nor calling user's tickets worked. "
                 "Try\n\"kinit\"ing yourself some tickets with permission to "
@@ -606,12 +606,12 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
     if (exec->mode == MODE_FLUSH) {
         if (flags->use_service_account) {
             fprintf(stdout,
-                    "Flushing all entries for service account %s from the keytab %s\n",
+                    "Flushing all entries for service account %s from keytab %s\n",
                     flags->sAMAccountName.c_str(),
                     flags->keytab_writename.c_str());
         } else {
             fprintf(stdout,
-                    "Flushing all entries for %s from the keytab %s\n",
+                    "Flushing all entries for %s from keytab %s\n",
                     flags->hostname.c_str(),
                     flags->keytab_writename.c_str());
         }
@@ -660,7 +660,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         if (! ldap_check_account(flags)) {
             if (flags->password.empty()) {
                 fprintf(stderr,
-                        "Error: a new AD account needs to be created "
+                        "Error: A new AD account needs to be created "
                         "but there is no password.");
                 if (flags->dont_change_password) {
                     fprintf(stderr,
@@ -722,11 +722,11 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
 
         /* update keytab */
         if (flags->use_service_account) {
-            VERBOSE("Updating all entries for service account %s in the keytab %s",
+            VERBOSE("Updating all entries for service account %s in keytab %s",
                     flags->sAMAccountName.c_str(),
                     flags->keytab_writename.c_str());
         } else {
-            VERBOSE("Updating all entries for computer account %s in the keytab %s",
+            VERBOSE("Updating all entries for computer account %s in keytab %s",
                     flags->sAMAccountName.c_str(),
                     flags->keytab_writename.c_str());
         }
@@ -774,7 +774,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         /* Check if computer account exists, update if so, error if
          * not. */
         if (!ldap_check_account(flags)) {
-            fprintf(stderr, "Error: the account %s does "
+            fprintf(stderr, "Error: The account %s does "
                             "not exist and cannot be "
                             "reset\n", flags->sAMAccountName.c_str());
             return 1;
@@ -789,7 +789,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         wait_for_new_kvno(flags);
         return ret;
     } else if (exec->mode == MODE_CLEANUP) {
-        fprintf(stdout, "Cleaning keytab %s\n",
+        fprintf(stdout, "Cleaning keytab: %s\n",
                 flags->keytab_writename.c_str());
         cleanup_keytab(flags);
         return 0;
@@ -801,7 +801,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
 
 void msktutil_exec::set_mode(msktutil_mode mode) {
     if (this->mode != MODE_NONE) {
-        fprintf(stderr, "Error: only one mode argument may be provided.\n");
+        fprintf(stderr, "Error: Only one mode argument may be provided.\n");
         fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
         exit(1);
     }
@@ -900,7 +900,7 @@ int main(int argc, char *argv [])
                 exec->add_principals.push_back(argv[i]);
             } else {
                 fprintf(stderr,
-                        "Error: No service principal given after '%s'\n",
+                        "Error: no service principal given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -912,7 +912,7 @@ int main(int argc, char *argv [])
                 exec->remove_principals.push_back(argv[i]);
             } else {
                 fprintf(stderr,
-                        "Error: No service principal given after '%s'\n",
+                        "Error: no service principal given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -928,7 +928,7 @@ int main(int argc, char *argv [])
                 flags->hostname = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No name given after '%s'\n",
+                        "Error: no name given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -949,7 +949,7 @@ int main(int argc, char *argv [])
                 flags->old_account_password = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No password given after '%s'\n",
+                        "Error: no password given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -963,7 +963,7 @@ int main(int argc, char *argv [])
                                 flags->password = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No password given after '%s'\n",
+                        "Error: no password given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -983,7 +983,7 @@ int main(int argc, char *argv [])
                 flags->site = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No site given after '%s'\n",
+                        "Error: no site given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -997,7 +997,7 @@ int main(int argc, char *argv [])
                 set_supportedEncryptionTypes(flags, argv[i]);
             } else {
                 fprintf(stderr,
-                        "Error: No enctype after '%s'\n",
+                        "Error: no enctype after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1067,7 +1067,7 @@ int main(int argc, char *argv [])
                 flags->sAMAccountName = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No name given after '%s'\n",
+                        "Error: no name given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1081,7 +1081,7 @@ int main(int argc, char *argv [])
                 flags->userPrincipalName = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No principal given after '%s'\n",
+                        "Error: no principal given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1095,7 +1095,7 @@ int main(int argc, char *argv [])
                 flags->keytab_file = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No file given after '%s'\n",
+                        "Error: no file given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1109,7 +1109,7 @@ int main(int argc, char *argv [])
                 flags->ldap_ou = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No base given after '%s'\n",
+                        "Error: no base given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1123,7 +1123,7 @@ int main(int argc, char *argv [])
                 flags->description = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No description given after '%s'\n",
+                        "Error: no description given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1137,7 +1137,7 @@ int main(int argc, char *argv [])
                 flags->server = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No server given after '%s'\n",
+                        "Error: no server given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1157,7 +1157,7 @@ int main(int argc, char *argv [])
                 flags->realm_name = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No realm given after '%s'\n",
+                        "Error: no realm given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1184,7 +1184,7 @@ int main(int argc, char *argv [])
                 flags->samba_cmd = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No command given after '%s'\n",
+                        "Error: no command given after '%s'\n",
                         argv[i -1]
                     );
                 goto error;
@@ -1203,7 +1203,7 @@ int main(int argc, char *argv [])
                 flags->keytab_auth_princ = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No principal given after '%s'\n",
+                        "Error: no principal given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1216,7 +1216,7 @@ int main(int argc, char *argv [])
                 flags->auto_update_interval = atoi(argv[i]);
             } else {
                 fprintf(stderr,
-                        "Error: No number given after '%s'\n",
+                        "Error: no number given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1229,7 +1229,7 @@ int main(int argc, char *argv [])
                 flags->sasl_mechanisms = argv[i];
             } else {
                 fprintf(stderr,
-                        "Error: No SASL candidate mechanisms list given after '%s'\n",
+                        "Error: no SASL candidate mechanisms list given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1242,7 +1242,7 @@ int main(int argc, char *argv [])
                 flags->cleanup_days = atoi(argv[i]);
             } else {
                 fprintf(stderr,
-                        "Error: No number given after '%s'\n",
+                        "Error: no number given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1255,7 +1255,7 @@ int main(int argc, char *argv [])
                 flags->cleanup_enctype = parse_enctype(argv[i]);
             } else {
                 fprintf(stderr,
-                        "Error: No number given after '%s'\n",
+                        "Error: no number given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1276,7 +1276,7 @@ int main(int argc, char *argv [])
         }
 
         /* Unrecognized */
-        fprintf(stderr, "Error: Unknown parameter (%s)\n", argv[i]);
+        fprintf(stderr, "Error: unknown parameter: %s\n", argv[i]);
         goto error;
     }
 
@@ -1337,7 +1337,7 @@ int main(int argc, char *argv [])
     if (flags->enctypes == VALUE_ON) {
         if ((flags->supportedEncryptionTypes | ALL_MS_KERB_ENCTYPES) != ALL_MS_KERB_ENCTYPES) {
             fprintf(stderr,
-                    "Error: Unsupported --enctypes must be integer that "
+                    "Error: unsupported --enctypes must be integer that "
                     "fits mask=0x%x\n",
                     ALL_MS_KERB_ENCTYPES
                 );
@@ -1365,7 +1365,7 @@ int main(int argc, char *argv [])
 
     if (exec->mode == MODE_NONE) {
         /* Default, no options present */
-        fprintf(stderr, "Error: No command given\n");
+        fprintf(stderr, "Error: no command given\n");
         goto error;
     }
 

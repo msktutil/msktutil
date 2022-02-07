@@ -62,10 +62,10 @@ LDAPConnection::LDAPConnection(const std::string &server,
     int ret = 0;
 #ifdef HAVE_LDAP_INITIALIZE
     std::string ldap_url = "ldap://" + server;
-    VERBOSEldap("calling ldap_initialize");
+    VERBOSEldap("Calling ldap_initialize");
     ret = ldap_initialize(&m_ldap, ldap_url.c_str());
 #else
-    VERBOSEldap("calling ldap_init");
+    VERBOSEldap("Calling ldap_init");
     m_ldap = ldap_init(server.c_str(), LDAP_PORT);
     if (m_ldap) {
         ret = LDAP_SUCCESS;
@@ -106,7 +106,7 @@ LDAPConnection::LDAPConnection(const std::string &server,
             "reverse lookups");
 #endif
 
-    VERBOSEldap("calling ldap_sasl_interactive_bind_s with mechs = %s", sasl_mechanisms.c_str());
+    VERBOSEldap("Calling ldap_sasl_interactive_bind_s with mechs: %s", sasl_mechanisms.c_str());
 
     ret = ldap_sasl_interactive_bind_s(m_ldap, NULL, sasl_mechanisms.c_str(), NULL, NULL,
 #ifdef LDAP_SASL_QUIET
@@ -213,7 +213,7 @@ LDAPConnection::search(const std::string &base_dn, int scope,
 {
     LDAPMessage * mesg;
 
-    VERBOSEldap("calling ldap_search_ext_s");
+    VERBOSEldap("Calling ldap_search_ext_s");
     VERBOSEldap("ldap_search_ext_s base context: %s", base_dn.c_str());
     VERBOSEldap("ldap_search_ext_s filter: %s", filter.c_str());
     int ret = ldap_search_ext_s(m_ldap, base_dn.c_str(), scope, filter.c_str(),
@@ -278,10 +278,10 @@ int LDAPConnection::modify_ext(const std::string &dn, const std::string& type,
     attr.mod_values = vals;
     mod_attrs[1] = NULL;
 
-    VERBOSEldap("calling ldap_modify_ext_s");
+    VERBOSEldap("Calling ldap_modify_ext_s");
     ret = ldap_modify_ext_s(m_ldap, dn.c_str(), mod_attrs, NULL, NULL);
     if (check && ret != LDAP_SUCCESS) {
-        VERBOSE("ldap_modify_ext_s failed (%s)", ldap_err2string(ret));
+        VERBOSE("ldap_modify_ext_s failed: %s", ldap_err2string(ret));
     }
     return ret;
 }

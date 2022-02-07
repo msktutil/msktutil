@@ -121,7 +121,7 @@ std::string get_salt(msktutil_flags *flags)
                      lower_accountname.c_str(),
                      flags->lower_realm_name.c_str());
     }
-    VERBOSE("Using salt of %s", salt.c_str());
+    VERBOSE("Using salt: %s", salt.c_str());
     return(salt);
 }
 
@@ -151,7 +151,7 @@ int flush_keytab(msktutil_flags *flags)
             continue;
         }
 
-        VERBOSE("Deleting %s kvno=%d, enctype=%d", principal_name.c_str(), it->kvno(), it->enctype());
+        VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab", principal_name.c_str(), it->kvno(), it->enctype());
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 
@@ -177,7 +177,7 @@ void cleanup_keytab(msktutil_flags *flags)
             continue;
         }
         KRB5Principal principal(it->principal());
-        VERBOSE("Deleting %s kvno=%d, enctype=%d", principal.name().c_str(), it->kvno(), it->enctype());
+        VERBOSE("Deleting %s with kvno=%d, enctype=%d from keytab", principal.name().c_str(), it->kvno(), it->enctype());
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 
@@ -209,7 +209,7 @@ void cleanup_keytab(msktutil_flags *flags)
             continue;
         }
         KRB5Principal principal(it->principal());
-        VERBOSE("Deleting %s kvno=%d, enctype=%d", principal.name().c_str(), it->kvno(), it->enctype());
+        VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab", principal.name().c_str(), it->kvno(), it->enctype());
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 }
@@ -235,7 +235,7 @@ void remove_keytab_entries(msktutil_flags *flags,
         for (size_t i = 0; i < remove_principals.size(); ++i) {
             std::string remove_principal = remove_principals[i] + "@" + flags->realm_name;
             if (principal_name.compare(remove_principal) == 0) {
-                VERBOSE("Deleting %s kvno=%d, enctype=%d", principal.name().c_str(), it->kvno(), it->enctype());
+                VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab", principal.name().c_str(), it->kvno(), it->enctype());
                 keytab.removeEntry(principal, it->kvno(), it->enctype());
             }
         }
@@ -361,7 +361,7 @@ static void prune_keytab(KRB5Keytab& keytab, KRB5Principal &principal, krb5_time
             continue;
 
         KRB5Principal principal(it->principal());
-        VERBOSE("Deleting %s kvno=%d, enctype=%d",
+        VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab",
                 principal.name().c_str(), it->kvno(), it->enctype());
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
@@ -369,10 +369,6 @@ static void prune_keytab(KRB5Keytab& keytab, KRB5Principal &principal, krb5_time
 
 void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 {
-    VERBOSE("Adding principal to keytab: %s", principal.c_str());
-    VERBOSE("Using supportedEncryptionTypes: %d", flags->ad_supportedEncryptionTypes);
-    KRB5Keytab keytab(flags->keytab_writename);
-
     std::string principal_string = "";
 
     if (principal.find("@") != std::string::npos) {
@@ -382,12 +378,15 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
                                  principal.c_str(),
                                  flags->realm_name.c_str());
     }
+    VERBOSE("Adding principal to keytab: %s", principal_string.c_str());
+    VERBOSE("Using supportedEncryptionTypes: %d", flags->ad_supportedEncryptionTypes);
 
     /* FIXME: Why do we use a fixed magic number instead of reusing
      * flags->cleanup_days for update as well? */
     krb5_timestamp min_keep_timestamp = time(NULL) - (7*24*60*60);
     KRB5Principal princ(principal_string);
 
+    KRB5Keytab keytab(flags->keytab_writename);
     prune_keytab(keytab, princ, min_keep_timestamp);
 
     std::vector<int32_t> enc_types;
@@ -419,7 +418,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 
     if (password.empty()) {
         VERBOSE("No password available, skipping creation "
-                "of password based keytab ntries");
+                "of password-based keytab entries");
     } else {
         for(size_t i = 0; i < enc_types.size(); ++i) {
             VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);

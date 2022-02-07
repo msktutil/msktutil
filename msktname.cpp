@@ -55,7 +55,7 @@ std::string complete_hostname(const std::string &hostname,
                                                   &temp_princ_raw);
     if (ret != 0) {
         fprintf(stderr,
-                "Warning: hostname canonicalization for %s failed (%s)\n",
+                "Warning: hostname canonicalization for %s failed: %s\n",
                 hostname.c_str(),
                 error_message(ret)
             );
@@ -161,7 +161,7 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
     ret = getaddrinfo(srvname.c_str(), service.c_str(), &hints, &hostaddrinfo);
 
     if (ret != 0) {
-        VERBOSE("Error: gethostbyname failed for %s (%s)\n", srvname.c_str(),
+        VERBOSE("Error: gethostbyname failed for %s: %s\n", srvname.c_str(),
                 ret == EAI_SYSTEM ? strerror(errno) : gai_strerror(ret));
         if (hostaddrinfo) {
             freeaddrinfo(hostaddrinfo);
@@ -177,14 +177,14 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
             close(sock);
         }
         if ((sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
-            VERBOSE("Failed to open socket (%s)", strerror(errno));
+            VERBOSE("Failed to open socket: %s", strerror(errno));
             continue;
         }
         if (connect(sock, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1) {
             int err = errno;
             char addrstr[INET6_ADDRSTRLEN] = "";
             (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
-            VERBOSE("LDAP connection to %s failed (%s)", addrstr, strerror(err));
+            VERBOSE("LDAP connection to %s failed: %s", addrstr, strerror(err));
             continue;
         }
 
@@ -204,7 +204,7 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
             int err = errno;
             char addrstr[INET6_ADDRSTRLEN] = "";
             (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
-            VERBOSE("Error: getnameinfo failed for %s (%s)\n", addrstr,
+            VERBOSE("Error: getnameinfo failed for %s: %s\n", addrstr,
                     ret == EAI_SYSTEM ? strerror(err) : gai_strerror(ret));
             continue;
         }
@@ -287,7 +287,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
 
     if (!site_name.empty()) {
         for (i = 0; i < (int)(sizeof(protocols) / sizeof(protocols[0])); i++) {
-            VERBOSE("Attempting to find site-specific Domain Controller to use via "
+            VERBOSE("Attempting to find site-specific domain controller to use via "
                             "DNS SRV record in domain %s for site %s and procotol %s",
                             realm_name.c_str(), site_name.c_str(), protocols[i].c_str());
             dcsrvs = DnsSrvQuery(site_name + "._sites.dc._msdcs." + realm_name, "kerberos", protocols[i]);
@@ -299,7 +299,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
 
     if (dcsrvs.empty()) {
         for (i = 0; i < (int)(sizeof(protocols) / sizeof(protocols[0])); i++) {
-            VERBOSE("Attempting to find Domain Controller to use via "
+            VERBOSE("Attempting to find domain controller to use via "
                             "DNS SRV record in domain %s for procotol %s",
                             realm_name.c_str(), protocols[i].c_str());
             dcsrvs = DnsSrvQuery("dc._msdcs." + realm_name, "kerberos", protocols[i]);
@@ -310,7 +310,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     }
 
     if (dcsrvs.empty()) {
-        VERBOSE("Attempting to find a Domain Controller to use (DNS domain)");
+        VERBOSE("Attempting to find a domain controller to use (DNS domain)");
         dcsrvs = DnsSrvQuery(DnsSrvHost(realm_name, 0, 0, 0));
     }
 
@@ -326,7 +326,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
 	}
     }
 
-    VERBOSE("Found preferred Domain Controller: %s", bestdc.c_str());
+    VERBOSE("Found preferred domain controller: %s", bestdc.c_str());
 
     return bestdc;
 }

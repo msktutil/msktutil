@@ -87,7 +87,7 @@ void get_default_ou(msktutil_flags *flags)
     } else {
         flags->ldap_ou = dn;
     }
-    VERBOSE("Determining default OU: %s", flags->ldap_ou.c_str());
+    VERBOSE("Determined default OU: %s", flags->ldap_ou.c_str());
 }
 
 
@@ -111,7 +111,7 @@ void ldap_get_base_dn(msktutil_flags *flags)
         } while (last_pos != 0);
 
         flags->base_dn = out;
-        VERBOSE("Determining default LDAP base: %s", flags->base_dn.c_str());
+        VERBOSE("Determined default LDAP base: %s", flags->base_dn.c_str());
     }
 }
 
@@ -205,7 +205,7 @@ krb5_kvno ldap_get_kvno(msktutil_flags *flags)
     }
     ldap_msgfree(mesg);
 
-    VERBOSE("KVNO is %d", kvno);
+    VERBOSE("Found KVNO: %d", kvno);
     return kvno;
 }
 
@@ -378,12 +378,12 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
                                                             "distinguishedName");
             if (found_dn.empty()) {
                 fprintf(stderr,
-                        "Error: Inconsistent LDAP entry: No DN value present\n"
+                        "Error: inconsistent LDAP entry: No DN value present\n"
                     );
                 ret = -1;
             } else if (dn != found_dn) {
                 fprintf(stderr,
-                        "Error: Another computer account (%s) has the "
+                        "Error: another computer account (%s) has the "
                         "principal %s\n",
                         found_dn.c_str(),
                         principal.c_str()
@@ -395,7 +395,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
         }
         default:
             fprintf(stderr,
-                    "Error: Multiple (%d) LDAP entries were found containing "
+                    "Error: multiple (%d) LDAP entries were found containing "
                     "the principal %s\n",
                     num_entries,
                     principal.c_str()
@@ -474,7 +474,7 @@ void ldap_check_account_strings(msktutil_flags *flags)
             upn_found = ldap->get_one_val(mesg, "userPrincipalName");
         }
         ldap_msgfree(mesg);
-        VERBOSE("Found userPrincipalName = %s", upn_found.c_str());
+        VERBOSE("Found userPrincipalName: %s", upn_found.c_str());
         VERBOSE("userPrincipalName should be %s",
                 userPrincipalName_string.c_str());
         if (upn_found.compare(userPrincipalName_string)) {
@@ -578,9 +578,9 @@ bool ldap_check_account(msktutil_flags *flags)
 
     /* Account already exists */
     if (flags->use_service_account) {
-        VERBOSE("Checking service account - found");
+        VERBOSE("Found service account");
     } else {
-        VERBOSE("Checking computer account - found");
+        VERBOSE("Found computer account");
     }
     mesg = ldap->first_entry(mesg);
     flags->ad_computerDn = ldap->get_one_val(mesg, "distinguishedName");
@@ -588,7 +588,7 @@ bool ldap_check_account(msktutil_flags *flags)
     std::string uac = ldap->get_one_val(mesg, "userAccountControl");
     if (!uac.empty()) {
         flags->ad_userAccountControl = atoi(uac.c_str());
-        VERBOSE("Found userAccountControl = 0x%x", flags->ad_userAccountControl);
+        VERBOSE("Found userAccountControl: 0x%x", flags->ad_userAccountControl);
     }
 
     /* save the current msDs-supportedEncryptionTypes */
@@ -597,7 +597,7 @@ bool ldap_check_account(msktutil_flags *flags)
     if (!supportedEncryptionTypes.empty()) {
         flags->ad_supportedEncryptionTypes = atoi(supportedEncryptionTypes.c_str());
         flags->ad_enctypes = VALUE_ON; /* actual value found in AD */
-        VERBOSE("Found supportedEncryptionTypes = %d",
+        VERBOSE("Found supportedEncryptionTypes: %d",
                 flags->ad_supportedEncryptionTypes);
     } else {
         /* Not in current LDAP entry set defaults */
@@ -606,14 +606,14 @@ bool ldap_check_account(msktutil_flags *flags)
             flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
         }
         flags->ad_enctypes = VALUE_OFF; /* this is the assumed default */
-        VERBOSE("Found default supportedEncryptionTypes = %d",
+        VERBOSE("Found default supportedEncryptionTypes: %d",
                 flags->ad_supportedEncryptionTypes);
     }
 
     if (!flags->use_service_account) {
         /* Save current dNSHostName */
         flags->ad_dnsHostName = ldap->get_one_val(mesg, "dNSHostName");
-        VERBOSE("Found dNSHostName = %s", flags->ad_dnsHostName.c_str());
+        VERBOSE("Found dNSHostName: %s", flags->ad_dnsHostName.c_str());
     }
 
     /* Save current servicePrincipalName and userPrincipalName
@@ -629,19 +629,19 @@ bool ldap_check_account(msktutil_flags *flags)
                 vals[i].replace(0, 5, "host/");
             }
             flags->ad_principals.push_back(vals[i]);
-            VERBOSE("Found Principal: %s", vals[i].c_str());
+            VERBOSE("Found servicePrincipalName: %s", vals[i].c_str());
         }
 
         if (flags->set_userPrincipalName) {
-            VERBOSE("userPrincipal specified on command line");
+            VERBOSE("User principal specified on command line");
         } else {
             std::string upn = ldap->get_one_val(mesg, "userPrincipalName");
             if (!upn.empty()) {
+                VERBOSE("Found userPrincipalName: %s", upn.c_str());
                 size_t pos = upn.find('@');
                 if (pos != std::string::npos) {
                     upn.erase(pos);
                 }
-                VERBOSE("Found User Principal: %s", upn.c_str());
                 /* update userPrincipalName for salt generation */
                 flags->userPrincipalName = upn.c_str();
             }
@@ -668,13 +668,13 @@ void ldap_create_account(msktutil_flags *flags)
     LDAPConnection *ldap = flags->ldap;
     /* No computer account found, so let's add one in the OU specified */
     if (flags->use_service_account) {
-        VERBOSE("Service account not found, create the account");
+        VERBOSE("Service account not found, creating one");
         fprintf(stdout,
                 "No service account for %s found, creating a new one.\n",
                 flags->sAMAccountName.c_str()
             );
     } else {
-        VERBOSE("Computer account not found, create the account");
+        VERBOSE("Computer account not found, create one");
         fprintf(stdout,
                 "No computer account for %s found, creating a new one.\n",
                 flags->sAMAccountName_nodollar.c_str()

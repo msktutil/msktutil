@@ -151,7 +151,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
     }
 #endif
 
-    VERBOSE("Created a fake krb5.conf file: %s", g_config_filename.c_str());
+    VERBOSE("Created fake krb5.conf file: %s", g_config_filename.c_str());
 
     destroy_g_context();
     initialize_g_context();
@@ -202,7 +202,7 @@ bool try_machine_keytab_princ(msktutil_flags *flags,
                               const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s from local keytab",
+        VERBOSE("Trying to authenticate %s from local keytab",
                 principal_name.c_str());
         KRB5Keytab keytab(flags->keytab_readname);
         KRB5Principal principal(principal_name);
@@ -223,7 +223,7 @@ bool try_machine_keytab_princ(msktutil_flags *flags,
 bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s with password",
+        VERBOSE("Trying to authenticate %s with password",
                 flags->sAMAccountName.c_str());
         KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal,
@@ -246,7 +246,7 @@ bool try_machine_supplied_password(msktutil_flags *flags,
                                    const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate for %s with supplied password",
+        VERBOSE("Trying to authenticate %s with supplied password",
                 flags->sAMAccountName.c_str());
         KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal, /*password:*/ flags->old_account_password);
@@ -301,7 +301,7 @@ bool try_user_creds()
         return true;
     } catch(KRB5Exception &e) {
         VERBOSE("%s", e.what());
-        VERBOSE("User ticket cache was not valid");
+        VERBOSE("Default ticket cache was not valid");
         return false;
     }
 }

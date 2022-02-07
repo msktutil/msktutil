@@ -31,11 +31,11 @@
 #include "msktutil.h"
 
 void krb5_error_exit( const char *func, int err_code) {
-   v_error_exit("error_exit: krb func %s failed: (%s)", func, error_message(err_code));
+   v_error_exit("error_exit: krb5 function %s failed: %s", func, error_message(err_code));
 }
 
 void krb5_warn( const char *func, int err_code) {
-   fprintf( stderr, "Warning: krb func %s failed: (%s)", func, error_message(err_code));
+   fprintf( stderr, "Warning: krb5 function %s failed: %s", func, error_message(err_code));
 }
 
 #ifdef HEIMDAL
@@ -58,7 +58,7 @@ krb5_error_code krb5_free_keytab_entry_contents(krb5_context context,
 
 void
 initialize_g_context() {
-    VERBOSE("Creating Kerberos Context");
+    VERBOSE("Creating Kerberos context");
     krb5_error_code ret = krb5_init_context(&g_context);
     if (ret) {
         krb5_error_exit("krb5_init_context", ret);
@@ -67,7 +67,7 @@ initialize_g_context() {
 
 void
 destroy_g_context() {
-    VERBOSE("Destroying Kerberos Context");
+    VERBOSE("Destroying Kerberos context");
     krb5_free_context(g_context);
     g_context = 0;
 }
@@ -176,7 +176,7 @@ void KRB5Keytab::addEntry(const KRB5Principal &princ,
                                             &entry);
     if (ret) {
         if (errno != 0) {
-            fprintf(stderr,"Error: Keytab write error: %s!\n", strerror(errno));
+            fprintf(stderr,"Error: keytab write error: %s\n", strerror(errno));
         }
         throw KRB5Exception("krb5_kt_add_entry failed", ret);
     }
@@ -304,7 +304,7 @@ void KRB5Keytab::removeEntry(const KRB5Principal &princ,
                                                &entry);
     if (ret) {
         if (errno != 0) {
-            fprintf(stderr,"Error: Keytab write error: %s!\n", strerror(errno));
+            fprintf(stderr,"Error: keytab write error: %s\n", strerror(errno));
         }
         throw KRB5Exception("krb5_kt_remove_entry", ret);
     }
