@@ -1,3 +1,17 @@
+Release 1.2
+
+- New co-maintainer Michael Osipov
+- Improvement: allow to delete and reset computer account
+- Improvement: prefer SASL mechanism GSS-SPNEGO over GSSAPI for LDAP
+               connections to domain controllers (thanks, James Ralston!)
+- Improvement: allow custom script to be called for Samba callouts
+               (thanks, Jarek Polok!)
+- Improvement: install executable to 'bin' rather than 'sbin' by default
+- Improvement: consistent qualification of default SPN entries
+- Improvement: query domain controller for proper salting information
+               (feature available with MIT Kerberos 1.17 or later)
+- Bugfix: Ignore errors from Samba callout
+
 Release 1.1
 - Improvement: Add paragraph regarding autogen.sh to INSTALL
 
