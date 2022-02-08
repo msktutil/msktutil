@@ -3,9 +3,11 @@ msktutil  (C) 2004-2006 Dan Perry <dperry@pppl.gov>
           (C) 2009-2010 Doug Engert (deengert@anl.gov)
           (C) 2010 James Knight <foom@fuhm.net>
           (C) 2010-2013 Ken Dreyer <ktdreyer at ktdreyer.com>
-          (C) 2012-2017 Mark Proehl <mark at mproehl.net>
-          (C) 2012-2017 Olaf Flebbe <of at oflebbe.de>
+          (C) 2012-2021 Olaf Flebbe <of at oflebbe.de>
+          (C) 2012-2022 Mark Proehl <mark at mproehl.net>
           (C) 2013-2017 Daniel Kobras <d.kobras at science-computing.de>
+          (C) 2017-2022 Michael Osipov <michael.osipov at siemens.com>
+          (C) 2018-2022 Daniel Kobras <kobras at puzzle-itc.de>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,12 +49,12 @@ Then, Doug Engbert made a number of changes to it during 2009.
 
 Then, in Feb 2010, James Knight then downloaded the debian package with
 changes from <http://download.systemimager.org/~finley/msktutil/>, and
-made even more changes. That's what you have now. :)
+made even more changes.
 
 In Feb 2012, Ken Dreyer provided some build fixes.
 
-In 2012 and 2013, Mark Proehl, Michael Weiser and Olaf Flebbe provided
-enhancements and build fixes
+In 2012 and 2013, Mark Proehl, Michael Weiser, Daniel Kobras and Olaf Flebbe
+provided enhancements and build fixes
 
 In 2017 Michael Osipov joined the team
 
