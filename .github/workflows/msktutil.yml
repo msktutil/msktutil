@@ -23,10 +23,12 @@ jobs:
           - { container: 'debian:stable', cc-version: clang }
           - { container: 'debian:sid', cc-version: gcc }
           - { container: 'debian:sid', cc-version: clang }
-          - { container: 'centos:7', cc-version: gcc }
-          - { container: 'centos:7', cc-version: clang }
-          - { container: 'centos:8', cc-version: gcc }
-          - { container: 'centos:8', cc-version: clang }
+          - { container: 'quay.io/centos/centos:7', cc-version: gcc }
+          - { container: 'quay.io/centos/centos:7', cc-version: clang }
+          - { container: 'quay.io/centos/centos:stream8', cc-version: gcc }
+          - { container: 'quay.io/centos/centos:stream8', cc-version: clang }
+          - { container: 'quay.io/centos/centos:stream9', cc-version: gcc }
+          - { container: 'quay.io/centos/centos:stream9', cc-version: clang }
           - { container: 'fedora:latest', cc-version: gcc }
           - { container: 'fedora:latest', cc-version: clang }
 
@@ -56,18 +58,18 @@ jobs:
             dnf -y install ${{ matrix.cfg.cc-version }}
             ${{ matrix.cfg.cc-version }} --version
             ;;
-          centos:8)
-            cat /etc/centos-release
-            rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
-            dnf -y update
-            dnf -y install ${{ matrix.cfg.cc-version }}
-            ${{ matrix.cfg.cc-version }} --version
-            ;;
-          centos:7)
+          */centos:7)
             cat /etc/centos-release
             rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
             yum -y update
             yum -y install ${{ matrix.cfg.cc-version }}
+            ${{ matrix.cfg.cc-version }} --version
+            ;;
+          */centos:*)
+            cat /etc/centos-release
+            rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+            dnf -y update
+            dnf -y install ${{ matrix.cfg.cc-version }}
             ${{ matrix.cfg.cc-version }} --version
             ;;
         esac
@@ -94,20 +96,20 @@ jobs:
             dnf -y install \
               cyrus-sasl-devel krb5-devel openldap-devel
             ;;
-          centos:8)
+          */centos:7)
             # basic packages
-            dnf -y install \
+            yum -y install \
               autoconf automake gcc-c++ libtool make pkgconfig which
             # install dependencies
-            dnf -y install \
+            yum -y install \
               cyrus-sasl-devel krb5-devel openldap-devel
             ;;
-          centos:7)
+          */centos:*)
             # basic packages
-            yum -y install \
+            dnf -y install \
               autoconf automake gcc-c++ libtool make pkgconfig which
             # install dependencies
-            yum -y install \
+            dnf -y install \
               cyrus-sasl-devel krb5-devel openldap-devel
             ;;
           esac
