@@ -10,6 +10,8 @@ Release 1.2
 - Improvement: consistent qualification of default SPN entries
 - Improvement: query domain controller for proper salting information
                (feature available with MIT Kerberos 1.17 or later)
+- Improvement: consistent and improved log messages
+- Improvement: documentation updates
 - Bugfix: Ignore errors from Samba callout
 
 Release 1.1
