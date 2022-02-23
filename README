@@ -37,24 +37,12 @@ See the man page for more information on how to use it.
 
 ----------------------------------------------------------------------------
 
-This package has been through a few maintainers over the years.
+Early history:
 
-It was originally written by Dan Perry, and available from
-<http://www.pppl.gov/~dperry/>
+> This software was originally written by Dan Perry.  Brian Elliott Finley
+> debianized it in Mar 2006.  Doug Engbert made a number of changes to it
+> during 2009.  Since Feb 2010, when James Knight downloaded the Debian
+> package, history and contributions have been tracked via Git.
 
-Then, it was downloaded from there and debianized by Brian Elliott
-Finley in Mar 2006.
-
-Then, Doug Engbert made a number of changes to it during 2009.
-
-Then, in Feb 2010, James Knight then downloaded the debian package with
-changes from <http://download.systemimager.org/~finley/msktutil/>, and
-made even more changes.
-
-In Feb 2012, Ken Dreyer provided some build fixes.
-
-In 2012 and 2013, Mark Proehl, Michael Weiser, Daniel Kobras and Olaf Flebbe
-provided enhancements and build fixes
-
-In 2017 Michael Osipov joined the team
-
+The msktutil package is currently maintained by Mark Proehl, Michael Osipov,
+and Daniel Kobras. It is available from <https://github.com/msktutil/msktutil>.
