@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT(msktutil, 1.2-dev)
+AC_INIT(msktutil, 1.2)
 AC_CONFIG_HEADER([config.h])
 
 PACKAGE_DATE="June 25, 2018"
