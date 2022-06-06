@@ -126,7 +126,7 @@ LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
                                     const char **attrs)
 {
     std::string filter = sform("(&(|(objectCategory=Computer)"
-                               "(objectCategory=User))(sAMAccountName=%s))",
+                               "(objectCategory=User)(objectCategory=MsDS-ManagedServiceAccount))(sAMAccountName=%s))",
                                flags->sAMAccountName.c_str());
     return flags->ldap->search(flags->base_dn,
                                LDAP_SCOPE_SUBTREE,
@@ -138,7 +138,7 @@ LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
                                     const std::string& attr)
 {
     std::string filter = sform("(&(|(objectCategory=Computer)"
-                               "(objectCategory=User))"
+                               "(objectCategory=User)(objectCategory=MsDS-ManagedServiceAccount))"
                                "(sAMAccountName=%s))",
                                flags->sAMAccountName.c_str());
     return flags->ldap->search(flags->base_dn,
