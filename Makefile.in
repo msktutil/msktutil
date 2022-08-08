@@ -6,7 +6,6 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 datarootdir=@datarootdir@
 sbindir=@sbindir@
-bindir=@bindir@
 mandir=@mandir@
 CXX=@CXX@
 CC=@CC@
@@ -16,7 +15,6 @@ CFLAGS=@CFLAGS@ @WARNFLAGS@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@
 INSTALL=@INSTALL@
-LN_S=@LN_S@
 RM=@RM@ -rf
 CP=@CP@ -f
 SED=@SED@
@@ -58,11 +56,9 @@ configure config.h.in: configure.ac
 	./autogen.sh
 
 install: all
-	$(MKDIR) -p $(DESTDIR)$(bindir)
 	$(MKDIR) -p $(DESTDIR)$(sbindir)
 	$(MKDIR) -p $(DESTDIR)$(mandir)/man1
-	$(INSTALL) -m 0755 $(PROG) $(DESTDIR)$(bindir)
-	$(LN_S) -f $(bindir)/$(PROG) $(DESTDIR)$(sbindir)/$(PROG)
+	$(INSTALL) -m 0755 $(PROG) $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 0644 $(MAN) $(DESTDIR)$(mandir)/man1
 
 distcheck:
