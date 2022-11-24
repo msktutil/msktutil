@@ -1,3 +1,8 @@
+Relase 1.2.1
+
+- Bugfix: correct AUTHORS section of manpage
+- Revert installation to $PREFIX/bin
+
 Release 1.2
 
 - New co-maintainer Michael Osipov
