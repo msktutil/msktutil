@@ -28,5 +28,5 @@ following options to the configure script:
 Note the paths specified are expected to a base path.  For example, th
 configure script expects that an 'include' and 'lib' directory exists in
 each of the base paths with the appropriate headers and libraries.  You
-also can set the LDFLAGS and CPPFLAGS enviroment variables to specify other
+also can set the LDFLAGS and CPPFLAGS environment variables to specify other
 paths for these headers and libraries.

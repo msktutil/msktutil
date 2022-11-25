@@ -1,4 +1,4 @@
-Relase 1.2.1
+Release 1.2.1
 
 - Bugfix: correct AUTHORS section of manpage
 - Revert installation to $PREFIX/bin
@@ -33,7 +33,7 @@ Release 1.1rc2:
 
 Release 1.1rc1:
 - Bugfix: keytab entries generated with wrong salt
-- Bugfix: try_machine_keytab_princ is not called when keytab is not exlicitly given via --keytab
+- Bugfix: try_machine_keytab_princ is not called when keytab is not explicitly given via --keytab
 - Bugfix: failure to write keytab entries for more than one principal
 - Bugfix: duplicate entries when using service account
 - New Option --dont-update-dnshostname
@@ -121,13 +121,13 @@ Release 0.4.2:
 
 Release 0.4.1:
 
-- Ken Dreyer took over maintainance, based upon master at
+- Ken Dreyer took over maintenance, based upon master at
   http://repo.or.cz/w/msktutil.git
 - Build fixes for Red Hat
 
 Release 0.4:
 
-- James Y Knight took over maintainance, based upon msktutil_0.3.16-7
+- James Y Knight took over maintenance, based upon msktutil_0.3.16-7
   downloaded from: http://download.systemimager.org/~finley/msktutil/
 
 - Made most functionality work properly with only the machine account
@@ -189,7 +189,7 @@ msktutil 0.3.16-6
 
   * SASL ssf varied depending on TLS to circumvent another W2008 bug
 
-  * added --enctypes N where N is defind with W2008
+  * added --enctypes N where N is defined with W2008
     http://msdn.microsoft.com/en-us/library/cc223853(PROT.10).aspx
     msDs-supportedEncrtptionTypes. 1=DES, 2=DES, 4=RC4,
     8=AES128 16=AES256. N is sum of these.

@@ -199,7 +199,7 @@ void cleanup_keytab(msktutil_flags *flags)
     /* FIXME this will work nicely for multiple principals derived from the
      * same account/password, but what about multiple independent principals
      * within the same keytab? We could run the cleanup separately for each
-     * principal, but then there's no way to get rid of truely obsolete
+     * principal, but then there's no way to get rid of truly obsolete
      * principals. */
     krb5_kvno keep_kvno = it->kvno();
     time_t min_keep_timestamp = time(0) - flags->cleanup_days * 60 * 60 * 24;

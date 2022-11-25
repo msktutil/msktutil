@@ -147,7 +147,7 @@ int parse_enctype(const std::string &value)
 
 void do_verbose()
 {
-    g_verbose++; /* allow for ldap debuging */
+    g_verbose++; /* allow for ldap debugging */
 }
 
 
@@ -327,7 +327,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
         exit(1);
     }
 
-    /* If we didn't get kerberos credentials because the old passord
+    /* If we didn't get Kerberos credentials because the old password
      * has expired we need to change it now */
     if (flags->auth_type == AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD) {
         VERBOSE("Account password expired, changing it now...");
@@ -1444,7 +1444,7 @@ msktutil_flags::msktutil_flags() :
     cleanup_enctype(VALUE_IGNORE)
 {
     /* Check for environment variables as well.  These variables will
-     * be overriden by command line arguments. */
+     * be overridden by command line arguments. */
     if (getenv("MSKTUTIL_KEYTAB")) {
         keytab_file = getenv("MSKTUTIL_KEYTAB");
     }
