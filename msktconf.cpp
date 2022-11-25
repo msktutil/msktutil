@@ -181,9 +181,9 @@ void switch_default_ccache(const char *ccache_name)
     VERBOSE("Using the local credential cache: %s", ccache_name);
 
     /* Is this setenv really necessary given krb5_cc_set_default_name?
-     * ...answer: YES, because ldap's sasl won't be using our context
+     * ...answer: YES, because LDAP's SASL won't be using our context
      * object, and may in fact be using a different implementation of
-     * kerberos entirely! */
+     * Kerberos entirely! */
 #ifdef HAVE_SETENV
     if (setenv("KRB5CCNAME", ccache_name, 1)) {
         error_exit("setenv failed");
@@ -331,10 +331,10 @@ int find_working_creds(msktutil_flags *flags)
         /*
          * NOTE: we have to use an actual file for the credential
          * cache, and not a MEMORY: type, because libsasl may be using
-         * heimdal, while this program may be compiled against MIT
-         * kerberos. So, while it's all in the same process and you'd
+         * Heimdal, while this program may be compiled against MIT
+         * Kerberos. So, while it's all in the same process and you'd
          * think an in-mem ccache would be the right thing, the two
-         * kerberos implementations cannot share an in-memory ccache,
+         * Kerberos implementations cannot share an in-memory ccache,
          * so we have to use a file. Sigh.
          */
         g_ccache_filename = get_tempfile_name(".mskt_krb5_ccache");

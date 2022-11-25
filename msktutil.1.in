@@ -1,6 +1,6 @@
 .TH @PACKAGE_NAME@ 1 @PACKAGE_VERSION@
 .SH NAME
-@PACKAGE_NAME@ \- fetches and manages kerberos keytabs in an Active Directory environment
+@PACKAGE_NAME@ \- fetches and manages Kerberos keytabs in an Active Directory environment
 .SH SYNOPSIS
 .B @PACKAGE_NAME@
 [mode] [parameter 1] [parameter 2] ...
@@ -148,7 +148,7 @@ a keytab with the account principal, but you do have a keytab with a service pri
 with that account.
 .TP
 --server <server>
-Specifies to use <server> as the domain controller.  This affects both kerberos and ldap operations.
+Specifies to use <server> as the domain controller.  This affects both Kerberos and LDAP operations.
 The server can also be specified by setting the MSKTUTIL_SERVER environment variable.  Default:
 looked up in DNS from the realm name.
 .TP
@@ -160,7 +160,7 @@ process, allowing systems outside the NAT firewall to join the domain managed by
 the NAT firewall.
 .TP
 --realm <realm>
-Specifies to use <realm> as kerberos realm.  Default: use the default_realm from [libdefaults] 
+Specifies to use <realm> as Kerberos realm.  Default: use the default_realm from [libdefaults]
 section of krb5.conf.
 .TP
 --site <site>
@@ -172,9 +172,9 @@ need to do this if your client cannot resolve the PTR records for a domain contr
 servers store incorrect PTR records.  Default: Use DNS reverse lookups to canonicalize DC names.
 .TP
 -n, --no-canonical-name
-Do not attempt to canonicalize the hostname while creating names of kerberos principals.
+Do not attempt to canonicalize the hostname while creating names of Kerberos principals.
 Instead use supplied hostname. This may be needed for systems where forward and reverse
-DNS lookups do not return the same (an dynamic dns system for example where lookup for
+DNS lookups do not return the same (a dynamic DNS system for example where lookup for
 myhost.mydomain returns IP X.Y.Z.W , but lookup for IP X.Y.Z.W returns a name different
 than myhost.mydomain).
 .TP
@@ -248,7 +248,7 @@ If the value is set to 0x3 (that is: only the two DES types), it also attempts t
 flag in userAccountControl.
 
 Note: Windows 2008R2 refuses to use DES by default; you thus cannot use DES-only keys unless
-you have enabled DES encryption for your domain first.  Recent versions of MIT kerberos clients
+you have enabled DES encryption for your domain first.  Recent versions of MIT Kerberos clients
 similarly refuse to use DES by default.
 
 Default: sets the value to 0x1C: that is, use anything but DES.
@@ -332,7 +332,7 @@ your Active Directory domain may have special password policies for those user a
 time to pass until you may invoke @PACKAGE_NAME@ update --use-service-account.
 .SS OTHER NOTES
 .PP
-Unlike other kerberos implementations, Active Directory has only a single key for all of the
+Unlike other Kerberos implementations, Active Directory has only a single key for all of the
 principals associated with an account.  So, if you create a HTTP/hostname service principal, it will
 share the same key as the host/hostname principal.  If you want to isolate (security-wise) different
 service principals, you may want to create a dedicated service account for them (with --use-service-account)
@@ -354,7 +354,7 @@ misconfigured, this construction may fail.  To work around this issue,  you may 
 qualified DNS name of your domain controller with the --server option and additionally use the
 --no-reverse-lookups option.
 .PP
-Samba (www.samba.org) provides the net command that can be used to manage kerberos keytabs as
+Samba (www.samba.org) provides the net command that can be used to manage Kerberos keytabs as
 well.  Using @PACKAGE_NAME@ and commands like "net ads join" or "net ads keytab" together can lead to
 trouble.  With the --set-samba-secret option, @PACKAGE_NAME@ can be used as a replacement for net.
 .PP
@@ -438,7 +438,7 @@ This will create a keytab for johndoe without changing John Doe's password
 .PP
 This will create a computer account in Active Directory that is compatible with Samba.  The command creates
 a new password, write out a new keytab, and ensure that it includes both "host/hostname" and "host/hostname.example.com"
-as service principals (which is equivalent to what setspn.exe -R would do on windows).  The new computer
+as service principals (which is equivalent to what setspn.exe -R would do on Windows).  The new computer
 password will be stored in Samba's secrets.tdb database to provide interoperability with Samba.
 As Samba (version 3) only supports arcfour encrypted Kerberos tickets the --enctypes option must be used
 to select only that encryption type.

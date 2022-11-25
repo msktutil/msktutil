@@ -28,12 +28,12 @@ Salt for service accounts is created in a different way:
 FIXME: this is stupid, and not future proof. The salt is supposed to
 be an implementation detail that the server can set to whatever it
 feels like (so long as it doesn't change it except when the password
-changes). A future version of windows may change the salting algorithm
+changes). A future version of Windows may change the salting algorithm
 to something else, or may even start using random salts.
 
 In the normal authentication path, the client asks the KDC what salt
 to use when encrypting the password for the account, and then uses
-that. And for the creation of a keytab in MIT kerberos (in the suual
+that. And for the creation of a keytab in MIT Kerberos (in the suual
 case), you use the kadmin protocol to download the already salted key
 block.
 
@@ -48,7 +48,7 @@ Note: even if the salting string could be fetched from the network
 protocol, that would only be possible after the password has been set
 in AD.  But the keytab entry should be created before that.
 
-What we're doing here is very much like MIT kerberos' ktutil addent
+What we're doing here is very much like MIT Kerberos' ktutil addent
 -password, which also assumes the server uses a particular salt. And
 that is also broken. Given this email thread:
 <http://mailman.mit.edu/pipermail/krbdev/2009-July/007835.html>, I

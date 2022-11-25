@@ -147,7 +147,7 @@ int parse_enctype(const std::string &value)
 
 void do_verbose()
 {
-    g_verbose++; /* allow for ldap debugging */
+    g_verbose++; /* allow for LDAP debugging */
 }
 
 
@@ -312,7 +312,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     qualify_principal_vec(exec->add_principals, flags);
     qualify_principal_vec(exec->remove_principals, flags);
 
-    /* Now, try to get kerberos credentials in order to connect to
+    /* Now, try to get Kerberos credentials in order to connect to
      * LDAP. */
     flags->auth_type = find_working_creds(flags);
     if (flags->auth_type == AUTH_NONE) {
@@ -337,7 +337,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
             exit(1);
         }
         if (!get_creds(flags)) {
-            fprintf(stderr, "Error: failed to get kerberos credentials\n");
+            fprintf(stderr, "Error: failed to get Kerberos credentials\n");
             exit(1);
         }
     }
@@ -352,7 +352,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
         fprintf(stderr, "Error: ldap_connect failed\n");
         /* Print a hint as to the likely cause: */
         if (flags->auth_type == AUTH_FROM_USER_CREDS) {
-            fprintf(stderr, "--> Is your kerberos ticket expired? "
+            fprintf(stderr, "--> Is your Kerberos ticket expired? "
                     "You might try re-\"kinit\"ing.\n"
                 );
         }
@@ -479,7 +479,7 @@ void do_help()
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
     fprintf(stdout, "                         up in DNS based upon realm.\n");
     fprintf(stdout, "  --server-behind-nat    Ignore server IP validation error caused by NAT.\n");
-    fprintf(stdout, "  --realm <realm>        Use a specific kerberos realm instead of using\n");
+    fprintf(stdout, "  --realm <realm>        Use a specific Kerberos realm instead of using\n");
     fprintf(stdout, "                         default_realm from krb5.conf.\n");
     fprintf(stdout, "  --site <site>          Find and use domain controller in specific AD site.\n");
     fprintf(stdout, "                         This option is ignored if option --server is used.\n");
@@ -560,7 +560,7 @@ static int wait_for_new_kvno(msktutil_flags *flags)
         return 0;
     }
 
-    VERBOSE("Checking new kvno via ldap");
+    VERBOSE("Checking new kvno via LDAP");
 
     /* Loop and wait for the account and password set to replicate */
     for (int this_time = 0; ; this_time += 5) {
@@ -1192,7 +1192,7 @@ int main(int argc, char *argv [])
             continue;
         }
 
-        /* Use user kerberos credentials only */
+        /* Use user Kerberos credentials only */
         if (!strcmp(argv[i], "--user-creds-only")) {
             flags->user_creds_only = true;
             continue;

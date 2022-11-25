@@ -200,7 +200,7 @@ msktutil 0.3.16-6
 
   * #ifdef for use with Solairs LDAP
 
-  * Cleanup of other ldap code and error handing
+  * Cleanup of other LDAP code and error handing
 
   * msktutil.interactive updated to work on Solaris and use msktutil
     from same directory.

@@ -287,7 +287,7 @@ void add_keytab_entries(msktutil_flags *flags)
             }
 
             if (it != keytab_entries.end()) {
-                /* Matching entry already present for this KVNO and enctype */
+                /* Matching entry already present for this kvno and enctype */
                 continue;
             }
 

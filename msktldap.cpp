@@ -196,16 +196,16 @@ krb5_kvno ldap_get_kvno(msktutil_flags *flags)
             kvno = (krb5_kvno) atoi(kvno_str.c_str());
         else {
             /* This must be a Windows 2000 domain, which does support
-             * have KVNO's. */
+             * have kvno's. */
             kvno = KVNO_WIN_2000;
-            VERBOSE("Unable to find KVNO attribute on domain controller "
-                    "%s - This must be running windows 2000",
+            VERBOSE("Unable to find kvno attribute on domain controller "
+                    "%s - This must be running Windows 2000",
                     flags->server.c_str());
         }
     }
     ldap_msgfree(mesg);
 
-    VERBOSE("Found KVNO: %d", kvno);
+    VERBOSE("Found kvno: %d", kvno);
     return kvno;
 }
 
@@ -237,7 +237,7 @@ int ldap_simple_set_attr(const std::string &dn,
     int ret = flags->ldap->simple_set_attr(dn, attrName, val);
 
     if (ret != LDAP_SUCCESS) {
-        fprintf(stderr, "WARNING: ldap modification of %s\n", dn.c_str());
+        fprintf(stderr, "WARNING: LDAP modification of %s\n", dn.c_str());
         fprintf(stderr, "         failed while trying to change %s to %s.\n",
                 attrName.c_str(), val.c_str());
         fprintf(stderr, "         Error was: %s\n", ldap_err2string(ret));
@@ -358,7 +358,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
             VERBOSE("Adding principal %s to LDAP entry", principal.c_str());
             ret = ldap->add_attr(dn, "servicePrincipalName", principal);
             if (ret != LDAP_SUCCESS) {
-                fprintf(stderr, "WARNING: ldap modification of %s\n", dn.c_str());
+                fprintf(stderr, "WARNING: LDAP modification of %s\n", dn.c_str());
                 fprintf(stderr, "         failed while trying to add servicePrincipalName %s.\n", principal.c_str());
                 fprintf(stderr, "         Error was: %s\n", ldap_err2string(ret));
                 fprintf(stderr, "         --> Do you have enough privileges?\n");

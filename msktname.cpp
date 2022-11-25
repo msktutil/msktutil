@@ -38,7 +38,7 @@
 std::string complete_hostname(const std::string &hostname,
                               bool no_canonical_name)
 {
-    /* Ask the kerberos lib to canonicalize the hostname, and then
+    /* Ask the Kerberos library to canonicalize the hostname, and then
      * pull it out of the principal. */
     int32_t type = KRB5_NT_SRV_HST;
     krb5_principal temp_princ_raw = NULL;
@@ -93,7 +93,7 @@ std::string complete_hostname(const std::string &hostname,
 
 std::string get_default_hostname(bool no_canonical_name)
 {
-    /* Ask the kerberos lib to canonicalize the hostname, and then
+    /* Ask the Kerberos library to canonicalize the hostname, and then
      * pull it out of the principal. */
     int32_t type = KRB5_NT_SRV_HST;
     krb5_principal temp_princ_raw;
