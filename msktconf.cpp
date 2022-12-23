@@ -101,7 +101,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 
     file << "[libdefaults]\n"
          << " default_realm = " << flags->realm_name << "\n"
-         << " dns_lookup_kdc = false\n"
+         << " dns_lookup_kdc = true\n"
          << " udp_preference_limit = 1\n"
          << " default_ccache_name = " << KRB5CCache::defaultName() << "\n";
 
