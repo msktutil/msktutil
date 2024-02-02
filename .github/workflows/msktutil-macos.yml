@@ -26,9 +26,9 @@ jobs:
         brew install krb5 openldap
         case "${{ matrix.cfg.cc-version }}" in
           gcc)
-            brew install gcc@10
-            export CC=gcc-10
-            export CXX=g++-10
+            brew install gcc@12
+            export CC=gcc-12
+            export CXX=g++-12
             ;;
           clang)
             export CC=clang
