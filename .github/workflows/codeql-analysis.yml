@@ -57,6 +57,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
+        sudo apt-get update || true
         sudo apt-get install -q -y libldap2-dev libkrb5-dev libsasl2-dev
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
