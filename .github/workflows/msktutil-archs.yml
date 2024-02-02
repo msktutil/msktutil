@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     name: Build on ${{ matrix.distro }} ${{ matrix.arch }} with gcc
 
     # Run steps on a matrix of 4 arch/distro combinations
@@ -17,18 +17,20 @@ jobs:
       matrix:
         include:
           - arch: aarch64
-            distro: ubuntu20.04
+            distro: ubuntu22.04
           - arch: ppc64le
-            distro: ubuntu20.04
+            distro: ubuntu22.04
+          - arch: riscv64
+            distro: ubuntu22.04
           - arch: s390x
-            distro: ubuntu20.04
+            distro: ubuntu22.04
           - arch: armv7
-            distro: ubuntu20.04
+            distro: ubuntu22.04
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-      - uses: uraimo/run-on-arch-action@v2.0.8
+        uses: actions/checkout@v4
+      - uses: uraimo/run-on-arch-action@v2
         name: Build artifact
         id: build
         with:

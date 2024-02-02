@@ -9,10 +9,10 @@ on:
 jobs:
   # see https://github.com/koalaman/shellcheck
   shellcheck:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install linters on ubuntu
         run: |
@@ -26,10 +26,10 @@ jobs:
 
   # see https://github.com/danmar/cppcheck
   cppcheck:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install linters on ubuntu
         run: |
