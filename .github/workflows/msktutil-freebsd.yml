@@ -25,10 +25,11 @@ jobs:
       with:
         mem: 2048
         usesh: true
-        run: |
+        prepare: |
           freebsd-version
           # basic dependencies
-          pkg install -y autoconf cyrus-sasl-gssapi gmake openldap24-client
+          pkg install -y autotools autoconf cyrus-sasl-gssapi gmake openldap26-client
+        run: |
           case "${{ matrix.cfg.cc-version }}" in
             gcc)
               pkg install -y gcc
