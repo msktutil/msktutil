@@ -448,6 +448,10 @@ void do_help()
     fprintf(stdout, "\n");
     fprintf(stdout, "  cleanup                Deletes entries from the keytab that are no longer needed.\n");
     fprintf(stdout, "\n");
+    fprintf(stdout, "  gmsa                   Retrieves the password of a Group Managed Service Account\n");
+    fprintf(stdout, "                         (identified by --gmsa-name) using the current host credentials\n");
+    fprintf(stdout, "                         and updates its keytab (--gmsa-keytab).\n");
+    fprintf(stdout, "\n");
     fprintf(stdout, "Common options: \n");
     fprintf(stdout, "  --help                 Displays this message\n");
     fprintf(stdout, "  -v, --version          Display the current version\n");
@@ -539,6 +543,11 @@ void do_help()
     fprintf(stdout, "                         Removes entries with given <enctype>. Supported enctype\n");
     fprintf(stdout, "                         strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128\n");
     fprintf(stdout, "                         and aes256\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "GMSA options:\n");
+    fprintf(stdout, "  --gmsa-name <string>   The name of the GMSA account (without the ending $).\n");
+    fprintf(stdout, "  --gmsa-keytab <file>   Use <file> to store the GMSA account keytab.\n");
+    fprintf(stdout, "\n");
 }
 
 
@@ -589,6 +598,8 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         VERBOSE("cleanup mode: don't need a new password");
     } else if (exec->mode == MODE_DELETE) {
         VERBOSE("delete mode: don't need a new password");
+    } else if (exec->mode == MODE_GMSA) {
+        VERBOSE("gmsa mode: don't need a new password");
     } else {
         /* Generate a random password and store it. */
         ret = generate_new_password(flags);
@@ -793,6 +804,37 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                 flags->keytab_writename.c_str());
         cleanup_keytab(flags);
         return 0;
+    } else if (exec->mode == MODE_GMSA) {
+        VERBOSE("Retrieving secret of %s\n", flags->gmsa_name.c_str());
+        flags->keytab_writename = "WRFILE:" + flags->gmsa_keytab_file;
+
+        std::string machine_sAMAccountName = flags->sAMAccountName;
+        flags->sAMAccountName = flags->gmsa_name;
+        if (flags->sAMAccountName[flags->sAMAccountName.size()-1] != '$') {
+            flags->sAMAccountName += "$";
+        }
+
+        std::string blob = ldap_get_managed_password_blob(flags);
+        if (blob.empty()) {
+            fprintf(stderr,
+                    "Error: Could not read value of msDS-ManagedPassword attribute.\n");
+
+            fprintf(stderr,
+                    "Hint: Does the machine account %s have the right to "
+                    "read %s password?\n"
+                    "      Check the attribute msDS-GroupMSAMembership of %s.\n",
+                    machine_sAMAccountName.c_str(), flags->sAMAccountName.c_str(),
+                    flags->sAMAccountName.c_str());
+            return 1;
+        }
+
+        ldap_set_ad_supported_encryption_types(flags);
+
+        flags->password = get_managed_password(blob);
+        add_principal_keytab(flags->sAMAccountName, flags);
+        fprintf(stdout, "%s kerberos keys written in %s.\n",
+                flags->sAMAccountName.c_str(), flags->gmsa_keytab_file.c_str());
+        return 0;
     }
 
     return 0;
@@ -840,6 +882,8 @@ int main(int argc, char *argv [])
             exec->set_mode(MODE_DELETE);
         } else if (!strcmp(argv[1], "reset")) {
             exec->set_mode(MODE_RESET);
+        } else if (!strcmp(argv[1], "gmsa")) {
+            exec->set_mode(MODE_GMSA);
         }
     }
 
@@ -1269,6 +1313,32 @@ int main(int argc, char *argv [])
             continue;
         }
 
+        if (!strcmp(argv[i], "--gmsa-name")) {
+            if (++i < argc) {
+                flags->gmsa_name = argv[i];
+            } else {
+                fprintf(stderr,
+                        "Error: no string given after '%s'\n",
+                        argv[i - 1]
+                    );
+                goto error;
+            }
+            continue;
+        }
+
+        if (!strcmp(argv[i], "--gmsa-keytab")) {
+            if (++i < argc) {
+                flags->gmsa_keytab_file = argv[i];
+            } else {
+                fprintf(stderr,
+                        "Error: no file given after '%s'\n",
+                        argv[i - 1]
+                    );
+                goto error;
+            }
+            continue;
+        }
+
         /* Display Verbose Messages */
         if (!strcmp(argv[i], "--verbose")) {
             do_verbose();
@@ -1377,6 +1447,16 @@ int main(int argc, char *argv [])
     /* reset mode will only work with admin credentials */
     if (exec->mode == MODE_RESET) {
         flags->user_creds_only = true;
+    }
+
+    /* gmsa mode needs gmsa_name and gmsa_keytab_file options */
+    if (exec->mode == MODE_GMSA &&
+            (flags->gmsa_name.empty() || flags->gmsa_keytab_file.empty())) {
+        fprintf(stderr,
+                "Error: gmsa mode needs --gmsa-name or "
+                "--gmsa-keytab-file\n"
+            );
+        goto error;
     }
 
     try {

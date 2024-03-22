@@ -173,7 +173,8 @@ enum msktutil_mode {
     MODE_CLEANUP,
     MODE_PRECREATE,
     MODE_DELETE,
-    MODE_RESET
+    MODE_RESET,
+    MODE_GMSA,
 };
 
 
@@ -233,6 +234,9 @@ public:
     krb5_kvno kvno;
     int cleanup_days;
     int cleanup_enctype;
+
+    std::string gmsa_name;
+    std::string gmsa_keytab_file;
     msktutil_flags();
 
 private:
@@ -294,6 +298,8 @@ extern int ldap_flush_principals(msktutil_flags *);
 extern int set_password(msktutil_flags *);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
 extern std::string ldap_get_pwdLastSet(msktutil_flags *);
+extern std::string ldap_get_managed_password_blob(msktutil_flags *);
+extern void ldap_set_ad_supported_encryption_types(msktutil_flags *flags);
 extern std::vector<std::string> ldap_list_principals(msktutil_flags *);
 extern int ldap_add_principal(const std::string &, msktutil_flags *);
 int ldap_remove_principal(const std::string &principal, msktutil_flags *flags);
@@ -308,6 +314,7 @@ extern void remove_ccache();
 int find_working_creds(msktutil_flags *flags);
 bool get_creds(msktutil_flags *flags);
 int generate_new_password(msktutil_flags *flags);
+extern std::string get_managed_password(const std::string &blob);
 
 /* Verbose messages */
 #define VERBOSE(text...) if (g_verbose) { fprintf(stdout, " -- %s: ", __FUNCTION__); fprintf(stdout, ## text); fprintf(stdout, "\n"); }

@@ -126,7 +126,7 @@ LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
                                     const char **attrs)
 {
     std::string filter = sform("(&(|(objectCategory=Computer)"
-                               "(objectCategory=User))(sAMAccountName=%s))",
+                               "(objectCategory=User)(objectCategory=msDS-GroupManagedServiceAccount))(sAMAccountName=%s))",
                                flags->sAMAccountName.c_str());
     return flags->ldap->search(flags->base_dn,
                                LDAP_SCOPE_SUBTREE,
@@ -138,7 +138,7 @@ LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
                                     const std::string& attr)
 {
     std::string filter = sform("(&(|(objectCategory=Computer)"
-                               "(objectCategory=User))"
+                               "(objectCategory=User)(objectClass=msDS-GroupManagedServiceAccount))"
                                "(sAMAccountName=%s))",
                                flags->sAMAccountName.c_str());
     return flags->ldap->search(flags->base_dn,
@@ -228,6 +228,22 @@ std::string ldap_get_pwdLastSet(msktutil_flags *flags)
     return pwdLastSet;
 }
 
+
+std::string ldap_get_managed_password_blob(msktutil_flags *flags)
+{
+    std::string blob;
+
+    LDAPConnection *ldap = flags->ldap;
+
+    LDAPMessage *mesg = ldap_get_account_attrs(flags, "msDS-ManagedPassword");
+
+    if (ldap->count_entries(mesg) == 1) {
+        mesg = ldap->first_entry(mesg);
+        blob = ldap->get_one_val(mesg, "msDS-ManagedPassword");
+    }
+    ldap_msgfree(mesg);
+    return blob;
+}
 
 int ldap_simple_set_attr(const std::string &dn,
                          const std::string &attrName,
@@ -739,4 +755,25 @@ int ldap_delete_account(msktutil_flags *flags)
     ret = flags->ldap->del(dn);
 
     return ret;
+}
+
+void ldap_set_ad_supported_encryption_types(msktutil_flags *flags)
+{
+    LDAPMessage *mesg = ldap_get_account_attrs(flags, "msDs-supportedEncryptionTypes");
+    std::string supportedEncryptionTypes =
+        flags->ldap->get_one_val(mesg, "msDs-supportedEncryptionTypes");
+
+    if (!supportedEncryptionTypes.empty()) {
+        flags->ad_supportedEncryptionTypes = atoi(supportedEncryptionTypes.c_str());
+        VERBOSE("Found supportedEncryptionTypes: %d",
+                flags->ad_supportedEncryptionTypes);
+    } else {
+        /* Not in current LDAP entry set defaults */
+        flags->ad_supportedEncryptionTypes = MS_KERB_DES_ENCTYPES;
+        if (!(flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
+            flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
+        }
+    }
+    flags->ad_supportedEncryptionTypes &= flags->supportedEncryptionTypes;
+    VERBOSE("Use supportedEncryptionTypes: %d", flags->ad_supportedEncryptionTypes);
 }
