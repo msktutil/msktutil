@@ -182,8 +182,8 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
         }
         if (connect(sock, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1) {
             int err = errno;
-            char addrstr[INET6_ADDRSTRLEN] = "";
-            (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
+            char addrstr[NI_MAXHOST] = "";
+            (void) getnameinfo(ai->ai_addr, ai->ai_addrlen, addrstr, sizeof(addrstr), NULL, 0, NI_NUMERICHOST);
             VERBOSE("LDAP connection to %s failed: %s", addrstr, strerror(err));
             continue;
         }
@@ -202,8 +202,8 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
 
         if (ret != 0) {
             int err = errno;
-            char addrstr[INET6_ADDRSTRLEN] = "";
-            (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
+            char addrstr[NI_MAXHOST] = "";
+            (void) getnameinfo(ai->ai_addr, ai->ai_addrlen, addrstr, sizeof(addrstr), NULL, 0, NI_NUMERICHOST);
             VERBOSE("Error: getnameinfo failed for %s: %s", addrstr,
                     ret == EAI_SYSTEM ? strerror(err) : gai_strerror(ret));
             continue;
