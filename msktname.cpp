@@ -161,7 +161,7 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
     ret = getaddrinfo(srvname.c_str(), service.c_str(), &hints, &hostaddrinfo);
 
     if (ret != 0) {
-        VERBOSE("Error: gethostbyname failed for %s: %s\n", srvname.c_str(),
+        VERBOSE("Error: getaddrinfo failed for %s: %s", srvname.c_str(),
                 ret == EAI_SYSTEM ? strerror(errno) : gai_strerror(ret));
         if (hostaddrinfo) {
             freeaddrinfo(hostaddrinfo);
@@ -177,7 +177,7 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
             close(sock);
         }
         if ((sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
-            VERBOSE("Failed to open socket: %s", strerror(errno));
+            VERBOSE("Failed to create socket: %s", strerror(errno));
             continue;
         }
         if (connect(sock, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1) {
@@ -204,7 +204,7 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
             int err = errno;
             char addrstr[INET6_ADDRSTRLEN] = "";
             (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
-            VERBOSE("Error: getnameinfo failed for %s: %s\n", addrstr,
+            VERBOSE("Error: getnameinfo failed for %s: %s", addrstr,
                     ret == EAI_SYSTEM ? strerror(err) : gai_strerror(ret));
             continue;
         }
