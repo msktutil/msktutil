@@ -52,7 +52,7 @@ void get_default_ou(msktutil_flags *flags)
         if (!endswith(flags->ldap_ou, flags->base_dn))
             flags->ldap_ou = flags->ldap_ou + "," + flags->base_dn;
         VERBOSE("Using OU: %s", flags->ldap_ou.c_str());
-	return;
+        return;
     }
 
     /* Otherwise, probe AD for its default OU */

@@ -323,7 +323,7 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
         if (it->validate(no_reverse_lookups, stringify(LDAP_PORT))) {
             bestdc = it->name();
             break;
-	}
+        }
     }
 
     VERBOSE("Found preferred domain controller: %s", bestdc.c_str());
