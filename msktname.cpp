@@ -182,8 +182,18 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
         }
         if (connect(sock, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1) {
             int err = errno;
+            void *addr;
+            /* We assume max possible size */
             char addrstr[INET6_ADDRSTRLEN] = "";
-            (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
+            switch (ai->ai_family) {
+                case AF_INET:
+                    addr = (void *) &(((struct sockaddr_in *) ai->ai_addr)->sin_addr);
+                    break;
+               case AF_INET6:
+                    addr = (void *) &(((struct sockaddr_in6 *) ai->ai_addr)->sin6_addr);
+                    break;
+            }
+            (void) inet_ntop(ai->ai_family, addr, addrstr, sizeof(addrstr));
             VERBOSE("LDAP connection to %s failed: %s", addrstr, strerror(err));
             continue;
         }
@@ -202,8 +212,18 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
 
         if (ret != 0) {
             int err = errno;
+            void *addr;
+            /* We assume max possible size */
             char addrstr[INET6_ADDRSTRLEN] = "";
-            (void) inet_ntop(ai->ai_family, ai->ai_addr, addrstr, INET6_ADDRSTRLEN);
+            switch (ai->ai_family) {
+                case AF_INET:
+                    addr = (void *) &(((struct sockaddr_in *) ai->ai_addr)->sin_addr);
+                    break;
+               case AF_INET6:
+                    addr = (void *) &(((struct sockaddr_in6 *) ai->ai_addr)->sin6_addr);
+                    break;
+            }
+            (void) inet_ntop(ai->ai_family, addr, addrstr, sizeof(addrstr));
             VERBOSE("Error: getnameinfo failed for %s: %s", addrstr,
                     ret == EAI_SYSTEM ? strerror(err) : gai_strerror(ret));
             continue;
