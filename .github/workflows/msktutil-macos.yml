@@ -39,4 +39,4 @@ jobs:
         ./autogen.sh
         ./configure \
            --with-ldapdir=/usr/local/opt/openldap \
-           --with-krb5-config=/usr/local/opt/krb5/bin/krb5-config && make
+           --with-krb5-config=/usr/local/opt/krb5/bin/krb5-config && make && ./msktutil --version
