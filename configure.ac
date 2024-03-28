@@ -74,6 +74,12 @@ fi
 if test -x "$krb5config"; then
   KRB5_CPPFLAGS=`$krb5config --cflags 2>/dev/null`
   KRB5_LIBS=`$krb5config --libs 2>/dev/null`
+  # Older versions of krb5-config do not support --vendor, yet.
+  # The resulting error message is not sent to stderr but stdout, though!
+  # So just check the exit code first, and only call --vendor for real if
+  # it is actually supported. This avoids spilling an error message into
+  # the KRB5_VENDOR variable, and just keeps it empty in this case.
+  KRB5_VENDOR=`$krb5config --vendor >/dev/null 2>&1 && $krb5config --vendor 2>/dev/null || :`
   CPPFLAGS="$CPPFLAGS $KRB5_CPPFLAGS"
   LIBS="$LIBS $KRB5_LIBS"
 else
@@ -139,12 +145,22 @@ if test "$ac_cv_header_et_com_err_h" = "yes"; then
 fi
 
 # We only ever directly include krb5.h, so the only reason to check for
-# Heimdal-specific heim_err.h is to distinguish which implementation we use.
-# We can entirely skip this check if the krb5 implementation has bee given
+# Heimdal-specific heim_err.h is to distinguish which implementation we use
+# in case we came across a krb5-config that doesn't support the --vendor option,
+# yet. We can entirely skip this check if the krb5 implementation has been given
 # explicitly, ie. krb5 is set to anything but "auto".
 case "$krb5" in
 mit|heimdal) ;;
-auto) krb5="mit"; AC_CHECK_HEADERS([heim_err.h heimdal/heim_err.h], [krb5="heimdal"; break]) ;;
+auto)
+  case "$KRB5_VENDOR" in
+  Massachusetts*) krb5="mit" ;;
+  Heimdal) krb5="heimdal" ;;
+  "")
+    krb5="mit"; AC_CHECK_HEADERS([heim_err.h heimdal/heim_err.h], [krb5="heimdal"; break]) ;;
+  *)
+    AC_MSG_ERROR([krb5-config reports unknown vendor $KRB5_VENDOR])
+  esac
+  ;;
 *) AC_MSG_ERROR([invalid parameter for --with-krb5]) ;;
 esac
 
