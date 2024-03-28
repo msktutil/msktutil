@@ -71,4 +71,4 @@ jobs:
           run: |
             ${CC} --version
             ./autogen.sh
-            ./configure && make
+            ./configure && make && ./msktutil --version

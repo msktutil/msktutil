@@ -138,4 +138,4 @@ jobs:
         esac
         ${CC} --version
         ./autogen.sh
-        ./configure && make
+        ./configure && make && ./msktutil --version
