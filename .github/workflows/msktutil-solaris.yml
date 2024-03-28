@@ -1,0 +1,42 @@
+name: msktutil Solaris
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build on Solaris
+    strategy:
+      fail-fast: false
+      matrix:
+        cfg:
+          - { cc-version: gcc }
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Build msktutil with ${{ matrix.cfg.cc-version }}
+      id: build
+      uses: vmactions/solaris-vm@v1
+      with:
+        release: "11.4-gcc"
+        mem: 2048
+        usesh: true
+        prepare: |
+          # basic dependencies
+          pkgutil -y -i autoconf sasl_gssapi gmake libkrb5_dev openldap_dev sasl_dev
+        run: |
+          case "${{ matrix.cfg.cc-version }}" in
+            gcc)
+              pkgutil -y -i gcc5g++
+              export PATH=/opt/csw/bin:$PATH
+              export CC=gcc
+              export CXX=g++
+              ;;
+          esac
+          ${CC} --version
+          ./autogen.sh
+          ./configure && make
