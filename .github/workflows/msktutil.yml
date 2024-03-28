@@ -29,6 +29,8 @@ jobs:
           - { container: 'quay.io/centos/centos:stream9', cc-version: clang }
           - { container: 'fedora:latest', cc-version: gcc }
           - { container: 'fedora:latest', cc-version: clang }
+          - { container: 'registry.access.redhat.com/ubi9/ubi:latest', cc-version: gcc }
+          - { container: 'registry.access.redhat.com/ubi9/ubi:latest', cc-version: clang }
 
     steps:
     - name: Install compiler ${{ matrix.cfg.cc-version }}
@@ -70,6 +72,10 @@ jobs:
             dnf -y install ${{ matrix.cfg.cc-version }}
             ${{ matrix.cfg.cc-version }} --version
             ;;
+          */ubi:*)
+            cat /etc/redhat-release
+            dnf -y install ${{ matrix.cfg.cc-version }}
+            ${{ matrix.cfg.cc-version }} --version
         esac
 
     - name: Install msktutil dependencies ${{ matrix.cfg.cc-version }}
@@ -102,7 +108,7 @@ jobs:
             yum -y install \
               cyrus-sasl-devel krb5-devel openldap-devel
             ;;
-          */centos:*)
+          */centos:*|*/ubi:*)
             # basic packages
             dnf -y install \
               autoconf automake gcc-c++ libtool make pkgconfig which
