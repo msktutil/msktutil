@@ -1,3 +1,14 @@
+Release 1.2.2
+
+- Improve CI
+- configure.ac: more robust krb5 autodetection
+- configure.ac: Replace obsoleted AC_CONFIG_HEADER with AC_CONFIG_HEADERS
+- configure.ac: fix linking with minimal LIBS
+- Use getnameinfo(3) instead of inet_ntop(3)
+- dns_lookup_kdc setting in create_fake_krb5_conf causes issue when using a trusted domain user to create computer account (#208)
+- Fix several messages
+- Style fixes
+
 Release 1.2.1
 
 - Bugfix: correct AUTHORS section of manpage
