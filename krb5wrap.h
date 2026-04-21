@@ -66,7 +66,8 @@ public:
 
     void addEntry(const KRB5Principal &princ, krb5_kvno kvno, krb5_keyblock &keyblock);
     void addEntry(const KRB5Principal &princ, krb5_kvno kvno, krb5_enctype enctype,
-                  const std::string &password, const std::string &salt);
+                  const std::string &password, const std::string &salt,
+                  const KRB5Principal *salt_princ = NULL);
 
     void removeEntry(const KRB5Principal &princ, krb5_kvno kvno, krb5_enctype enctype);
 

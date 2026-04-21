@@ -186,7 +186,8 @@ void KRB5Keytab::addEntry(const KRB5Principal &princ,
                           krb5_kvno kvno,
                           krb5_enctype enctype,
                           const std::string &password,
-                          const std::string &salt)
+                          const std::string &salt,
+                          const KRB5Principal *salt_princ)
 {
     krb5_keyblock keyblock;
 
@@ -241,7 +242,7 @@ void KRB5Keytab::addEntry(const KRB5Principal &princ,
     krb5_data kdc_s2kparams;
 
     ret = krb5_get_etype_info(g_context,
-                              princ.get(),
+                              salt_princ ? salt_princ->get() : princ.get(),
                               opt,
                               &kdc_enctype,
                               &kdc_salt,

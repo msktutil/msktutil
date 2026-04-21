@@ -8,6 +8,9 @@ Release 1.2.2
 - dns_lookup_kdc setting in create_fake_krb5_conf causes issue when using a trusted domain user to create computer account (#208)
 - Fix several messages
 - Style fixes
+- Bugfix: for service accounts, use the account name principal when
+  querying the KDC for salt/etype info so SPN keytab entries get the
+  correct salt (#227)
 
 Release 1.2.1
 
