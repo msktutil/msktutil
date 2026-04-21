@@ -416,9 +416,35 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     std::string password = flags->dont_change_password ?
         flags->old_account_password : flags->password;
 
+    /* For service accounts, SPNs (e.g. HTTP/host@REALM) are not directly
+     * resolvable at the KDC as independent principals: only the account
+     * name has entries there. Querying krb5_get_etype_info for an SPN
+     * therefore fails, causing us to fall back to the heuristic salt,
+     * which does not necessarily match what AD uses (particularly when
+     * the UPN differs from the sAMAccountName). Use the account name
+     * principal for the etype/salt lookup so SPN keys share the correct
+     * salt. See https://github.com/msktutil/msktutil/issues/227
+     */
+    std::string salt_principal_string;
+    if (flags->use_service_account) {
+        std::string account_principal_string = flags->sAMAccountName + "@" +
+                                               flags->realm_name;
+        if (account_principal_string != principal_string) {
+            salt_principal_string = account_principal_string;
+        }
+    }
+
     if (password.empty()) {
         VERBOSE("No password available, skipping creation "
                 "of password-based keytab entries");
+    } else if (!salt_principal_string.empty()) {
+        KRB5Principal salt_princ(salt_principal_string);
+        for(size_t i = 0; i < enc_types.size(); ++i) {
+            VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
+            keytab.addEntry(princ, flags->kvno,
+                            static_cast<krb5_enctype>(enc_types[i]),
+                            password, salt, &salt_princ);
+        }
     } else {
         for(size_t i = 0; i < enc_types.size(); ++i) {
             VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
