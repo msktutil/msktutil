@@ -101,10 +101,15 @@ admin, is CN=Computers for machine accounts and CN=Users for service accounts).
 --computer-name <name>
 Specifies that the new account should use <name> for the computer account name and the SAM Account
 Name.  Note that a '$' will be automatically appended to the SAM Account Name.  Defaults to the
-machine's hostname, excluding the realm, with dots replaced with dashes.
+first component of the machine's hostname (up to the first dot), in lowercase.  This matches the
+hostname selection used by other join tools and services, such as Samba's "net ads join" and adcli,
+except that those tools uppercase the result and msktutil does not.
 
-That is: if the realm is EXAMPLE.COM, and the hostname is FOO.EXAMPLE.COM, the default computer name
-is FOO.  If the hostname is FOO.BAR.EXAMPLE.COM, the default computer name is FOO-BAR.
+That is: if the hostname is foo.example.com, the default computer name is foo, regardless of the
+realm.  If the hostname is foo.bar.example.com, the default computer name is also foo; any further
+subdomain labels are discarded.  If you rely on those labels to distinguish machines that share the
+same first hostname component (e.g. foo.site1.example.com vs foo.site2.example.com), pass
+--computer-name explicitly.
 .TP
 --account-name <name>
 An alias for --computer-name that can be used when operating on service accounts.  Note that a '$' 
