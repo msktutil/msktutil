@@ -402,35 +402,18 @@ std::string get_dc_host(const std::string &realm_name, const std::string &site_n
     return bestdc;
 }
 
-/* Return true if <str> ends with <suffix>, false otherwise */
-static bool ends_with(std::string const &str, std::string const &suffix)
-{
-    if (suffix.size() > str.size())
-        return false;
-
-    return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
-}
-
 /* Default sAMAccountName for current host:
-   Use lowercase FQDN, strip realm if applicable, convert remaining dots to dashes.
+   Use the first component of the (lowercase) FQDN, discarding any
+   remaining subdomain labels and the realm, matching the hostname
+   selection used by Samba's "net ads join" (which also takes only the
+   first DNS label, though it then uppercases the result; msktutil
+   keeps its existing lowercase convention).
    Eg. foo.example.com in realm EXAMPLE.COM -> foo
-       foo.subdomain1.example.com in realm EXAMPLE.COM -> foo-subdomain1
-       foo.subdomain1.example.com in realm OTHEREXAMPLE.COM -> foo-subdomain1-example-com
+       foo.subdomain1.example.com in realm EXAMPLE.COM -> foo
  */
 std::string get_default_samaccountname(msktutil_flags *flags)
 {
-    std::string long_hostname = flags->hostname;
-
-    std::transform(long_hostname.begin(), long_hostname.end(),
-                   long_hostname.begin(), ::tolower);
-
-    std::string samaccountname = long_hostname;
-
-    if (ends_with(samaccountname, '.' + flags->lower_realm_name))
-        samaccountname.resize(samaccountname.length() - flags->lower_realm_name.length() - 1);
-
-    /* Replace any remaining dots with dashes */
-    std::replace(samaccountname.begin(), samaccountname.end(), '.', '-');
+    std::string samaccountname = get_short_hostname(flags);
 
     VERBOSE("Determined sAMAccountName: %s", samaccountname.c_str());
     return samaccountname;

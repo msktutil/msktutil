@@ -8,6 +8,10 @@ Unreleased
 - Bugfix: add a connect timeout when probing domain controller
   availability, instead of blocking for the OS-level TCP connect
   timeout on an unreachable DC (#220)
+- Behavior change: default computer account name now uses only the first DNS
+  label of the hostname, matching the hostname selection used by Samba's
+  "net ads join", instead of stripping the realm suffix and joining any
+  remaining subdomain labels with hyphens (#230)
 
 Release 1.2.2
 
