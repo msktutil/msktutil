@@ -1,3 +1,10 @@
+Release 1.3.0
+
+- Behavior change: default computer account name now uses only the first DNS
+  label of the hostname, matching the hostname selection used by Samba's
+  "net ads join", instead of stripping the realm suffix and joining any
+  remaining subdomain labels with dashes (#230)
+
 Release 1.2.2
 
 - Improve CI
