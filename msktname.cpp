@@ -29,11 +29,82 @@
  *-----------------------------------------------------------------------------
  */
 
+/* On HP-UX, getsockopt(2) only takes a socklen_t* (rather than the
+ * legacy BSD int*) for its length argument once UNIX03/XPG visibility
+ * is requested; _HPUX_SOURCE restores HP's own BSD-ish declarations
+ * (e.g. NI_MAXHOST) that _XOPEN_SOURCE alone would otherwise hide. */
+#if defined(__hpux) && !defined(_XOPEN_SOURCE)
+#define _HPUX_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
 #include "msktutil.h"
 
 #include <algorithm>
 #include <cctype>
 #include <sstream>
+#include <sys/select.h>
+
+/* Default timeout, in seconds, for probing a domain controller's
+ * availability. Without this, an unreachable DC's connect(2) call
+ * blocks for the OS-level TCP connect timeout (often minutes) before
+ * moving on to the next candidate. */
+#define DC_CONNECT_TIMEOUT 5
+
+/* Like connect(2), but gives up after DC_CONNECT_TIMEOUT seconds instead
+ * of blocking for the OS default TCP connect timeout. Returns 0 on
+ * success, -1 on failure (with errno set, as connect(2) would). */
+static int connect_with_timeout(int sock, const struct sockaddr *addr,
+                                socklen_t addrlen)
+{
+    int flags = fcntl(sock, F_GETFL, 0);
+    if (flags == -1) {
+        return -1;
+    }
+    if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        return -1;
+    }
+
+    int ret = connect(sock, addr, addrlen);
+    if (ret == -1 && errno != EINPROGRESS) {
+        return -1;
+    }
+
+    if (ret == -1) {
+        fd_set wfds;
+        FD_ZERO(&wfds);
+        FD_SET(sock, &wfds);
+        struct timeval tv;
+        tv.tv_sec = DC_CONNECT_TIMEOUT;
+        tv.tv_usec = 0;
+
+        ret = select(sock + 1, NULL, &wfds, NULL, &tv);
+        if (ret == 0) {
+            errno = ETIMEDOUT;
+            return -1;
+        }
+        if (ret == -1) {
+            return -1;
+        }
+
+        int so_error = 0;
+        socklen_t so_error_len = sizeof(so_error);
+        if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error,
+                       &so_error_len) == -1) {
+            return -1;
+        }
+        if (so_error != 0) {
+            errno = so_error;
+            return -1;
+        }
+    }
+
+    /* restore blocking mode; harmless here since the socket is only
+     * ever used for this one connect probe, but keep behavior
+     * consistent with a plain connect(2) call for any future caller */
+    (void) fcntl(sock, F_SETFL, flags);
+    return 0;
+}
 
 std::string complete_hostname(const std::string &hostname,
                               bool no_canonical_name)
@@ -180,7 +251,7 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
             VERBOSE("Failed to create socket: %s", strerror(errno));
             continue;
         }
-        if (connect(sock, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1) {
+        if (connect_with_timeout(sock, (struct sockaddr *) ai->ai_addr, ai->ai_addrlen) == -1) {
             int err = errno;
             char addrstr[NI_MAXHOST] = "";
             (void) getnameinfo(ai->ai_addr, ai->ai_addrlen, addrstr, sizeof(addrstr), NULL, 0, NI_NUMERICHOST);

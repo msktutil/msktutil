@@ -3,6 +3,9 @@ Unreleased
 - Bugfix: reject --upn when --use-service-account is not given;
   userPrincipalName is an identity attribute and has no business being
   set on a computer account
+- Bugfix: add a connect timeout when probing domain controller
+  availability, instead of blocking for the OS-level TCP connect
+  timeout on an unreachable DC (#220)
 
 Release 1.2.2
 
