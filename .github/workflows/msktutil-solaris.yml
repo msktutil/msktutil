@@ -17,7 +17,7 @@ jobs:
           - { cc-version: gcc }
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Build msktutil with ${{ matrix.cfg.cc-version }}
       id: build
       uses: vmactions/solaris-vm@v1

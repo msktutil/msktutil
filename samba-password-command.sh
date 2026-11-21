@@ -54,10 +54,10 @@ ERR_MSG="must be run as root."
 [ "$UID" -eq 0 ]
 
 ERR_MSG="WORKGROUP not set"
-[ "x$WORKGROUP" != "x" ]
+[ "$WORKGROUP" != "" ]
 
 ERR_MSG="DCHOST not set"
-[ "x$DCHOST" != "x" ]
+[ "$DCHOST" != "" ]
 
 ERR_MSG="tdbtool and net SAMBA utilities are not installed."
 [ -x "$TDBTOOL" ] && [ -x "$NET" ]

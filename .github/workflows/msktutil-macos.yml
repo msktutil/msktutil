@@ -18,12 +18,12 @@ jobs:
           - { cc-version: clang }
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Build msktutil ${{ matrix.cfg.cc-version }}
       shell: sh
       run: |
         # silence Apple deprecation notices
-        brew install krb5 openldap
+        brew install autoconf automake libtool krb5 openldap
         case "${{ matrix.cfg.cc-version }}" in
           gcc)
             brew install gcc@12
@@ -38,5 +38,5 @@ jobs:
         ${CC} --version
         ./autogen.sh
         ./configure \
-           --with-ldapdir=/usr/local/opt/openldap \
-           --with-krb5-config=/usr/local/opt/krb5/bin/krb5-config && make && ./msktutil --version
+           --with-ldapdir="$(brew --prefix openldap)" \
+           --with-krb5-config="$(brew --prefix krb5)/bin/krb5-config" && make && ./msktutil --version

@@ -23,8 +23,6 @@ jobs:
           - { container: 'debian:stable', cc-version: clang }
           - { container: 'debian:sid', cc-version: gcc }
           - { container: 'debian:sid', cc-version: clang }
-          - { container: 'quay.io/centos/centos:stream8', cc-version: gcc }
-          - { container: 'quay.io/centos/centos:stream8', cc-version: clang }
           - { container: 'quay.io/centos/centos:stream9', cc-version: gcc }
           - { container: 'quay.io/centos/centos:stream9', cc-version: clang }
           - { container: 'fedora:latest', cc-version: gcc }
@@ -119,7 +117,7 @@ jobs:
           esac
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Build msktutil with ${{ matrix.cfg.cc-version }}
       shell: sh

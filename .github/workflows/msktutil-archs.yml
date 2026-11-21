@@ -29,8 +29,8 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      - uses: uraimo/run-on-arch-action@v2
+        uses: actions/checkout@v7
+      - uses: uraimo/run-on-arch-action@v3
         name: Build artifact
         id: build
         with:
