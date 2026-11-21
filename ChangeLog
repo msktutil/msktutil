@@ -30,6 +30,10 @@ Unreleased
 - Improvement: support enterprise principals (UPNs whose suffix differs
   from the local realm) when building keytab entries and computing the
   salt (#104, #147)
+- Bugfix: "flush" mode's keytab-side cleanup only ever matched a
+  machine account's own host/<hostname> SPN; it never removed anything
+  for service accounts, and left other SPN aliases on a machine
+  account untouched
 
 Release 1.2.2
 

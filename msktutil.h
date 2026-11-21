@@ -284,6 +284,7 @@ extern std::string get_default_samaccountname(msktutil_flags *);
 extern std::string get_short_hostname(msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
 extern void cleanup_keytab(msktutil_flags *);
+extern std::vector<std::string> get_account_principals(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
 extern void add_keytab_entries(msktutil_flags *);
 extern void remove_keytab_entries(msktutil_flags *,std::vector<std::string>);

@@ -134,34 +134,36 @@ std::string get_salt(msktutil_flags *flags)
 }
 
 
+/* Returns every principal (sAMAccountName, its uppercase variant for
+ * machine accounts, userPrincipalName, and every servicePrincipalName)
+ * currently assigned to this account, i.e. every principal whose
+ * keytab entries belong to it. Mirrors the enumeration update_keytab()
+ * uses to add entries, so it stays in sync with what "this account's
+ * principals" actually means for both machine and service accounts. */
+std::vector<std::string> get_account_principals(msktutil_flags *flags)
+{
+    std::vector<std::string> principals;
+
+    principals.push_back(flags->sAMAccountName);
+    if (!flags->use_service_account) {
+        principals.push_back(flags->sAMAccountName_uppercase);
+    }
+    if (!flags->userPrincipalName.empty()) {
+        principals.push_back(flags->userPrincipalName);
+    }
+    for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
+        principals.push_back(flags->ad_principals[i]);
+    }
+
+    return principals;
+}
+
+
 int flush_keytab(msktutil_flags *flags)
 {
     VERBOSE("Flushing the keytab");
-    KRB5Keytab keytab(flags->keytab_writename);
 
-    std::vector<KRB5KeytabEntry> keytab_entries;
-
-    /* Extract a vector of keytab entries */
-    for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
-        keytab_entries.push_back(cursor);
-    }
-
-    for (std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin(); it != keytab_entries.end(); it++) {
-        KRB5Principal principal(it->principal());
-        std::string principal_name(principal.name());
-        size_t first_chr = principal_name.find('/') + 1;
-        size_t last_chr = principal_name.rfind('@');
-
-        std::string host = principal_name.substr(first_chr,
-                                                 last_chr - first_chr);
-
-        if (host != flags->hostname) {
-            continue;
-        }
-
-        VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab", principal_name.c_str(), it->kvno(), it->enctype());
-        keytab.removeEntry(principal, it->kvno(), it->enctype());
-    }
+    remove_keytab_entries(flags, get_account_principals(flags));
 
     return ldap_flush_principals(flags);
 }
@@ -237,12 +239,29 @@ void remove_keytab_entries(msktutil_flags *flags,
         keytab_entries.push_back(cursor);
     }
 
+    /* Build the comparable (and, for an enterprise principal,
+     * correctly escaped) form of each name to remove once, the same
+     * way add_principal_keytab() builds entries, so the comparison
+     * below is exact regardless of whether a principal is a bare SPN,
+     * a classic UPN, or an enterprise UPN. */
+    std::vector<std::string> remove_principal_names;
+    for (size_t i = 0; i < remove_principals.size(); ++i) {
+        const std::string &remove_principal = remove_principals[i];
+        bool is_spn = (remove_principal.find('/') != std::string::npos);
+        bool in_realm = is_in_realm(remove_principal, flags);
+        bool eupn = !is_spn && !in_realm &&
+            (remove_principal.find('@') != std::string::npos);
+        std::string qualified = in_realm
+            ? remove_principal
+            : remove_principal + "@" + flags->realm_name;
+        remove_principal_names.push_back(KRB5Principal(qualified, eupn).name());
+    }
+
     for (std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin(); it != keytab_entries.end(); it++) {
         KRB5Principal principal(it->principal());
         std::string principal_name(principal.name());
-        for (size_t i = 0; i < remove_principals.size(); ++i) {
-            std::string remove_principal = remove_principals[i] + "@" + flags->realm_name;
-            if (principal_name.compare(remove_principal) == 0) {
+        for (size_t i = 0; i < remove_principal_names.size(); ++i) {
+            if (principal_name.compare(remove_principal_names[i]) == 0) {
                 VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab", principal.name().c_str(), it->kvno(), it->enctype());
                 keytab.removeEntry(principal, it->kvno(), it->enctype());
             }
