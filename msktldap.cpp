@@ -520,6 +520,57 @@ T * myend(T (&ra)[N]) {
     return ra + N;
 }
 
+/* Fetches the account's current servicePrincipalName and
+ * userPrincipalName values from AD into flags->ad_principals and
+ * flags->userPrincipalName. Read-only -- unlike ldap_check_account(),
+ * this never writes anything back to AD, so it's safe to call from a
+ * context (flush, delete) that just needs to know what this account's
+ * principals currently are, without the side effect of reconciling
+ * any other attribute. Returns false if the account couldn't be
+ * found. */
+bool ldap_fetch_account_principals(msktutil_flags *flags)
+{
+    LDAPConnection *ldap = flags->ldap;
+    const char *attrs[] = {"servicePrincipalName",
+                           "userPrincipalName",
+                           NULL};
+
+    LDAPMessage *mesg = ldap_get_account_attrs(flags, attrs);
+
+    if (ldap->count_entries(mesg) != 1) {
+        ldap_msgfree(mesg);
+        return false;
+    }
+    mesg = ldap->first_entry(mesg);
+
+    std::vector<std::string> vals = ldap->get_all_vals(mesg,
+                                                       "servicePrincipalName");
+    for (size_t i = 0; i < vals.size(); ++i) {
+        flags->ad_principals.push_back(normalize_host_spn(vals[i]));
+        VERBOSE("Found servicePrincipalName: %s", vals[i].c_str());
+    }
+
+    if (flags->set_userPrincipalName) {
+        VERBOSE("User principal specified on command line");
+    } else {
+        std::string upn = ldap->get_one_val(mesg, "userPrincipalName");
+        if (!upn.empty()) {
+            VERBOSE("Found userPrincipalName: %s", upn.c_str());
+            /* Only strip a realm suffix that matches our local realm.
+             * An enterprise UPN's suffix doesn't match the realm, and
+             * must be preserved so add_principal_keytab() can tell it
+             * apart from a classic UPN. */
+            if (is_in_realm(upn, flags)) {
+                size_t pos = upn.rfind('@');
+                upn.erase(pos);
+            }
+            flags->userPrincipalName = upn.c_str();
+        }
+    }
+    ldap_msgfree(mesg);
+    return true;
+}
+
 bool ldap_check_account(msktutil_flags *flags)
 {
     LDAPMessage *mesg;
@@ -710,30 +761,14 @@ int ldap_delete_account(msktutil_flags *flags)
     std::string dn;
     int ret;
     LDAPConnection *ldap = flags->ldap;
-    const char *attrs[] = {"distinguishedName",
-                           "servicePrincipalName",
-                           "userPrincipalName",
-                           NULL};
 
     VERBOSE("Deleting LDAP entry of %s", flags->sAMAccountName.c_str());
 
-    LDAPMessage *mesg = ldap_get_account_attrs(flags, attrs);
+    LDAPMessage *mesg = ldap_get_account_attrs(flags, "distinguishedName");
 
     if (ldap->count_entries(mesg) == 1) {
         mesg = ldap->first_entry(mesg);
         dn = ldap->get_one_val(mesg, "distinguishedName");
-
-        /* Fetch the account's current principals before it's gone, so
-         * we can purge their (now dead, unusable) entries from the
-         * local keytab -- otherwise they'd sit there indefinitely and
-         * could collide with a later account recreated under the same
-         * name. */
-        std::vector<std::string> vals = ldap->get_all_vals(mesg,
-                                                           "servicePrincipalName");
-        for (size_t i = 0; i < vals.size(); ++i) {
-            flags->ad_principals.push_back(normalize_host_spn(vals[i]));
-        }
-        flags->userPrincipalName = ldap->get_one_val(mesg, "userPrincipalName");
     }
     ldap_msgfree(mesg);
     if (dn.empty()) {
@@ -744,6 +779,11 @@ int ldap_delete_account(msktutil_flags *flags)
         return -1;
     }
 
+    /* Fetch the account's current principals before it's gone, so we
+     * can purge their (now dead, unusable) entries from the local
+     * keytab -- otherwise they'd sit there indefinitely and could
+     * collide with a later account recreated under the same name. */
+    ldap_fetch_account_principals(flags);
     remove_keytab_entries(flags, get_account_principals(flags));
 
     ret = ldap->del(dn);

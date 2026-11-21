@@ -299,6 +299,7 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags);
 extern std::string get_dc_host(const std::string &realm_name, const std::string &site_name,
                                const bool);
 extern bool ldap_check_account(msktutil_flags *);
+extern bool ldap_fetch_account_principals(msktutil_flags *);
 extern void ldap_create_account(msktutil_flags *);
 extern int ldap_delete_account(msktutil_flags *);
 extern void create_fake_krb5_conf(msktutil_flags *);

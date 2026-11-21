@@ -653,6 +653,7 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
                     flags->hostname.c_str(),
                     flags->keytab_writename.c_str());
         }
+        ldap_fetch_account_principals(flags);
         ret = flush_keytab(flags);
         return ret;
     } else if (exec->mode == MODE_DELETE) {
