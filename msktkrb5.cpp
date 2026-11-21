@@ -246,7 +246,7 @@ void remove_keytab_entries(msktutil_flags *flags,
      * a classic UPN, or an enterprise UPN. */
     std::vector<std::string> remove_principal_names;
     for (size_t i = 0; i < remove_principals.size(); ++i) {
-        const std::string &remove_principal = remove_principals[i];
+        std::string remove_principal = normalize_host_spn(remove_principals[i]);
         bool is_spn = (remove_principal.find('/') != std::string::npos);
         bool in_realm = is_in_realm(remove_principal, flags);
         bool eupn = !is_spn && !in_realm &&
@@ -394,9 +394,10 @@ static void prune_keytab(KRB5Keytab& keytab, KRB5Principal &principal, krb5_time
     }
 }
 
-void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
+void add_principal_keytab(const std::string &principal_arg, msktutil_flags *flags)
 {
     std::string principal_string = "";
+    std::string principal = normalize_host_spn(principal_arg);
 
     /* Service principals always contain a '/' and are never qualified
      * with a realm/suffix of their own; they must be parsed in classic

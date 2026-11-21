@@ -327,6 +327,10 @@ bool ends_with(std::string const &str, std::string const &suffix);
  * (case insensitive) */
 bool is_in_realm(std::string str, msktutil_flags *flags);
 
+/* Rewrite a leading "HOST/" service class to msktutil's own "host/"
+ * convention; leaves anything else unchanged. */
+std::string normalize_host_spn(std::string principal);
+
 class Exception : public std::exception
 {
   protected:

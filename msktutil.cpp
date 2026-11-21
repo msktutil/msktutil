@@ -88,6 +88,21 @@ bool ends_with(std::string const &str, std::string const &suffix)
     return std::equal(suffix.rbegin(), suffix.rend(), str.rbegin());
 }
 
+/* Windows' setspn and some AD tooling display/accept the "HOST"
+ * service class uppercased; msktutil's own convention (and what a
+ * Unix client's host-based service lookup actually requests) is
+ * lowercase "host". Normalize so an SPN read back from AD, or typed
+ * by an operator via --service/--remove-service, always ends up
+ * compared and stored the same way msktutil itself would have
+ * written it. */
+std::string normalize_host_spn(std::string principal)
+{
+    if (principal.compare(0, 5, "HOST/") == 0) {
+        principal.replace(0, 5, "host/");
+    }
+    return principal;
+}
+
 bool is_in_realm(std::string str, msktutil_flags *flags)
 {
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);

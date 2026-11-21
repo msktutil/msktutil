@@ -37,6 +37,11 @@ Unreleased
 - Bugfix: "delete" mode left the account's keytab entries behind;
   re-creating an account with the same name could then pick up stale,
   dead keys from the deleted account (#207)
+- Bugfix: a servicePrincipalName read back from AD as "HOST/..." (as
+  Windows itself writes it) was never normalized to msktutil's own
+  "host/..." convention outside of the regular update path, so
+  "delete"/"flush" could fail to match and purge such an entry from
+  the keytab
 
 Release 1.2.2
 

@@ -615,11 +615,7 @@ bool ldap_check_account(msktutil_flags *flags)
         std::vector<std::string> vals = ldap->get_all_vals(mesg,
                                                            "servicePrincipalName");
         for (size_t i = 0; i < vals.size(); ++i) {
-            /* translate HOST/ to host/ */
-            if (vals[i].compare(0, 5, "HOST/") == 0) {
-                vals[i].replace(0, 5, "host/");
-            }
-            flags->ad_principals.push_back(vals[i]);
+            flags->ad_principals.push_back(normalize_host_spn(vals[i]));
             VERBOSE("Found servicePrincipalName: %s", vals[i].c_str());
         }
 
@@ -735,10 +731,7 @@ int ldap_delete_account(msktutil_flags *flags)
         std::vector<std::string> vals = ldap->get_all_vals(mesg,
                                                            "servicePrincipalName");
         for (size_t i = 0; i < vals.size(); ++i) {
-            if (vals[i].compare(0, 5, "HOST/") == 0) {
-                vals[i].replace(0, 5, "host/");
-            }
-            flags->ad_principals.push_back(vals[i]);
+            flags->ad_principals.push_back(normalize_host_spn(vals[i]));
         }
         flags->userPrincipalName = ldap->get_one_val(mesg, "userPrincipalName");
     }
