@@ -42,6 +42,11 @@ Unreleased
   "host/..." convention outside of the regular update path, so
   "delete"/"flush" could fail to match and purge such an entry from
   the keytab
+- Improvement: "flush" now resets a machine account's keytab and
+  servicePrincipalName in AD back to the default sAMAccountName and
+  host/ principals, instead of wiping them -- removing them entirely
+  would leave the account unreachable over Kerberos by any client.
+  userPrincipalName, if set, is always left untouched by "flush"
 
 Release 1.2.2
 

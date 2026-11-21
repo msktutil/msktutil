@@ -138,11 +138,17 @@ LDAPMessage* ldap_get_account_attrs(const msktutil_flags* flags,
 }
 
 
-int ldap_flush_principals(msktutil_flags *flags)
+/* Removes every servicePrincipalName value from the account's AD
+ * entry except those in <keep_principals> (so, with an empty list,
+ * removes all of them -- the original behavior). Keeping
+ * host/<hostname> around for a machine account matters beyond the
+ * local keytab: if nothing in AD maps that SPN to this account
+ * anymore, the KDC can't resolve it for ANY client trying to reach
+ * this host over Kerberos, regardless of what's in its keytab. */
+int ldap_flush_principals(msktutil_flags *flags,
+                          const std::vector<std::string> &keep_principals)
 {
     std::string dn;
-
-    int ret;
 
     VERBOSE("Flushing principals from LDAP entry");
     LDAPMessage *mesg = ldap_get_account_attrs(flags, "distinguishedName");
@@ -160,13 +166,36 @@ int ldap_flush_principals(msktutil_flags *flags)
         return -1;
     }
 
-    ret = flags->ldap->flush_attr_no_check(dn, "servicePrincipalName");
+    if (keep_principals.empty()) {
+        int ret = flags->ldap->flush_attr_no_check(dn, "servicePrincipalName");
 
-    /* Ignore if the attribute doesn't exist, that just means that
-     * it's already empty */
-    if (ret != LDAP_SUCCESS && ret != LDAP_NO_SUCH_ATTRIBUTE) {
-        flags->ldap->print_diagnostics("ldap_modify_ext_s failed", ret);
-        return -1;
+        /* Ignore if the attribute doesn't exist, that just means that
+         * it's already empty */
+        if (ret != LDAP_SUCCESS && ret != LDAP_NO_SUCH_ATTRIBUTE) {
+            flags->ldap->print_diagnostics("ldap_modify_ext_s failed", ret);
+            return -1;
+        }
+        return 0;
+    }
+
+    for (size_t i = 0; i < flags->ad_principals.size(); ++i) {
+        const std::string &spn = flags->ad_principals[i];
+        bool keep = false;
+        for (size_t j = 0; j < keep_principals.size(); ++j) {
+            if (spn == keep_principals[j]) {
+                keep = true;
+                break;
+            }
+        }
+        if (keep) {
+            continue;
+        }
+
+        int ret = flags->ldap->remove_attr(dn, "servicePrincipalName", spn);
+        if (ret != LDAP_SUCCESS) {
+            flags->ldap->print_diagnostics("ldap_modify_ext_s failed", ret);
+            return -1;
+        }
     }
 
     return 0;

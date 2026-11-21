@@ -282,14 +282,17 @@ extern void get_default_ou(msktutil_flags *);
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string get_default_samaccountname(msktutil_flags *);
 extern std::string get_short_hostname(msktutil_flags *);
+extern void qualify_principal_vec(std::vector<std::string> &, msktutil_flags *);
 extern int flush_keytab(msktutil_flags *);
 extern void cleanup_keytab(msktutil_flags *);
 extern std::vector<std::string> get_account_principals(msktutil_flags *);
+extern std::vector<std::string> get_default_account_principals(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
 extern void add_keytab_entries(msktutil_flags *);
 extern void remove_keytab_entries(msktutil_flags *,std::vector<std::string>);
 extern void add_principal_keytab(const std::string &, msktutil_flags *);
-extern int ldap_flush_principals(msktutil_flags *);
+extern int ldap_flush_principals(msktutil_flags *,
+                                 const std::vector<std::string> &);
 extern int set_password(msktutil_flags *);
 extern krb5_kvno ldap_get_kvno(msktutil_flags *);
 extern std::string ldap_get_pwdLastSet(msktutil_flags *);

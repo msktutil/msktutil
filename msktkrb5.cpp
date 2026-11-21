@@ -159,13 +159,77 @@ std::vector<std::string> get_account_principals(msktutil_flags *flags)
 }
 
 
+/* Returns the baseline principal set "flush" resets the account back
+ * down to: sAMAccountName (+ uppercase for a machine account), plus,
+ * for a machine account only, the default host SPN for both the
+ * short and fully-qualified hostname (a service account has no
+ * default SPN at all) -- host/<hostname> in particular is what lets
+ * other clients reach this machine over Kerberos at all, so it must
+ * survive a flush, not just the account's own ability to authenticate
+ * as itself. The current userPrincipalName, if any, is also kept:
+ * msktutil has no record of whether a UPN already existed on the
+ * account before it was ever touched, so it can't safely be treated
+ * as "not part of the baseline" and removed. */
+std::vector<std::string> get_default_account_principals(msktutil_flags *flags)
+{
+    std::vector<std::string> principals;
+
+    principals.push_back(flags->sAMAccountName);
+    if (!flags->use_service_account) {
+        principals.push_back(flags->sAMAccountName_uppercase);
+
+        std::vector<std::string> host_spns;
+        host_spns.push_back("host");
+        qualify_principal_vec(host_spns, flags);
+        for (size_t i = 0; i < host_spns.size(); ++i) {
+            principals.push_back(host_spns[i]);
+        }
+    }
+    if (!flags->userPrincipalName.empty()) {
+        principals.push_back(flags->userPrincipalName);
+    }
+
+    return principals;
+}
+
+
+/* Returns every entry in <principals> that doesn't also appear in
+ * <baseline>, case-sensitively (matching how the keytab/AD itself
+ * store these names). */
+static std::vector<std::string> subtract_principals(
+    const std::vector<std::string> &principals,
+    const std::vector<std::string> &baseline)
+{
+    std::vector<std::string> result;
+
+    for (size_t i = 0; i < principals.size(); ++i) {
+        bool in_baseline = false;
+        for (size_t j = 0; j < baseline.size(); ++j) {
+            if (principals[i] == baseline[j]) {
+                in_baseline = true;
+                break;
+            }
+        }
+        if (!in_baseline) {
+            result.push_back(principals[i]);
+        }
+    }
+
+    return result;
+}
+
+
 int flush_keytab(msktutil_flags *flags)
 {
     VERBOSE("Flushing the keytab");
 
-    remove_keytab_entries(flags, get_account_principals(flags));
+    std::vector<std::string> to_remove = subtract_principals(
+        get_account_principals(flags),
+        get_default_account_principals(flags));
 
-    return ldap_flush_principals(flags);
+    remove_keytab_entries(flags, to_remove);
+
+    return ldap_flush_principals(flags, get_default_account_principals(flags));
 }
 
 

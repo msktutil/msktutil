@@ -68,8 +68,13 @@ local keytab.  Requires -h or --computer-name argument.  Implies --user-creds-on
 requires administrator credentials.
 .TP
 .B flush
-Flushes out principals for the current accountname from the keytab, and makes corresponding changes
-to the machine or service account.
+Resets the current account name's keytab entries and servicePrincipalName attribute in Active
+Directory back to the account's default principal set: sAMAccountName (and its uppercase variant
+for a machine account), and, for a machine account, its default host/ SPNs (for both the short
+and fully qualified hostname). A service account has no default service principal. Any other
+service principal added (e.g. via --service) is removed from both the keytab and Active Directory.
+userPrincipalName, if set, is left untouched in both places, since @PACKAGE_NAME@ has no way to
+tell whether it already existed on the account before @PACKAGE_NAME@ ever touched it.
 .TP
 .B cleanup
 Deletes entries from the keytab that are no longer needed.

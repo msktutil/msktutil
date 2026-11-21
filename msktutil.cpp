@@ -477,8 +477,10 @@ void do_help()
     fprintf(stdout, "                         Requires -h or --computer-name argument.\n");
     fprintf(stdout, "                         Implies --user-creds-only.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  flush                  Flushes all principals for the current host or service account\n");
-    fprintf(stdout, "                         from the keytab, and deletes servicePrincipalName from AD.\n");
+    fprintf(stdout, "  flush                  Resets the current machine or service account's keytab and\n");
+    fprintf(stdout, "                         servicePrincipalName in AD back to the default: sAMAccountName,\n");
+    fprintf(stdout, "                         and, for a machine account, its default host/ SPNs.\n");
+    fprintf(stdout, "                         userPrincipalName, if set, is left untouched.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "  delete                 Deletes the host or service account from Active Directory.\n");
     fprintf(stdout, "\n");
