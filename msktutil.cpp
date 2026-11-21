@@ -526,6 +526,7 @@ void do_help()
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
     fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>.\n");
     fprintf(stdout, "                         The realm name will be appended to this principal.\n");
+    fprintf(stdout, "                         Only valid together with --use-service-account.\n");
     fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
     fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
     fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
@@ -1287,6 +1288,14 @@ int main(int argc, char *argv [])
         fprintf(stderr,
                 "Error: --old-account-password and --user-creds-only "
                 "are mutually exclusive\n");
+        goto error;
+    }
+
+    /* userPrincipalName is an identity attribute; it has no business
+     * being set on a machine account. */
+    if (flags->set_userPrincipalName && !flags->use_service_account) {
+        fprintf(stderr,
+                "Error: --upn can only be used with --use-service-account\n");
         goto error;
     }
 
