@@ -158,6 +158,28 @@ public:
         if (ret)
             throw KRB5Exception("krb5_parse_name", ret);
     }
+
+    /* enterprise=true parses <principal_name> as an RFC-style enterprise
+     * principal (KRB5_PRINCIPAL_PARSE_ENTERPRISE): everything up to the
+     * last '@' becomes a single component, so an embedded '@' (as in an
+     * Active Directory enterprise UPN) needs no backslash-escaping. */
+    KRB5Principal(const std::string &principal_name, bool enterprise) : m_princ() {
+#if HAVE_KRB5_PARSE_NAME_FLAGS
+        int flags = enterprise ? KRB5_PRINCIPAL_PARSE_ENTERPRISE : 0;
+        krb5_error_code ret = krb5_parse_name_flags(g_context, principal_name.c_str(),
+                                                    flags, &m_princ);
+        if (ret)
+            throw KRB5Exception("krb5_parse_name_flags", ret);
+#else
+        if (enterprise) {
+            v_error_exit("error_exit: enterprise principal parsing is not "
+                        "supported by this build's Kerberos library\n");
+        }
+        krb5_error_code ret = krb5_parse_name(g_context, principal_name.c_str(), &m_princ);
+        if (ret)
+            throw KRB5Exception("krb5_parse_name", ret);
+#endif
+    }
     ~KRB5Principal() {
         if (m_princ)
             krb5_free_principal(g_context, m_princ);

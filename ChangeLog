@@ -27,6 +27,9 @@ Unreleased
   leading label (e.g. proxy.example.com and
   proxy.loadbalancer.example.com) could register colliding host/
   SPNs even though their account names differ (#136)
+- Improvement: support enterprise principals (UPNs whose suffix differs
+  from the local realm) when building keytab entries and computing the
+  salt (#104, #147)
 
 Release 1.2.2
 
