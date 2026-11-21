@@ -713,14 +713,34 @@ int ldap_delete_account(msktutil_flags *flags)
 {
     std::string dn;
     int ret;
+    LDAPConnection *ldap = flags->ldap;
+    const char *attrs[] = {"distinguishedName",
+                           "servicePrincipalName",
+                           "userPrincipalName",
+                           NULL};
 
     VERBOSE("Deleting LDAP entry of %s", flags->sAMAccountName.c_str());
 
-    LDAPMessage *mesg = ldap_get_account_attrs(flags, "distinguishedName");
+    LDAPMessage *mesg = ldap_get_account_attrs(flags, attrs);
 
-    if (flags->ldap->count_entries(mesg) == 1) {
-        mesg = flags->ldap->first_entry(mesg);
-        dn = flags->ldap->get_one_val(mesg, "distinguishedName");
+    if (ldap->count_entries(mesg) == 1) {
+        mesg = ldap->first_entry(mesg);
+        dn = ldap->get_one_val(mesg, "distinguishedName");
+
+        /* Fetch the account's current principals before it's gone, so
+         * we can purge their (now dead, unusable) entries from the
+         * local keytab -- otherwise they'd sit there indefinitely and
+         * could collide with a later account recreated under the same
+         * name. */
+        std::vector<std::string> vals = ldap->get_all_vals(mesg,
+                                                           "servicePrincipalName");
+        for (size_t i = 0; i < vals.size(); ++i) {
+            if (vals[i].compare(0, 5, "HOST/") == 0) {
+                vals[i].replace(0, 5, "host/");
+            }
+            flags->ad_principals.push_back(vals[i]);
+        }
+        flags->userPrincipalName = ldap->get_one_val(mesg, "userPrincipalName");
     }
     ldap_msgfree(mesg);
     if (dn.empty()) {
@@ -731,7 +751,9 @@ int ldap_delete_account(msktutil_flags *flags)
         return -1;
     }
 
-    ret = flags->ldap->del(dn);
+    remove_keytab_entries(flags, get_account_principals(flags));
+
+    ret = ldap->del(dn);
 
     return ret;
 }

@@ -34,6 +34,9 @@ Unreleased
   machine account's own host/<hostname> SPN; it never removed anything
   for service accounts, and left other SPN aliases on a machine
   account untouched
+- Bugfix: "delete" mode left the account's keytab entries behind;
+  re-creating an account with the same name could then pick up stale,
+  dead keys from the deleted account (#207)
 
 Release 1.2.2
 
