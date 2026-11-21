@@ -1,3 +1,9 @@
+Unreleased
+
+- Improvement: support enterprise principals (UPNs whose suffix differs
+  from the local realm) when building keytab entries and computing the
+  salt (#104, #147)
+
 Release 1.2.2
 
 - Improve CI

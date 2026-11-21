@@ -101,6 +101,14 @@ std::string get_salt(msktutil_flags *flags)
                          flags->sAMAccountName.c_str());
         } else {
             std::string upnsalt = flags->userPrincipalName;
+
+            /* Only the part before the realm/suffix is used for
+             * salting, whether the UPN is classic (user@REALM) or
+             * enterprise (user@othersuffix) */
+            size_t pos = upnsalt.find('@');
+            if (pos != std::string::npos)
+                upnsalt.erase(pos);
+
             upnsalt.erase(std::remove(upnsalt.begin(),
                                       upnsalt.end(),
                                       '/'),
@@ -371,7 +379,17 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
 {
     std::string principal_string = "";
 
-    if (principal.find("@") != std::string::npos) {
+    /* Service principals always contain a '/' and are never qualified
+     * with a realm/suffix of their own; they must be parsed in classic
+     * mode so '/' keeps separating the service and instance components.
+     * Only a bare userPrincipalName can be an enterprise principal
+     * (a UPN whose suffix differs from the local realm), identified by
+     * containing an '@' that doesn't match is_in_realm(). */
+    bool is_spn = (principal.find('/') != std::string::npos);
+    bool in_realm = is_in_realm(principal, flags);
+    bool eupn = !is_spn && !in_realm && (principal.find('@') != std::string::npos);
+
+    if (in_realm) {
         principal_string = sform("%s", principal.c_str());
     } else {
         principal_string = sform("%s@%s",
@@ -384,7 +402,7 @@ void add_principal_keytab(const std::string &principal, msktutil_flags *flags)
     /* FIXME: Why do we use a fixed magic number instead of reusing
      * flags->cleanup_days for update as well? */
     krb5_timestamp min_keep_timestamp = time(NULL) - (7*24*60*60);
-    KRB5Principal princ(principal_string);
+    KRB5Principal princ(principal_string, eupn);
 
     KRB5Keytab keytab(flags->keytab_writename);
     prune_keytab(keytab, princ, min_keep_timestamp);

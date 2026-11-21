@@ -34,22 +34,13 @@
 #include <sstream>
 #include <iostream>
 
-/* Check if string <s> ends with string <suffix> */
-static bool endswith(std::string const &s, std::string const &suffix)
-{
-    if (s.length() < suffix.length())
-        return false;
-    return s.compare(s.length() - suffix.length(),
-                     suffix.length(), suffix) == 0;
-}
-
 void get_default_ou(msktutil_flags *flags)
 {
     /* If OU was given explicitly, we just need to make sure it's a
      * valid dn below our base dn.
      */
     if (!flags->ldap_ou.empty()) {
-        if (!endswith(flags->ldap_ou, flags->base_dn))
+        if (!ends_with(flags->ldap_ou, flags->base_dn))
             flags->ldap_ou = flags->ldap_ou + "," + flags->base_dn;
         VERBOSE("Using OU: %s", flags->ldap_ou.c_str());
         return;
@@ -638,8 +629,12 @@ bool ldap_check_account(msktutil_flags *flags)
             std::string upn = ldap->get_one_val(mesg, "userPrincipalName");
             if (!upn.empty()) {
                 VERBOSE("Found userPrincipalName: %s", upn.c_str());
-                size_t pos = upn.find('@');
-                if (pos != std::string::npos) {
+                /* Only strip a realm suffix that matches our local realm.
+                 * An enterprise UPN's suffix doesn't match the realm, and
+                 * must be preserved so add_principal_keytab() can tell it
+                 * apart from a classic UPN. */
+                if (is_in_realm(upn, flags)) {
+                    size_t pos = upn.rfind('@');
                     upn.erase(pos);
                 }
                 /* update userPrincipalName for salt generation */
