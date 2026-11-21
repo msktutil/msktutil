@@ -524,8 +524,8 @@ void do_help()
     fprintf(stdout, "                         and adds the short and the full hostname.\n");
     fprintf(stdout, "                         Default for service accounts: None");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
-    fprintf(stdout, "  --upn <principal>      Set the user principal name to be <principal>.\n");
-    fprintf(stdout, "                         The realm name will be appended to this principal.\n");
+    fprintf(stdout, "  --upn <principal>      Set the userPrincipalName attribute to <principal>.\n");
+    fprintf(stdout, "                         If no realm is given, the default realm is appended.\n");
     fprintf(stdout, "  --set-samba-secret     Use the net changesecretpw command to locally set the\n");
     fprintf(stdout, "                         machine account password in samba's secrets.tdb.\n");
     fprintf(stdout, "                         $PATH need to include Samba's net command.\n");
