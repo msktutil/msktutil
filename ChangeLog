@@ -20,6 +20,13 @@ Unreleased
   principal to a machine account, even when --service was given;
   restore skipping the default once --service is explicitly given,
   as documented
+- Bugfix: the short form of an unqualified service principal on a
+  machine account was derived by truncating the hostname at the
+  first dot, instead of using the account's own (NetBIOS) name;
+  distinct machine accounts whose hostnames happen to share a
+  leading label (e.g. proxy.example.com and
+  proxy.loadbalancer.example.com) could register colliding host/
+  SPNs even though their account names differ (#136)
 
 Release 1.2.2
 

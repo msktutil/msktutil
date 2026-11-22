@@ -158,7 +158,15 @@ void qualify_principal_vec(std::vector<std::string> &principals,
     std::string::size_type len = principals.size();
 
     if (!flags->hostname.empty()) {
-        short_hostname = get_short_hostname(flags);
+        /* The short form of an unqualified principal (e.g. the default
+         * "host" entry) is the account's own name -- its NetBIOS name,
+         * per Microsoft's SPN definition -- not a truncated hostname;
+         * matches Samba's "net ads join" (machine_name) and adcli
+         * (computer_name). A service account has no host identity of
+         * its own, so keep deriving its short form from --hostname. */
+        short_hostname = flags->use_service_account
+            ? get_short_hostname(flags)
+            : flags->sAMAccountName_nodollar;
         if (flags->hostname == short_hostname)
             short_hostname = "";
     }
