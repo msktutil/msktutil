@@ -273,15 +273,9 @@ the full and the short hostnames, eg. host/hostname.example.com and host/hostnam
 Specifies a service principal to remove from the account (and keytab if appropriate).
 .TP
 --upn <principal>
-Sets the userPrincipalName attribute of the computer account or service account to be <principal>.
-
-The userPrincipalName can be used in addition to the sAMAccountName (e.g. computername$ for computer accounts) for kinit.
-
-<principal> can be provided in short form (e.g. host/hostname.example.com) or in long form
-(e.g. host/hostname.example.com@EXAMPLE.COM). In short form the default realm will automatically
-be appended.
-
-This operation requires administrator privileges.
+Sets the userPrincipalName attribute of the service account to <principal>; only valid together
+with --use-service-account.  If <principal> has no realm, the default realm is appended.  Can be
+used in addition to sAMAccountName for kinit.  Requires administrator privileges.
 .TP
 --set-samba-secret
 Use Samba's net changesecretpw command to locally set the machine account password in Samba's secrets.tdb.
@@ -342,11 +336,6 @@ Also note: kinit -k 'host/computername' *will not work*, by default, even when t
 service principal existing in your keytab.  Active Directory does not allow you to authenticate as a
 service principal, so do not use that as a test of whether the service principal is working.  If you
 actually want to authenticate as the computer account user, kinit -k 'computername$' instead.
-.PP
-If you really need to be able to authenticate as 'host/computername', you can also use the --upn
-argument to set the userPrincipalName attribute (generally requires administrator credentials, not
-computer account credentials).  Both 'computername$' and the value of userPrincipalName are treated
-as valid account names to kinit as.
 .PP
 @PACKAGE_NAME@ will use kerberized LDAP operations to talk to domain controllers.  To obtain a LDAP service
 ticket, the DNS service will be used to construct the domain controllers LDAP principal name.  If DNS is

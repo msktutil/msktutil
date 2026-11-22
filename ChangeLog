@@ -1,3 +1,9 @@
+Unreleased
+
+- Bugfix: reject --upn when --use-service-account is not given;
+  userPrincipalName is an identity attribute and has no business being
+  set on a computer account
+
 Release 1.2.2
 
 - Improve CI
