@@ -248,8 +248,6 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     } else if (flags->hostname.empty()) {
         /* Canonicalize the hostname if need be */
         flags->hostname = get_default_hostname(flags->no_canonical_name);
-    } else {
-        flags->hostname = complete_hostname(flags->hostname);
     }
 
     /* Determine the sAMAccountName, if not set */
@@ -464,7 +462,7 @@ void do_help()
     fprintf(stdout, "                         Use supplied computer account password or service\n");
     fprintf(stdout, "                         account password for authentication.\n");
     fprintf(stdout, "                         This option is mutually exclusive with --user-creds-only.\n");
-    fprintf(stdout, "  -h, --hostname <name>  Use <name> as current hostname.\n");
+    fprintf(stdout, "  -h, --hostname <fqdn>  Use <fqdn> as current hostname, used verbatim.\n");
     fprintf(stdout, "  --password <new_password>\n");
     fprintf(stdout, "                         Specify the new account password instead of generating\n");
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");

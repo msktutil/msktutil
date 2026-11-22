@@ -106,62 +106,6 @@ static int connect_with_timeout(int sock, const struct sockaddr *addr,
     return 0;
 }
 
-std::string complete_hostname(const std::string &hostname,
-                              bool no_canonical_name)
-{
-    /* Ask the Kerberos library to canonicalize the hostname, and then
-     * pull it out of the principal. */
-    int32_t type = KRB5_NT_SRV_HST;
-    krb5_principal temp_princ_raw = NULL;
-
-    /* do not canonicalize, use supplied hostname */
-    if (no_canonical_name) {
-        type = KRB5_NT_UNKNOWN;
-    }
-
-    krb5_error_code ret = krb5_sname_to_principal(g_context,
-                                                  hostname.c_str(),
-                                                  "host",
-                                                  type,
-                                                  &temp_princ_raw);
-    if (ret != 0) {
-        fprintf(stderr,
-                "Warning: hostname canonicalization for %s failed: %s\n",
-                hostname.c_str(),
-                error_message(ret)
-            );
-        return hostname;
-    }
-
-    KRB5Principal temp_princ(temp_princ_raw);
-
-#ifdef HEIMDAL
-    const char *comp = krb5_principal_get_comp_string(g_context,
-                                                      temp_princ.get(),
-                                                      1);
-#else
-    krb5_data *comp = krb5_princ_component(g_context,
-                                           temp_princ.get(),
-                                           1);
-#endif
-    if (comp == NULL) {
-        std::string name(temp_princ.name());
-        fprintf(stderr,
-                "Warning: hostname canonicalization for %s failed: returned "
-                "unexpected principal %s\n",
-                hostname.c_str(),
-                name.c_str()
-            );
-        return hostname;
-    }
-#ifdef HEIMDAL
-    return std::string(comp);
-#else
-    return std::string(comp->data, comp->length);
-#endif
-}
-
-
 std::string get_default_hostname(bool no_canonical_name)
 {
     /* Ask the Kerberos library to canonicalize the hostname, and then

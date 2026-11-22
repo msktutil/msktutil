@@ -12,6 +12,10 @@ Unreleased
   label of the hostname, matching the hostname selection used by Samba's
   "net ads join", instead of stripping the realm suffix and joining any
   remaining subdomain labels with hyphens (#230)
+- Bugfix: an explicitly supplied --hostname was silently re-resolved via
+  DNS (if dns_canonicalize_hostname is enabled) and always lowercased,
+  instead of being used verbatim; neither Samba's "net ads join" nor
+  adcli does this to an explicitly supplied hostname
 
 Release 1.2.2
 
