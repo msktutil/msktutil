@@ -38,11 +38,13 @@ all: $(PROG)
 $(PROG): $(OBJECTS)
 	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(PROG)
 
-.cpp.o: $(HEADERS) config.h
+.cpp.o:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-.c.o: config.h
+.c.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(OBJECTS): $(HEADERS) config.h
 
 clean:
 	$(RM) $(PROG) $(OBJECTS)
