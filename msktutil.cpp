@@ -302,7 +302,8 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
     }
     VERBOSE("sAMAccountName: %s", flags->sAMAccountName.c_str());
 
-    if (exec->mode == MODE_CREATE && !flags->use_service_account) {
+    if (exec->mode == MODE_CREATE && !flags->use_service_account
+        && exec->add_principals.empty()) {
         exec->add_principals.push_back("host");
     }
 
@@ -520,6 +521,7 @@ void do_help()
     fprintf(stdout, "                         <service>/<hostname>.\n");
     fprintf(stdout, "                         If the hostname is omitted, assumes current hostname,\n");
     fprintf(stdout, "                         and adds the short and the full hostname.\n");
+    fprintf(stdout, "                         Default for machine accounts, if not given: host/.\n");
     fprintf(stdout, "                         Default for service accounts: None");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
     fprintf(stdout, "  --upn <principal>      Set the userPrincipalName attribute to <principal>.\n");

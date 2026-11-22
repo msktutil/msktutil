@@ -16,6 +16,10 @@ Unreleased
   DNS (if dns_canonicalize_hostname is enabled) and always lowercased,
   instead of being used verbatim; neither Samba's "net ads join" nor
   adcli does this to an explicitly supplied hostname
+- Bugfix: "create" unconditionally added the default host/ service
+  principal to a machine account, even when --service was given;
+  restore skipping the default once --service is explicitly given,
+  as documented
 
 Release 1.2.2
 
