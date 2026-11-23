@@ -47,6 +47,16 @@ Unreleased
   host/ principals, instead of wiping them -- removing them entirely
   would leave the account unreachable over Kerberos by any client.
   userPrincipalName, if set, is always left untouched by "flush"
+- Bugfix: an enctype requested via --enctypes, or already present in
+  msDs-supportedEncryptionTypes/userAccountControl, that the local
+  Kerberos library can no longer use (DES, most commonly -- removed
+  entirely from MIT krb5 1.18 onwards, and disabled by default in
+  Heimdal) crashed with an uncaught exception mid-run, after already
+  changing the account's password and/or servicePrincipalName, leaving
+  no usable keytab at all. Fail with a clear error before making any
+  change instead. The msktutil-computed default for an account with no
+  msDs-supportedEncryptionTypes set at all also no longer includes DES,
+  matching what AD/the KDC itself assumes in that case (#172)
 
 Release 1.2.2
 

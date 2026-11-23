@@ -516,14 +516,11 @@ void ldap_check_account_strings(msktutil_flags *flags)
     }
 
     ldap_set_userAccountControl_flag(dn, UF_USE_DES_KEY_ONLY, des_only, flags);
-    /* If msDS-supportedEncryptionTypes isn't set, ad_enctypes will be
-     * VALUE_OFF. In that case, reset ad_supportedEncryptionTypes
-     * according to the DES flag, in case we changed it. */
+    /* If msDS-supportedEncryptionTypes isn't set and the write above
+     * didn't succeed (ad_enctypes still VALUE_OFF), fall back to the
+     * same default ldap_check_account() uses for the same situation. */
     if (flags->ad_enctypes == VALUE_OFF) {
-        flags->ad_supportedEncryptionTypes = MS_KERB_DES_ENCTYPES;
-        if (!(flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
-            flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
-        }
+        flags->ad_supportedEncryptionTypes = DEFAULT_MS_KERB_ENCTYPES;
     }
 
     ldap_set_userAccountControl_flag(dn,
@@ -662,6 +659,26 @@ bool ldap_check_account(msktutil_flags *flags)
         VERBOSE("Found userAccountControl: 0x%x", flags->ad_userAccountControl);
     }
 
+    /* UF_USE_DES_KEY_ONLY can be set via ADUC independently of
+     * msDs-supportedEncryptionTypes (which may or may not also have
+     * explicit DES bits set) -- check it unconditionally, not just
+     * when msDs-supportedEncryptionTypes happens to be unset. Ask the
+     * library rather than assume DES is unsupported: on a build that
+     * can still use at least one DES variant, "DES-only" is still
+     * satisfiable. */
+    if ((flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY) &&
+        unsupported_ms_kerb_enctypes(MS_KERB_DES_ENCTYPES) ==
+            MS_KERB_DES_ENCTYPES) {
+        fprintf(stderr,
+                "Error: %s is flagged UF_USE_DES_KEY_ONLY in "
+                "userAccountControl, but DES is not supported by "
+                "the local Kerberos library\n",
+                flags->sAMAccountName.c_str()
+            );
+        ldap_msgfree(mesg);
+        exit(1);
+    }
+
     /* save the current msDs-supportedEncryptionTypes */
     std::string supportedEncryptionTypes =
         flags->ldap->get_one_val(mesg, "msDs-supportedEncryptionTypes");
@@ -670,12 +687,33 @@ bool ldap_check_account(msktutil_flags *flags)
         flags->ad_enctypes = VALUE_ON; /* actual value found in AD */
         VERBOSE("Found supportedEncryptionTypes: %d",
                 flags->ad_supportedEncryptionTypes);
-    } else {
-        /* Not in current LDAP entry set defaults */
-        flags->ad_supportedEncryptionTypes = MS_KERB_DES_ENCTYPES;
-        if (!(flags->ad_userAccountControl & UF_USE_DES_KEY_ONLY)) {
-            flags->ad_supportedEncryptionTypes |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
+
+        /* This was set outside of this run (by AD/ADUC, a previous
+         * msktutil run against an older Kerberos library, or anything
+         * else) -- if it includes an enctype we can no longer use,
+         * fail now, before touching the account, rather than crash
+         * later mid-keytab-write having already changed the password
+         * and/or servicePrincipalName. */
+        unsigned int unsupported =
+            unsupported_ms_kerb_enctypes(flags->ad_supportedEncryptionTypes);
+        if (unsupported) {
+            fprintf(stderr,
+                    "Error: msDs-supportedEncryptionTypes on %s is 0x%x, "
+                    "which includes enctype(s) (0x%x) not supported by "
+                    "the local Kerberos library\n",
+                    flags->sAMAccountName.c_str(),
+                    flags->ad_supportedEncryptionTypes,
+                    unsupported
+                );
+            ldap_msgfree(mesg);
+            exit(1);
         }
+    } else {
+        /* Not in current LDAP entry; this is msktutil's own default
+         * for an account with no msDs-supportedEncryptionTypes set at
+         * all, matching the default AD/the KDC itself assumes in that
+         * case regardless of domain functional level. */
+        flags->ad_supportedEncryptionTypes = DEFAULT_MS_KERB_ENCTYPES;
         flags->ad_enctypes = VALUE_OFF; /* this is the assumed default */
         VERBOSE("Found default supportedEncryptionTypes: %d",
                 flags->ad_supportedEncryptionTypes);
@@ -777,9 +815,7 @@ void ldap_create_account(msktutil_flags *flags)
     ldap->add(flags->ad_computerDn, mod_attrs);
 
     /* Defaults, will attempt to reset later */
-    flags->ad_supportedEncryptionTypes =
-        MS_KERB_DES_ENCTYPES |
-        MS_KERB_ENCTYPE_RC4_HMAC_MD5;
+    flags->ad_supportedEncryptionTypes = DEFAULT_MS_KERB_ENCTYPES;
     flags->ad_enctypes = VALUE_OFF;
     flags->ad_userAccountControl = userAcctFlags;
     ldap_check_account_strings(flags);

@@ -34,6 +34,19 @@ extern krb5_context g_context;
 void krb5_error_exit( const char *func, int err_code);
 void krb5_warn( const char *func, int err_code);
 
+/* Whether the linked Kerberos library can actually derive/use a key of
+ * the given enctype right now. The ENCTYPE_* macros stay defined even
+ * for algorithms the library no longer implements or has disabled, so
+ * this cannot be answered at compile time: the symbol is always
+ * present, only the implementation behind it may be gone or disabled. */
+inline bool enctype_supported(krb5_enctype etype) {
+#ifdef HEIMDAL
+    return krb5_enctype_valid(g_context, etype) == 0;
+#else
+    return krb5_c_valid_enctype(etype) != 0;
+#endif
+}
+
 void
 initialize_g_context();
 

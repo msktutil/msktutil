@@ -33,6 +33,41 @@
 #include <cctype>
 #include <algorithm>
 
+/* Returns the subset of bits in ms_enctypes (an msDs-supportedEncryptionTypes
+ * style AD bitmask) for which the linked Kerberos library cannot actually
+ * derive a key. Returns 0 if every requested enctype is usable. */
+unsigned int unsupported_ms_kerb_enctypes(unsigned int ms_enctypes)
+{
+    unsigned int unsupported = 0;
+
+    if ((ms_enctypes & MS_KERB_ENCTYPE_DES_CBC_CRC) &&
+        !enctype_supported(ENCTYPE_DES_CBC_CRC)) {
+        unsupported |= MS_KERB_ENCTYPE_DES_CBC_CRC;
+    }
+    if ((ms_enctypes & MS_KERB_ENCTYPE_DES_CBC_MD5) &&
+        !enctype_supported(ENCTYPE_DES_CBC_MD5)) {
+        unsupported |= MS_KERB_ENCTYPE_DES_CBC_MD5;
+    }
+    if ((ms_enctypes & MS_KERB_ENCTYPE_RC4_HMAC_MD5) &&
+        !enctype_supported(ENCTYPE_ARCFOUR_HMAC)) {
+        unsupported |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
+    }
+#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+    if ((ms_enctypes & MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96) &&
+        !enctype_supported(ENCTYPE_AES128_CTS_HMAC_SHA1_96)) {
+        unsupported |= MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96;
+    }
+#endif
+#if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+    if ((ms_enctypes & MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96) &&
+        !enctype_supported(ENCTYPE_AES256_CTS_HMAC_SHA1_96)) {
+        unsupported |= MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+    }
+#endif
+
+    return unsupported;
+}
+
 void get_default_keytab(msktutil_flags *flags)
 {
     char keytab_name[MAX_KEYTAB_NAME_LEN];

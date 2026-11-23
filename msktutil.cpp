@@ -551,7 +551,8 @@ void do_help()
     fprintf(stdout, "                         (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5\n");
     fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-cts-hmac-sha1\n");
     fprintf(stdout, "                                 0x10=aes256-cts-hmac-sha1)\n");
-    fprintf(stdout, "                         Sets des-only in userAccountControl if set to 0x3.\n");
+    fprintf(stdout, "                         Rejected if it includes an enctype not supported\n");
+    fprintf(stdout, "                         by the local Kerberos library.\n");
     fprintf(stdout, "  --allow-weak-crypto    Enables the usage of DES keys for authentication\n");
     fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC.\n");
     fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC.\n");
@@ -1394,6 +1395,17 @@ int main(int argc, char *argv [])
         }
         if (flags->supportedEncryptionTypes == 0) {
             fprintf(stderr, "Error: --enctypes must not be zero\n");
+            goto error;
+        }
+        unsigned int unsupported =
+            unsupported_ms_kerb_enctypes(flags->supportedEncryptionTypes);
+        if (unsupported) {
+            fprintf(stderr,
+                    "Error: --enctypes 0x%x includes enctype(s) (0x%x) "
+                    "not supported by the local Kerberos library\n",
+                    flags->supportedEncryptionTypes,
+                    unsupported
+                );
             goto error;
         }
     }

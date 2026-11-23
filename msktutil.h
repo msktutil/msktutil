@@ -278,6 +278,7 @@ extern std::string get_default_hostname(bool no_canonical_name = false);
 extern void get_default_keytab(msktutil_flags *);
 extern std::string get_salt(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
+extern unsigned int unsupported_ms_kerb_enctypes(unsigned int ms_enctypes);
 
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string get_default_samaccountname(msktutil_flags *);

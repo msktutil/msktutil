@@ -254,12 +254,14 @@ You may OR together the following values:
 This value is used to determine which encryption types AD will offer to use, and which encryption
 types to put in the keytab.
 
-If the value is set to 0x3 (that is: only the two DES types), it also attempts to set the DES-only
-flag in userAccountControl.
+If the value is set to 0x3 (that is: only the two DES types) and the local Kerberos library can
+still use DES, it also attempts to set the DES-only flag in userAccountControl.
 
-Note: Windows 2008R2 refuses to use DES by default; you thus cannot use DES-only keys unless
-you have enabled DES encryption for your domain first.  Recent versions of MIT Kerberos clients
-similarly refuse to use DES by default.
+Note: DES (0x1, 0x2) is rejected outright if the local Kerberos library cannot use it, which is the
+case for any reasonably current MIT krb5 (DES support was removed entirely in release 1.18) or
+Heimdal (DES is disabled by default). This is independent of --allow-weak-crypto or any AD-side
+DES policy, since there is no implementation left to fall back on -- in practice, 0x3 is rejected
+before the userAccountControl flag is ever considered.
 
 Default: sets the value to 0x1C: that is, use anything but DES.
 .TP
