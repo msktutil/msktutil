@@ -564,6 +564,10 @@ void do_help()
     fprintf(stdout, "                         Default for machine accounts, if not given: host/.\n");
     fprintf(stdout, "                         Default for service accounts: None");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
+    fprintf(stdout, "  --remove-unknown       Removes keytab entries for principals no longer\n");
+    fprintf(stdout, "                         known to this account in AD, e.g. a service\n");
+    fprintf(stdout, "                         principal removed outside of msktutil. Only valid\n");
+    fprintf(stdout, "                         with create, update, or auto-update mode.\n");
     fprintf(stdout, "  --upn <principal>      Set the userPrincipalName attribute to <principal>.\n");
     fprintf(stdout, "                         If no realm is given, the default realm is appended.\n");
     fprintf(stdout, "                         Only valid together with --use-service-account.\n");
@@ -762,6 +766,10 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
 
         remove_keytab_entries(flags, exec->remove_principals);
 
+        if (flags->remove_unknown) {
+            remove_unknown_keytab_entries(flags);
+        }
+
         /* update keytab */
         if (flags->use_service_account) {
             VERBOSE("Updating all entries for service account %s in keytab %s",
@@ -959,6 +967,13 @@ int main(int argc, char *argv [])
                     );
                 goto error;
             }
+            continue;
+        }
+
+        /* remove keytab entries for principals AD no longer knows
+         * about for this account */
+        if (!strcmp(argv[i], "--remove-unknown")) {
+            flags->remove_unknown = true;
             continue;
         }
 
@@ -1384,6 +1399,18 @@ int main(int argc, char *argv [])
         goto error;
     }
 
+    /* allow --remove-unknown only in modes that read the account's
+     * current principals from AD and write the keytab */
+    if (flags->remove_unknown &&
+        exec->mode != MODE_CREATE && exec->mode != MODE_UPDATE &&
+        exec->mode != MODE_AUTO_UPDATE) {
+        fprintf(stderr,
+                "Error: --remove-unknown can only be used in create, "
+                "update, or auto-update mode\n"
+            );
+        goto error;
+    }
+
     if (flags->enctypes == VALUE_ON) {
         if ((flags->supportedEncryptionTypes | ALL_MS_KERB_ENCTYPES) != ALL_MS_KERB_ENCTYPES) {
             fprintf(stderr,
@@ -1482,6 +1509,7 @@ msktutil_flags::msktutil_flags() :
     samba_cmd(DEFAULT_SAMBA_CMD),
     check_replication(false),
     dont_change_password(false),
+    remove_unknown(false),
     dont_expire_password(VALUE_IGNORE),
     dont_update_dnshostname(VALUE_OFF),
     disable_account(VALUE_IGNORE),

@@ -286,6 +286,14 @@ instead.
 --remove-service <principal>
 Specifies a service principal to remove from the account (and keytab if appropriate).
 .TP
+--remove-unknown
+Removes keytab entries for principals (sAMAccountName, its uppercase variant, userPrincipalName, or any
+servicePrincipalName) that this account no longer has in AD -- for example a service principal removed
+outside of msktutil (via ADUC or another tool), which would otherwise never be revisited and could sit
+in the keytab indefinitely. Only valid with create, update, or auto-update mode. Comparison is by
+principal name only, independent of key version number, so this also catches leftover entries from an
+account that was deleted and recreated under the same name.
+.TP
 --upn <principal>
 Sets the userPrincipalName attribute of the service account to <principal>; only valid together
 with --use-service-account.  If <principal> has no realm, the default realm is appended.  Can be

@@ -64,6 +64,13 @@ Unreleased
   so the Kerberos library fell back to its own independent DNS SRV
   lookup for the password-change service, bypassing --server/--site
   entirely
+- Improvement: add --remove-unknown (create/update/auto-update) to
+  remove keytab entries for principals this account no longer has in
+  AD, e.g. a service principal removed outside of msktutil -- such an
+  entry was never revisited by the normal update path and could sit in
+  the keytab indefinitely, and could be picked up ahead of the real
+  account principal by tools that use the keytab's first entry (e.g.
+  kinit -i)
 
 Release 1.2.2
 

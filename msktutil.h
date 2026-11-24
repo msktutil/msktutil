@@ -211,6 +211,7 @@ public:
     std::string samba_cmd;
     bool check_replication;
     bool dont_change_password;
+    bool remove_unknown;
 
     msktutil_val dont_expire_password;
     msktutil_val dont_update_dnshostname;
@@ -288,9 +289,11 @@ extern int flush_keytab(msktutil_flags *);
 extern void cleanup_keytab(msktutil_flags *);
 extern std::vector<std::string> get_account_principals(msktutil_flags *);
 extern std::vector<std::string> get_default_account_principals(msktutil_flags *);
+extern std::vector<std::string> get_keytab_principals(msktutil_flags *);
 extern void update_keytab(msktutil_flags *);
 extern void add_keytab_entries(msktutil_flags *);
 extern void remove_keytab_entries(msktutil_flags *,std::vector<std::string>);
+extern void remove_unknown_keytab_entries(msktutil_flags *);
 extern void add_principal_keytab(const std::string &, msktutil_flags *);
 extern int ldap_flush_principals(msktutil_flags *,
                                  const std::vector<std::string> &);

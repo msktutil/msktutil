@@ -228,6 +228,66 @@ std::vector<std::string> get_default_account_principals(msktutil_flags *flags)
 }
 
 
+/* Returns every distinct, qualified principal name physically present
+ * in the local keytab, deduplicated across kvnos/enctypes. */
+std::vector<std::string> get_keytab_principals(msktutil_flags *flags)
+{
+    KRB5Keytab keytab(flags->keytab_writename);
+    std::vector<std::string> principals;
+
+    for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
+        std::string name = cursor.principal().name();
+        if (std::find(principals.begin(), principals.end(), name) ==
+                principals.end()) {
+            principals.push_back(name);
+        }
+    }
+
+    return principals;
+}
+
+
+/* Determines the realm-qualified form of a bare principal <name_arg>
+ * and whether it needs enterprise-principal parsing -- shared by every
+ * caller that builds a KRB5Principal from a bare SPN/UPN, so this
+ * classification only lives in one place. Service principals always
+ * contain a '/' and are never qualified with a realm/suffix of their
+ * own; they must be parsed in classic mode so '/' keeps separating the
+ * service and instance components. Only a bare userPrincipalName can
+ * be an enterprise principal (a UPN whose suffix differs from the
+ * local realm), identified by containing an '@' that doesn't match
+ * is_in_realm(). */
+static std::string qualify_principal_name(
+    const std::string &name_arg, msktutil_flags *flags, bool *eupn_out)
+{
+    std::string name = normalize_host_spn(name_arg);
+    bool is_spn = (name.find('/') != std::string::npos);
+    bool in_realm = is_in_realm(name, flags);
+    *eupn_out = !is_spn && !in_realm && (name.find('@') != std::string::npos);
+
+    return in_realm ? name : name + "@" + flags->realm_name;
+}
+
+
+/* Builds the comparable (and, for an enterprise principal, correctly
+ * escaped) qualified form of each name in <names> -- shared so that
+ * every caller matching bare principal names against actual
+ * keytab/krb5 principal names stays in sync with that logic. */
+static std::vector<std::string> qualify_principal_names(
+    const std::vector<std::string> &names, msktutil_flags *flags)
+{
+    std::vector<std::string> qualified_names;
+
+    for (size_t i = 0; i < names.size(); ++i) {
+        bool eupn;
+        std::string qualified = qualify_principal_name(names[i], flags, &eupn);
+        qualified_names.push_back(KRB5Principal(qualified, eupn).name());
+    }
+
+    return qualified_names;
+}
+
+
 /* Returns every entry in <principals> that doesn't also appear in
  * <baseline>, case-sensitively (matching how the keytab/AD itself
  * store these names). */
@@ -324,36 +384,18 @@ void cleanup_keytab(msktutil_flags *flags)
 }
 
 
-void remove_keytab_entries(msktutil_flags *flags,
-                                   std::vector<std::string> remove_principals)
+/* Removes every keytab entry whose (already qualified) principal name
+ * appears in <remove_principal_names>, independent of kvno/enctype. */
+static void remove_keytab_entries_qualified(
+    msktutil_flags *flags, const std::vector<std::string> &remove_principal_names)
 {
     KRB5Keytab keytab(flags->keytab_writename);
-
-    VERBOSE("Trying to remove entries for %s from keytab", flags->sAMAccountName.c_str());
 
     std::vector<KRB5KeytabEntry> keytab_entries;
 
     /* Extract a vector of keytab entries */
     for (KRB5Keytab::cursor cursor(keytab); cursor.next(); ) {
         keytab_entries.push_back(cursor);
-    }
-
-    /* Build the comparable (and, for an enterprise principal,
-     * correctly escaped) form of each name to remove once, the same
-     * way add_principal_keytab() builds entries, so the comparison
-     * below is exact regardless of whether a principal is a bare SPN,
-     * a classic UPN, or an enterprise UPN. */
-    std::vector<std::string> remove_principal_names;
-    for (size_t i = 0; i < remove_principals.size(); ++i) {
-        std::string remove_principal = normalize_host_spn(remove_principals[i]);
-        bool is_spn = (remove_principal.find('/') != std::string::npos);
-        bool in_realm = is_in_realm(remove_principal, flags);
-        bool eupn = !is_spn && !in_realm &&
-            (remove_principal.find('@') != std::string::npos);
-        std::string qualified = in_realm
-            ? remove_principal
-            : remove_principal + "@" + flags->realm_name;
-        remove_principal_names.push_back(KRB5Principal(qualified, eupn).name());
     }
 
     for (std::vector<KRB5KeytabEntry>::iterator it = keytab_entries.begin(); it != keytab_entries.end(); it++) {
@@ -366,6 +408,48 @@ void remove_keytab_entries(msktutil_flags *flags,
             }
         }
     }
+}
+
+
+void remove_keytab_entries(msktutil_flags *flags,
+                                   std::vector<std::string> remove_principals)
+{
+    VERBOSE("Trying to remove entries for %s from keytab", flags->sAMAccountName.c_str());
+
+    /* Build the comparable (and, for an enterprise principal,
+     * correctly escaped) form of each name to remove once, so the
+     * comparison below is exact regardless of whether a principal is
+     * a bare SPN, a classic UPN, or an enterprise UPN. */
+    std::vector<std::string> remove_principal_names =
+        qualify_principal_names(remove_principals, flags);
+
+    remove_keytab_entries_qualified(flags, remove_principal_names);
+}
+
+
+/* Removes every keytab entry whose principal isn't currently known to
+ * this account in AD (sAMAccountName, its uppercase variant,
+ * userPrincipalName, or any current servicePrincipalName) -- e.g. an
+ * SPN removed from AD out-of-band (ADUC, another tool) rather than via
+ * --remove-service, which would otherwise sit in the keytab forever:
+ * never revisited by add_principal_keytab()/prune_keytab() since it no
+ * longer appears in flags->ad_principals, regardless of how much time
+ * passes or how many password rotations happen. Comparison is by
+ * qualified principal name only, independent of kvno, so this also
+ * catches entries left over from a since-deleted-and-recreated account
+ * that happened not to collide on kvno with the current one. */
+void remove_unknown_keytab_entries(msktutil_flags *flags)
+{
+    VERBOSE("Trying to remove unknown entries for %s from keytab",
+            flags->sAMAccountName.c_str());
+
+    std::vector<std::string> known_qualified =
+        qualify_principal_names(get_account_principals(flags), flags);
+    std::vector<std::string> in_keytab = get_keytab_principals(flags);
+    std::vector<std::string> unknown =
+        subtract_principals(in_keytab, known_qualified);
+
+    remove_keytab_entries_qualified(flags, unknown);
 }
 
 
@@ -495,26 +579,10 @@ static void prune_keytab(KRB5Keytab& keytab, KRB5Principal &principal, krb5_time
 
 void add_principal_keytab(const std::string &principal_arg, msktutil_flags *flags)
 {
-    std::string principal_string = "";
-    std::string principal = normalize_host_spn(principal_arg);
+    bool eupn;
+    std::string principal_string =
+        qualify_principal_name(principal_arg, flags, &eupn);
 
-    /* Service principals always contain a '/' and are never qualified
-     * with a realm/suffix of their own; they must be parsed in classic
-     * mode so '/' keeps separating the service and instance components.
-     * Only a bare userPrincipalName can be an enterprise principal
-     * (a UPN whose suffix differs from the local realm), identified by
-     * containing an '@' that doesn't match is_in_realm(). */
-    bool is_spn = (principal.find('/') != std::string::npos);
-    bool in_realm = is_in_realm(principal, flags);
-    bool eupn = !is_spn && !in_realm && (principal.find('@') != std::string::npos);
-
-    if (in_realm) {
-        principal_string = sform("%s", principal.c_str());
-    } else {
-        principal_string = sform("%s@%s",
-                                 principal.c_str(),
-                                 flags->realm_name.c_str());
-    }
     VERBOSE("Adding principal to keytab: %s", principal_string.c_str());
     VERBOSE("Using supportedEncryptionTypes: %d", flags->ad_supportedEncryptionTypes);
 
