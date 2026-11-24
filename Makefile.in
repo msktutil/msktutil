@@ -27,7 +27,7 @@ SOURCES_CPP=krb5wrap.cpp msktutil.cpp msktkrb5.cpp msktldap.cpp msktname.cpp msk
 SOURCES_C=strtoll.c
 SOURCES=$(SOURCES_CPP) $(SOURCES_C)
 HEADERS=msktutil.h msktname.h krb5wrap.h ldapconnection.h
-OBJECTS=$(SOURCES_CPP:.cpp=.o) $(SOURCES_C:.c=.o)
+OBJECTS=krb5wrap.o msktutil.o msktkrb5.o msktldap.o msktname.o msktpass.o msktconf.o ldapconnection.o strtoll.o
 DISTARCHIVE=@PACKAGE_NAME@-@PACKAGE_VERSION@
 EXTRA_DIST=README LICENSE ChangeLog INSTALL Makefile.in $(MAN).in configure.ac autogen.sh
 

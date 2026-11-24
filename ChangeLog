@@ -71,6 +71,12 @@ Unreleased
   the keytab indefinitely, and could be picked up ahead of the real
   account principal by tools that use the keytab's first entry (e.g.
   kinit -i)
+- Bugfix: Makefile.in derived OBJECTS from SOURCES_CPP/SOURCES_C via a
+  $(VAR:.ext=.o) substitution reference, a GNU make extension not
+  understood by vendor make (e.g. HP-UX's); OBJECTS ended up empty and
+  the build failed outright ("Don't know how to make msktutil") on any
+  platform without GNU make installed. List the object files
+  explicitly instead
 
 Release 1.2.2
 
