@@ -63,7 +63,10 @@ Unreleased
   pinned kdc/admin_server to the chosen server but never kpasswd_server,
   so the Kerberos library fell back to its own independent DNS SRV
   lookup for the password-change service, bypassing --server/--site
-  entirely
+  entirely. This is the root cause of #67 when --server names a
+  writable domain controller: LDAP account creation and kinit already
+  used that DC correctly, only the password change was silently
+  resolved elsewhere (#67)
 - Improvement: add --remove-unknown (create/update/auto-update) to
   remove keytab entries for principals this account no longer has in
   AD, e.g. a service principal removed outside of msktutil -- such an
