@@ -136,6 +136,7 @@ void create_fake_krb5_conf(msktutil_flags *flags)
          << " " << flags->realm_name << " = {\n"
          << "  kdc = " << flags->server << "\n"
          << "  admin_server = " << flags->server << "\n"
+         << "  kpasswd_server = " << flags->server << "\n"
          << " }\n";
     file.close();
 

@@ -57,6 +57,13 @@ Unreleased
   change instead. The msktutil-computed default for an account with no
   msDs-supportedEncryptionTypes set at all also no longer includes DES,
   matching what AD/the KDC itself assumes in that case (#172)
+- Bugfix: a password change (create/update/auto-update/precreate/reset)
+  could be sent to a domain controller other than the one msktutil
+  resolved and used for LDAP/authentication; the generated krb5.conf
+  pinned kdc/admin_server to the chosen server but never kpasswd_server,
+  so the Kerberos library fell back to its own independent DNS SRV
+  lookup for the password-change service, bypassing --server/--site
+  entirely
 
 Release 1.2.2
 
