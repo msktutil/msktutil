@@ -564,7 +564,7 @@ void do_help()
     fprintf(stdout, "                         If the hostname is omitted, assumes current hostname,\n");
     fprintf(stdout, "                         and adds the short and the full hostname.\n");
     fprintf(stdout, "                         Default for machine accounts, if not given: host/.\n");
-    fprintf(stdout, "                         Default for service accounts: None");
+    fprintf(stdout, "                         Default for service accounts: None.\n");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
     fprintf(stdout, "  --remove-unknown       Removes keytab entries for principals no longer\n");
     fprintf(stdout, "                         known to this account in AD, e.g. a service\n");

@@ -88,6 +88,8 @@ Unreleased
   with no command at all, are gone. --help/--version still work with
   no command. Fixes pre-create not actually implying --user-creds-only
   the way --precreate did and the documentation always claimed
+- Bugfix: --help's description of --service was missing its trailing
+  newline, running into the next option's text
 
 Release 1.2.2
 
