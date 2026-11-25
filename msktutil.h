@@ -147,6 +147,14 @@
 /* Default candidate SASL mechanisms */
 #define DEFAULT_SASL_MECHANISMS "GSS-SPNEGO GSSAPI"
 
+/* Default timeout, in seconds, bounding how long msktutil will wait
+ * on a domain controller: probing its availability
+ * (msktname.cpp's connect_with_timeout()), the actual krb5 protocol
+ * traffic once a server has been chosen (msktconf.cpp's generated
+ * fake krb5.conf), and LDAP bind/search/modify calls
+ * (ldapconnection.cpp). */
+#define DC_TIMEOUT 5
+
 /* Ways we can authenticate */
 enum auth_types {
     AUTH_NONE = 0,

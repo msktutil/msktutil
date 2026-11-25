@@ -194,6 +194,16 @@ Unreleased
   "aes256-cts-hmac-sha1-96 (18)"); an AD bitmask now shows as "<name>,
   <name>, ... (<hex>)" (e.g. "arcfour-hmac, aes256-cts-hmac-sha1-96
   (0x14)") (#171)
+- Bugfix: a domain controller that accepted a TCP connection but then
+  never replied (e.g. half-open or black-holed) could hang msktutil
+  indefinitely -- the existing connect timeout (#220) only bounds the
+  earlier SRV-candidate probe, not the actual krb5 protocol traffic
+  once a server has been chosen. The generated fake krb5.conf now also
+  sets a 5-second bound on that traffic: MIT's request_timeout, or
+  Heimdal's kdc_timeout/max_retries=1 (Heimdal has no single matching
+  setting). The same gap existed on the LDAP side too (bind/search/
+  modify calls had no timeout at all); LDAPConnection now sets
+  LDAP_OPT_NETWORK_TIMEOUT and LDAP_OPT_TIMEOUT to the same 5 seconds
 
 Release 1.2.2
 

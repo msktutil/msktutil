@@ -93,6 +93,16 @@ LDAPConnection::LDAPConnection(const std::string &server,
     sasl_ssf_t sasl_gssapi_minssf = 56;
     set_option(LDAP_OPT_X_SASL_SSF_MIN, &sasl_gssapi_minssf);
 
+    /* Bound how long a hung/black-holed DC can make the bind and any
+     * subsequent search/modify call block: NETWORK_TIMEOUT covers
+     * connect(2), TIMEOUT covers waiting for the server's reply.
+     * Both default to infinite otherwise. */
+    struct timeval ldap_timeout;
+    ldap_timeout.tv_sec = DC_TIMEOUT;
+    ldap_timeout.tv_usec = 0;
+    set_option(LDAP_OPT_NETWORK_TIMEOUT, &ldap_timeout);
+    set_option(LDAP_OPT_TIMEOUT, &ldap_timeout);
+
 #ifdef LDAP_OPT_X_SASL_NOCANON
     if (no_reverse_lookups) {
         try {

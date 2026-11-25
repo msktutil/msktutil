@@ -45,13 +45,7 @@
 #include <sstream>
 #include <sys/select.h>
 
-/* Default timeout, in seconds, for probing a domain controller's
- * availability. Without this, an unreachable DC's connect(2) call
- * blocks for the OS-level TCP connect timeout (often minutes) before
- * moving on to the next candidate. */
-#define DC_CONNECT_TIMEOUT 5
-
-/* Like connect(2), but gives up after DC_CONNECT_TIMEOUT seconds instead
+/* Like connect(2), but gives up after DC_TIMEOUT seconds instead
  * of blocking for the OS default TCP connect timeout. Returns 0 on
  * success, -1 on failure (with errno set, as connect(2) would). */
 static int connect_with_timeout(int sock, const struct sockaddr *addr,
@@ -75,7 +69,7 @@ static int connect_with_timeout(int sock, const struct sockaddr *addr,
         FD_ZERO(&wfds);
         FD_SET(sock, &wfds);
         struct timeval tv;
-        tv.tv_sec = DC_CONNECT_TIMEOUT;
+        tv.tv_sec = DC_TIMEOUT;
         tv.tv_usec = 0;
 
         ret = select(sock + 1, NULL, &wfds, NULL, &tv);

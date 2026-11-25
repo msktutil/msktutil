@@ -123,6 +123,19 @@ void create_fake_krb5_conf(msktutil_flags *flags)
         file << " rdns = false\n";
     }
 
+    /* Bound the total time spent waiting for a reply from the KDC or
+     * kpasswd server, independent of DC_TIMEOUT above (which
+     * only covers establishing the connection). MIT's request_timeout
+     * is a single total-time cap; Heimdal has no matching setting, so
+     * kdc_timeout (per-try timeout) with max_retries=1 gives the same
+     * effective bound. */
+#ifdef HEIMDAL
+    file << " kdc_timeout = " << DC_TIMEOUT << "\n"
+         << " max_retries = 1\n";
+#else
+    file << " request_timeout = " << DC_TIMEOUT << "\n";
+#endif
+
     file << "[realms]\n"
          << " " << flags->realm_name << " = {\n"
          << "  kdc = " << flags->server << "\n"
