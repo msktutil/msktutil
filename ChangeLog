@@ -97,6 +97,16 @@ Unreleased
 - Rename msktutil_flags::ad_computerDn to ad_dn: the field holds the
   current account's DN for both machine and service accounts, not
   something computer-account-specific
+- Bugfix: "pre-create" mode had no guard against --use-service-account,
+  so it would silently compute an AD machine-account-style default
+  password (strip trailing $, truncate, lowercase) for a service
+  account instead, which has no meaning there. Now rejected, same as
+  "reset" mode already does
+- Bugfix: --set-samba-secret had no guard against
+  --use-service-account; Samba's secrets.tdb holds the machine trust
+  account's password, so writing a service account's password there
+  was never meaningful and risked clobbering the real machine secret.
+  Now rejected
 
 Release 1.2.2
 

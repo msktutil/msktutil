@@ -63,8 +63,8 @@ options are given).  This option is intended for use from a daily crontab to ens
 is rotated regularly.
 .TP
 .B pre-create
-Pre-create (or update) an account for the given host with default password.  Does not use or update
-local keytab.  Requires -h or --computer-name argument.  Implies --user-creds-only.  Generally
+Pre-create (or update) a machine account for the given host with default password.  Does not use or
+update local keytab.  Requires -h or --computer-name argument.  Implies --user-creds-only.  Generally
 requires administrator credentials.
 .TP
 .B flush

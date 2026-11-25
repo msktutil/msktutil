@@ -472,8 +472,8 @@ void do_help()
     fprintf(stdout, "                         the last password change was more than 30 days ago\n");
     fprintf(stdout, "                         (see --auto-update-interval). Useful to run from a daily cron job.\n");
     fprintf(stdout, "\n");
-    fprintf(stdout, "  pre-create             Pre-create an account for the given host with default password\n");
-    fprintf(stdout, "                         but do not update local keytab.\n");
+    fprintf(stdout, "  pre-create             Pre-create a machine account for the given host with\n");
+    fprintf(stdout, "                         default password, but do not update local keytab.\n");
     fprintf(stdout, "                         Requires -h or --computer-name argument.\n");
     fprintf(stdout, "                         Implies --user-creds-only.\n");
     fprintf(stdout, "\n");
@@ -789,6 +789,17 @@ int execute(msktutil_exec *exec, msktutil_flags *flags)
         wait_for_new_kvno(flags);
         return ret;
     } else if (exec->mode == MODE_PRECREATE) {
+        /* pre-create mode will only work for machine accounts: the
+         * default password it sets follows AD's machine-account
+         * convention (strip trailing $, truncate, lowercase), which
+         * has no meaning for a service account's password. */
+        if (flags->use_service_account) {
+            fprintf(stderr, "Error: \"pre-create\" mode and "
+                            "\"--use-service-account\" are "
+                            "mutually exclusive\n");
+            return 1;
+        }
+
         /* Change account password to default value: */
         flags->password = create_default_machine_password(
             flags->sAMAccountName);
@@ -1341,6 +1352,16 @@ int main(int argc, char *argv [])
                 "Error: --use-samba-cmd (or MSKTUTIL_SAMBA_CMD "
                 "environment variable) can only be used with "
                 "--set-samba-secret\n");
+        goto error;
+    }
+
+    /* Samba's secrets.tdb holds the machine trust account's password;
+     * a service account's password has no business being written
+     * there. */
+    if (flags->set_samba_secret && flags->use_service_account) {
+        fprintf(stderr,
+                "Error: --set-samba-secret can only be used with a "
+                "machine account, not --use-service-account\n");
         goto error;
     }
 
