@@ -158,6 +158,32 @@ Unreleased
   that reached this probe. Skip it for service accounts, matching how
   the keytab-based AUTH_FROM_PASSWORD consumer in set_password()
   already assumed a machine account
+- Behavior change: --enctypes now takes a comma-separated list of
+  enctype strings (case-insensitive, e.g. --enctypes
+  aes256-cts-hmac-sha1-96,aes128-cts-hmac-sha1-96), the same vocabulary
+  --remove-enctype already accepted, instead of a raw
+  msDs-supportedEncryptionTypes bitmask the operator had to hand-compute.
+  --remove-enctype's own enctype strings are now matched
+  case-insensitively as well. Both options now also accept
+  aes128-cts-hmac-sha256-128 and aes256-cts-hmac-sha384-192, the two
+  AES-SHA2 enctypes Windows Server 2025 adds to
+  msDs-supportedEncryptionTypes, when the local Kerberos library
+  supports them (MIT krb5 >= 1.16, or Heimdal). The accepted name/alias
+  vocabulary is now exactly what the linked Kerberos library itself
+  recognizes for each enctype (its canonical name plus whichever
+  aliases it defines, e.g. "arcfour-hmac"/"rc4-hmac"/
+  "arcfour-hmac-md5"), rather than msktutil's own ad hoc list of extra
+  short forms; this drops a handful of previously-accepted strings
+  neither MIT krb5 nor Heimdal themselves recognize at all: the bare
+  "arcfour"/"rc4"/"aes128"/"aes256", and "rc4-hmac-md5",
+  "aes128-cts-hmac-sha1", "aes128-cts-hmac" (and their aes256
+  equivalents). Use "arcfour-hmac" (or its own alias "rc4-hmac"),
+  "aes128-cts-hmac-sha1-96" (or "aes128-cts"), or
+  "aes256-cts-hmac-sha1-96" (or "aes256-cts") instead. --help's own
+  --remove-enctype description now lists exactly the enctype names
+  this build supports, rather than a static list that could include
+  names an older linked Kerberos library doesn't actually recognize
+  (#159)
 
 Release 1.2.2
 

@@ -245,29 +245,25 @@ violation warning.
 Unsets the UF_ACCOUNT_DISABLE flag in the userAccountControl attribute.  When a computer leaves the domain
 this flag is normally set.  Generally requires administrator credentials.
 .TP
---enctypes <integer>
-Sets the supported encryption types in the msDs-supportedEncryptionTypes field.
-
-You may OR together the following values:
-  0x1=des-cbc-crc
-  0x2=des-cbc-md5
-  0x4=rc4-hmac-md5
-  0x8=aes128-cts-hmac-sha1
-  0x10=aes256-cts-hmac-sha1
+--enctypes <enctype>[,<enctype>...]
+Sets the supported encryption types in the msDs-supportedEncryptionTypes field, as a
+comma-separated list of enctype strings (case-insensitive). See --remove-enctype below for the
+list of supported enctype strings.
 
 This value is used to determine which encryption types AD will offer to use, and which encryption
 types to put in the keytab.
 
-If the value is set to 0x3 (that is: only the two DES types) and the local Kerberos library can
-still use DES, it also attempts to set the DES-only flag in userAccountControl.
+If the list is exactly des-cbc-crc and des-cbc-md5 (that is: only the two DES types) and the local
+Kerberos library can still use DES, it also attempts to set the DES-only flag in userAccountControl.
 
-Note: DES (0x1, 0x2) is rejected outright if the local Kerberos library cannot use it, which is the
-case for any reasonably current MIT krb5 (DES support was removed entirely in release 1.18) or
-Heimdal (DES is disabled by default). This is independent of --allow-weak-crypto or any AD-side
-DES policy, since there is no implementation left to fall back on -- in practice, 0x3 is rejected
-before the userAccountControl flag is ever considered.
+Note: DES (des-cbc-crc, des-cbc-md5) is rejected outright if the local Kerberos library cannot use
+it, which is the case for any reasonably current MIT krb5 (DES support was removed entirely in
+release 1.18) or Heimdal (DES is disabled by default). This is independent of --allow-weak-crypto
+or any AD-side DES policy, since there is no implementation left to fall back on -- in practice,
+des-cbc-crc,des-cbc-md5 is rejected before the userAccountControl flag is ever considered.
 
-Default: sets the value to 0x1C: that is, use anything but DES.
+Default: arcfour-hmac,aes128-cts-hmac-sha1-96,aes256-cts-hmac-sha1-96, that is, use anything but
+DES or the newer AES-SHA2 enctypes.
 .TP
 --allow-weak-crypto
 Enables the usage of DES keys for authentication. This is equivalent to MIT's krb5.conf parameter allow_weak_crypto.
@@ -327,9 +323,16 @@ Removes entries from the keytab that are older than <number> days. The newest ke
 to prevent a total cleanup. I.e. it is not possible to produce an empty keytab with the --remove-old option.
 .TP
 --remove-enctype <enctype>
-Removes entries from the keytab with given encryption type.
+Removes entries from the keytab with given encryption type (case-insensitive).
 Warning: it is possible to produce empty keytabs with the --remove-empty option by successively removing
-all encryption types. Supported enctype strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128 and aes256.
+all encryption types. The accepted enctype strings are exactly the canonical name (or any alias) the
+linked Kerberos library itself recognizes for each encryption type AD can express (case-insensitively) --
+des-cbc-crc, des-cbc-md5, arcfour-hmac, aes128-cts-hmac-sha1-96, aes256-cts-hmac-sha1-96,
+aes128-cts-hmac-sha256-128, and aes256-cts-hmac-sha384-192 -- though the last two (the AES-SHA2 types
+Windows Server 2025 introduces) are only usable with a new enough Kerberos library. Run
+"@PACKAGE_NAME@ --help" for the exact list (with a usable alias for each) this build supports. Other
+spellings some older msktutil releases accepted (e.g. bare "arcfour"/"rc4"/"aes128"/"aes256") are no
+longer accepted.
 .SH NOTES
 .SS PASSWORD EXPIRY
 .PP
@@ -427,7 +430,7 @@ can be done on a central host, e.g. to script the addition of many hosts.  You c
 domain.
 .PP
 .nf
-@PACKAGE_NAME@ create --host afs --service afs --enctypes 0x03
+@PACKAGE_NAME@ create --host afs --service afs --enctypes des-cbc-crc,des-cbc-md5
 .fi
 .PP
 This will create an afs/cell.name@REALM principal, and associate that principal with a computer
@@ -448,7 +451,7 @@ The size of Kerberos tickets for that service will stay small because no PAC inf
 This will create a keytab for johndoe without changing John Doe's password
 .PP
 .nf
-@PACKAGE_NAME@ create --service host/hostname --service host/hostname.example.com --set-samba-secret --enctypes 0x4
+@PACKAGE_NAME@ create --service host/hostname --service host/hostname.example.com --set-samba-secret --enctypes arcfour-hmac
 .fi
 .PP
 This will create a computer account in Active Directory that is compatible with Samba.  The command creates

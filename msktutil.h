@@ -117,18 +117,24 @@
 #define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 0
 #endif
 
+#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA256_128
+#define MS_KERB_ENCTYPE_AES128_CTS_HMAC_SHA256_128 0x40
+#else
+#define MS_KERB_ENCTYPE_AES128_CTS_HMAC_SHA256_128 0
+#endif
+
+#if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA384_192
+#define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA384_192 0x80
+#else
+#define MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA384_192 0
+#endif
+
 #define MS_KERB_DES_ENCTYPES \
     ( MS_KERB_ENCTYPE_DES_CBC_CRC | \
       MS_KERB_ENCTYPE_DES_CBC_MD5 )
 
 #define DEFAULT_MS_KERB_ENCTYPES \
     ( MS_KERB_ENCTYPE_RC4_HMAC_MD5 | \
-      MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 | \
-      MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 )
-
-#define ALL_MS_KERB_ENCTYPES \
-    ( MS_KERB_DES_ENCTYPES | \
-      MS_KERB_ENCTYPE_RC4_HMAC_MD5 | \
       MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 | \
       MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 )
 
@@ -279,6 +285,8 @@ extern void get_default_keytab(msktutil_flags *);
 extern std::string get_salt(msktutil_flags *);
 extern void get_default_ou(msktutil_flags *);
 extern unsigned int unsupported_ms_kerb_enctypes(unsigned int ms_enctypes);
+extern unsigned int ad_bit_for_enctype(krb5_enctype enctype);
+extern std::vector<krb5_enctype> ms_kerb_enctypes();
 
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string get_default_samaccountname(msktutil_flags *);

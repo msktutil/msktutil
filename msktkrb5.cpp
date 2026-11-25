@@ -33,6 +33,63 @@
 #include <cctype>
 #include <algorithm>
 
+/* The full set of krb5_enctype values msDs-supportedEncryptionTypes can
+ * express, paired with their AD bitmask bit. This is the only place
+ * that maps between the two numbering schemes; krb5_string_to_enctype()/
+ * krb5_enctype_to_name() (krb5wrap.h) handle the string<->krb5_enctype
+ * side, so this table only needs to go one level further, to the AD
+ * bit. Every AES entry (SHA1-96 and SHA2 alike) is only ever included
+ * on a build whose krb5.h actually declares the corresponding
+ * ENCTYPE_... macro (HAVE_DECL_ENCTYPE_... from configure.ac). */
+static const struct {
+    krb5_enctype enctype;
+    unsigned int ad_bit;
+} ms_kerb_enctype_table[] = {
+    { ENCTYPE_DES_CBC_CRC,  MS_KERB_ENCTYPE_DES_CBC_CRC },
+    { ENCTYPE_DES_CBC_MD5,  MS_KERB_ENCTYPE_DES_CBC_MD5 },
+    { ENCTYPE_ARCFOUR_HMAC, MS_KERB_ENCTYPE_RC4_HMAC_MD5 },
+#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+    { ENCTYPE_AES128_CTS_HMAC_SHA1_96, MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96 },
+#endif
+#if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+    { ENCTYPE_AES256_CTS_HMAC_SHA1_96, MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96 },
+#endif
+#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA256_128
+    { ENCTYPE_AES128_CTS_HMAC_SHA256_128, MS_KERB_ENCTYPE_AES128_CTS_HMAC_SHA256_128 },
+#endif
+#if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA384_192
+    { ENCTYPE_AES256_CTS_HMAC_SHA384_192, MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA384_192 },
+#endif
+};
+
+static const size_t ms_kerb_enctype_table_len =
+    sizeof(ms_kerb_enctype_table) / sizeof(ms_kerb_enctype_table[0]);
+
+/* AD bit for <enctype>, or 0 if <enctype> has no msDs-supportedEncryptionTypes
+ * representation at all (e.g. it's not one of the types AD/the KDC can
+ * express there, such as des3 or camellia). */
+unsigned int ad_bit_for_enctype(krb5_enctype enctype)
+{
+    for (size_t i = 0; i < ms_kerb_enctype_table_len; i++) {
+        if (ms_kerb_enctype_table[i].enctype == enctype) {
+            return ms_kerb_enctype_table[i].ad_bit;
+        }
+    }
+    return 0;
+}
+
+/* Every krb5_enctype with an msDs-supportedEncryptionTypes bit, for
+ * iterating in the other direction (AD bit -> enctype), e.g. to list
+ * or translate an entire AD bitmask. */
+std::vector<krb5_enctype> ms_kerb_enctypes()
+{
+    std::vector<krb5_enctype> result;
+    for (size_t i = 0; i < ms_kerb_enctype_table_len; i++) {
+        result.push_back(ms_kerb_enctype_table[i].enctype);
+    }
+    return result;
+}
+
 /* Returns the subset of bits in ms_enctypes (an msDs-supportedEncryptionTypes
  * style AD bitmask) for which the linked Kerberos library cannot actually
  * derive a key. Returns 0 if every requested enctype is usable. */
@@ -40,30 +97,13 @@ unsigned int unsupported_ms_kerb_enctypes(unsigned int ms_enctypes)
 {
     unsigned int unsupported = 0;
 
-    if ((ms_enctypes & MS_KERB_ENCTYPE_DES_CBC_CRC) &&
-        !enctype_supported(ENCTYPE_DES_CBC_CRC)) {
-        unsupported |= MS_KERB_ENCTYPE_DES_CBC_CRC;
+    for (size_t i = 0; i < ms_kerb_enctype_table_len; i++) {
+        unsigned int ad_bit = ms_kerb_enctype_table[i].ad_bit;
+        if ((ms_enctypes & ad_bit) &&
+            !enctype_supported(ms_kerb_enctype_table[i].enctype)) {
+            unsupported |= ad_bit;
+        }
     }
-    if ((ms_enctypes & MS_KERB_ENCTYPE_DES_CBC_MD5) &&
-        !enctype_supported(ENCTYPE_DES_CBC_MD5)) {
-        unsupported |= MS_KERB_ENCTYPE_DES_CBC_MD5;
-    }
-    if ((ms_enctypes & MS_KERB_ENCTYPE_RC4_HMAC_MD5) &&
-        !enctype_supported(ENCTYPE_ARCFOUR_HMAC)) {
-        unsupported |= MS_KERB_ENCTYPE_RC4_HMAC_MD5;
-    }
-#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-    if ((ms_enctypes & MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96) &&
-        !enctype_supported(ENCTYPE_AES128_CTS_HMAC_SHA1_96)) {
-        unsupported |= MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96;
-    }
-#endif
-#if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-    if ((ms_enctypes & MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96) &&
-        !enctype_supported(ENCTYPE_AES256_CTS_HMAC_SHA1_96)) {
-        unsupported |= MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
-    }
-#endif
 
     return unsupported;
 }
@@ -595,27 +635,13 @@ void add_principal_keytab(const std::string &principal_arg, msktutil_flags *flag
     prune_keytab(keytab, princ, min_keep_timestamp);
 
     std::vector<int32_t> enc_types;
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_CRC) {
-        enc_types.push_back(ENCTYPE_DES_CBC_CRC);
+    std::vector<krb5_enctype> all_ms_kerb_enctypes = ms_kerb_enctypes();
+    for (size_t i = 0; i < all_ms_kerb_enctypes.size(); i++) {
+        if (flags->ad_supportedEncryptionTypes &
+            ad_bit_for_enctype(all_ms_kerb_enctypes[i])) {
+            enc_types.push_back(all_ms_kerb_enctypes[i]);
+        }
     }
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_DES_CBC_MD5) {
-        enc_types.push_back(ENCTYPE_DES_CBC_MD5);
-    }
-    if (flags->ad_supportedEncryptionTypes & MS_KERB_ENCTYPE_RC4_HMAC_MD5) {
-        enc_types.push_back(ENCTYPE_ARCFOUR_HMAC);
-    }
-#if HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-    if (flags->ad_supportedEncryptionTypes &
-        MS_KERB_ENCTYPE_AES128_CTC_HMAC_SHA1_96) {
-        enc_types.push_back(ENCTYPE_AES128_CTS_HMAC_SHA1_96);
-    }
-#endif
-#if HAVE_DECL_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-    if (flags->ad_supportedEncryptionTypes &
-        MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
-        enc_types.push_back(ENCTYPE_AES256_CTS_HMAC_SHA1_96);
-    }
-#endif
 
     std::string salt = get_salt(flags);
     std::string password = flags->dont_change_password ?

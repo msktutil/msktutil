@@ -47,6 +47,67 @@ inline bool enctype_supported(krb5_enctype etype) {
 #endif
 }
 
+/* Canonical RFC-style name for <etype> (e.g. "aes256-cts-hmac-sha1-96"),
+ * via the Kerberos library's own name table -- so any enctype the
+ * linked library knows about (including ones msktutil has no built-in
+ * name list for) is covered automatically. Throws KRB5Exception if the
+ * library doesn't recognize <etype> at all. */
+inline std::string enctype_to_name(krb5_enctype etype) {
+#ifdef HEIMDAL
+    char *name;
+    krb5_error_code ret = krb5_enctype_to_string(g_context, etype, &name);
+    if (ret)
+        throw KRB5Exception("krb5_enctype_to_string", ret);
+    std::string result(name);
+    free(name);
+    return result;
+#else
+    char buf[128];
+    krb5_error_code ret = krb5_enctype_to_name(etype, FALSE, buf, sizeof(buf));
+    if (ret)
+        throw KRB5Exception("krb5_enctype_to_name", ret);
+    return std::string(buf);
+#endif
+}
+
+/* <etype>'s shortest alias (e.g. "aes128-cts" for
+ * aes128-cts-hmac-sha1-96), if the Kerberos library exposes one
+ * distinct from the canonical name, or "" if not -- either because
+ * <etype> has no alias, or (Heimdal only) because the library has no
+ * public way to retrieve it at all (krb5_enctype_to_string() only
+ * ever returns the canonical name there). */
+inline std::string enctype_alias(krb5_enctype etype) {
+#ifdef HEIMDAL
+    (void) etype;
+    return "";
+#else
+    char buf[128];
+    char canon[128];
+    if (krb5_enctype_to_name(etype, FALSE, canon, sizeof(canon)))
+        return "";
+    if (krb5_enctype_to_name(etype, TRUE, buf, sizeof(buf)))
+        return "";
+    std::string alias(buf);
+    return alias == canon ? "" : alias;
+#endif
+}
+
+/* Parses <name> (a canonical RFC-style enctype name or any alias the
+ * Kerberos library recognizes, e.g. "aes256"/"aes256-cts") into its
+ * krb5_enctype value, case-insensitively. Throws KRB5Exception if the
+ * library doesn't recognize <name>. */
+inline krb5_enctype name_to_enctype(const std::string &name) {
+    krb5_enctype etype;
+#ifdef HEIMDAL
+    krb5_error_code ret = krb5_string_to_enctype(g_context, name.c_str(), &etype);
+#else
+    krb5_error_code ret = krb5_string_to_enctype(const_cast<char *>(name.c_str()), &etype);
+#endif
+    if (ret)
+        throw KRB5Exception("krb5_string_to_enctype", ret);
+    return etype;
+}
+
 void
 initialize_g_context();
 

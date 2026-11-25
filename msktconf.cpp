@@ -111,20 +111,11 @@ void create_fake_krb5_conf(msktutil_flags *flags)
 
     if (flags->enctypes == VALUE_ON) {
         file << " default_tkt_enctypes =";
-        if (flags->supportedEncryptionTypes & 0x1) {
-            file << " des-cbc-crc";
-        }
-        if (flags->supportedEncryptionTypes & 0x2) {
-            file << " des-cbc-md5";
-        }
-        if (flags->supportedEncryptionTypes & 0x4) {
-            file << " arcfour-hmac-md5";
-        }
-        if (flags->supportedEncryptionTypes & 0x8) {
-            file << " aes128-cts";
-        }
-        if (flags->supportedEncryptionTypes & 0x10) {
-            file << " aes256-cts";
+        std::vector<krb5_enctype> types = ms_kerb_enctypes();
+        for (size_t i = 0; i < types.size(); i++) {
+            if (flags->supportedEncryptionTypes & ad_bit_for_enctype(types[i])) {
+                file << " " << enctype_to_name(types[i]);
+            }
         }
         file << "\n";
     }

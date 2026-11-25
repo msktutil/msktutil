@@ -122,56 +122,67 @@ void catch_int(int)
     exit(1);
 }
 
-void set_supportedEncryptionTypes(msktutil_flags *flags, char * value)
-{
-    flags->enctypes = VALUE_ON;
-    flags->supportedEncryptionTypes = strtol(value, NULL, 0);
-}
-
-/* Parse string representation of enctype into numeric krb5 enctype
- * (not to be mistaken with the numeric AD enctype!)
- */
+/* Parses <value> (a single RFC-style enctype name or alias, matched
+ * case-insensitively via the Kerberos library's own name table, e.g.
+ * "aes256"/"AES256-CTS") into its numeric krb5 enctype -- not to be
+ * confused with the numeric AD msDs-supportedEncryptionTypes bit, see
+ * ad_bit_for_enctype(). Only names for an enctype AD can actually
+ * express there are accepted; anything else (an enctype the library
+ * knows but AD has no bit for, or a name nothing recognizes) prints an
+ * error listing the accepted names and returns -1. */
 int parse_enctype(const std::string &value)
 {
-    int enctype;
+    krb5_enctype enctype;
+    try {
+        enctype = name_to_enctype(value);
+    } catch (KRB5Exception &) {
+        enctype = -1;
+    }
 
-    if ("des-cbc-crc" == value)
-        enctype = 1;
-    else if ("des-cbc-md5" == value)
-        enctype = 3;
-    else if ("arcfour-hmac-md5" == value ||
-             "arcfour-hmac" == value ||
-             "arcfour" == value ||
-             "rc4-hmac-md5" == value ||
-             "rc4-hmac" == value ||
-             "rc4" == value)
-        enctype = 23;
-    else if ("aes128-cts-hmac-sha1-96" == value ||
-             "aes128-cts-hmac-sha1" == value ||
-             "aes128-cts-hmac" == value ||
-             "aes128-cts" == value ||
-             "aes128" == value)
-        enctype = 17;
-    else if ("aes256-cts-hmac-sha1-96" == value ||
-             "aes256-cts-hmac-sha1" == value ||
-             "aes256-cts-hmac" == value ||
-             "aes256-cts" == value ||
-             "aes256" == value)
-        enctype = 18;
-    else {
+    if (enctype == -1 || !ad_bit_for_enctype(enctype)) {
         fprintf(stderr,
                 "Error: enctype %s not supported. "
-                "Supported enctype strings are\n", value.c_str()
+                "Supported enctype strings are:\n", value.c_str()
             );
-        fprintf(stderr, "  des-cbc-crc\n");
-        fprintf(stderr, "  des-cbc-md5\n");
-        fprintf(stderr, "  arcfour\n");
-        fprintf(stderr, "  aes128\n");
-        fprintf(stderr, "  aes256\n");
-        exit(1);
+        std::vector<krb5_enctype> types = ms_kerb_enctypes();
+        for (size_t i = 0; i < types.size(); i++) {
+            fprintf(stderr, "  %s\n", enctype_to_name(types[i]).c_str());
+        }
+        return -1;
     }
 
     return enctype;
+}
+
+/* Parses <value> (a comma-separated list of enctype names, each as
+ * accepted by parse_enctype()) into flags->supportedEncryptionTypes,
+ * ORing together the AD bit for each. Returns false, without
+ * modifying flags, if any name in the list fails to parse --
+ * parse_enctype() will already have printed why. */
+bool set_supportedEncryptionTypes(msktutil_flags *flags, const std::string &value)
+{
+    unsigned int bitmask = 0;
+    size_t start = 0;
+
+    while (start <= value.size()) {
+        size_t comma = value.find(',', start);
+        std::string token = value.substr(start, comma - start);
+
+        int enctype = parse_enctype(token);
+        if (enctype < 0) {
+            return false;
+        }
+        bitmask |= ad_bit_for_enctype(enctype);
+
+        if (comma == std::string::npos) {
+            break;
+        }
+        start = comma + 1;
+    }
+
+    flags->enctypes = VALUE_ON;
+    flags->supportedEncryptionTypes = bitmask;
+    return true;
 }
 
 void do_verbose()
@@ -453,6 +464,37 @@ int add_and_remove_principals(msktutil_exec *exec)
 }
 
 
+/* The enctype names (plus any alias) this build actually supports --
+ * i.e. exactly what parse_enctype() will accept -- each already
+ * wrapped to <width> characters and indented by <indent> spaces on
+ * every line but the first, ready to print as part of --help's
+ * --remove-enctype description. Built dynamically because a static
+ * list risks naming an enctype the linked Kerberos library doesn't
+ * actually declare (e.g. the AES-SHA2 types on an older MIT krb5). */
+std::string supported_enctype_names(size_t indent, size_t width)
+{
+    std::string result;
+    size_t line_len = 0;
+    std::vector<krb5_enctype> types = ms_kerb_enctypes();
+    for (size_t i = 0; i < types.size(); i++) {
+        std::string name = enctype_to_name(types[i]);
+        std::string alias = enctype_alias(types[i]);
+        std::string item = alias.empty() ? name : (name + " (" + alias + ")");
+        if (i > 0) {
+            item = ", " + item;
+        }
+        if (line_len > 0 && line_len + item.size() > width) {
+            result += "\n" + std::string(indent, ' ');
+            line_len = 0;
+            /* drop the leading ", " now that it starts a fresh line */
+            item = item.substr(2);
+        }
+        result += item;
+        line_len += item.size();
+    }
+    return result;
+}
+
 void do_help()
 {
     fprintf(stdout, "Usage: %s [MODE] [OPTIONS]\n", PACKAGE_NAME);
@@ -551,12 +593,12 @@ void do_help()
     fprintf(stdout, "  --dont-update-dnshostname\n");
     fprintf(stdout, "                         Do not update dNSHostName attribute.\n");
     fprintf(stdout, "  --do-expire-password   Undisables (puts back to default) password expiration.\n");
-    fprintf(stdout, "  --enctypes <int>       Sets msDs-supportedEncryptionTypes\n");
-    fprintf(stdout, "                         (OR of: 0x1=des-cbc-crc 0x2=des-cbc-md5\n");
-    fprintf(stdout, "                                 0x4=rc4-hmac-md5 0x8=aes128-cts-hmac-sha1\n");
-    fprintf(stdout, "                                 0x10=aes256-cts-hmac-sha1)\n");
+    fprintf(stdout, "  --enctypes <enctype>[,<enctype>...]\n");
+    fprintf(stdout, "                         Sets msDs-supportedEncryptionTypes to the given,\n");
+    fprintf(stdout, "                         comma-separated list of enctypes (case-insensitive).\n");
     fprintf(stdout, "                         Rejected if it includes an enctype not supported\n");
-    fprintf(stdout, "                         by the local Kerberos library.\n");
+    fprintf(stdout, "                         by the local Kerberos library. See --remove-enctype\n");
+    fprintf(stdout, "                         below for the list of supported enctype strings.\n");
     fprintf(stdout, "  --allow-weak-crypto    Enables the usage of DES keys for authentication\n");
     fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC.\n");
     fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC.\n");
@@ -585,9 +627,9 @@ void do_help()
     fprintf(stdout, "Cleanup options:\n");
     fprintf(stdout, "  --remove-old <number>  Removes entries older than <number> days\n");
     fprintf(stdout, "  --remove-enctype <enctype>\n");
-    fprintf(stdout, "                         Removes entries with given <enctype>. Supported enctype\n");
-    fprintf(stdout, "                         strings are: des-cbc-crc,des-cbc-md5, arcfour, aes128\n");
-    fprintf(stdout, "                         and aes256\n");
+    fprintf(stdout, "                         Removes entries with given <enctype> (case-insensitive).\n");
+    fprintf(stdout, "                         Supported enctype strings on this build are:\n");
+    fprintf(stdout, "                         %s\n", supported_enctype_names(25, 50).c_str());
 }
 
 
@@ -1044,7 +1086,9 @@ int main(int argc, char *argv [])
         /* W2008 msDs-supportedEncryptionTypes */
         if (!strcmp(argv[i], "--enctypes")) {
             if (++i < argc) {
-                set_supportedEncryptionTypes(flags, argv[i]);
+                if (!set_supportedEncryptionTypes(flags, argv[i])) {
+                    goto error;
+                }
             } else {
                 fprintf(stderr,
                         "Error: no enctype after '%s'\n",
@@ -1302,10 +1346,14 @@ int main(int argc, char *argv [])
 
         if (!strcmp(argv[i], "--remove-enctype")) {
             if (++i < argc) {
-                flags->cleanup_enctype = parse_enctype(argv[i]);
+                int enctype = parse_enctype(argv[i]);
+                if (enctype < 0) {
+                    goto error;
+                }
+                flags->cleanup_enctype = enctype;
             } else {
                 fprintf(stderr,
-                        "Error: no number given after '%s'\n",
+                        "Error: no enctype given after '%s'\n",
                         argv[i - 1]
                     );
                 goto error;
@@ -1415,18 +1463,11 @@ int main(int argc, char *argv [])
     }
 
     if (flags->enctypes == VALUE_ON) {
-        if ((flags->supportedEncryptionTypes | ALL_MS_KERB_ENCTYPES) != ALL_MS_KERB_ENCTYPES) {
-            fprintf(stderr,
-                    "Error: unsupported --enctypes must be integer that "
-                    "fits mask=0x%x\n",
-                    ALL_MS_KERB_ENCTYPES
-                );
-            goto error;
-        }
-        if (flags->supportedEncryptionTypes == 0) {
-            fprintf(stderr, "Error: --enctypes must not be zero\n");
-            goto error;
-        }
+        /* set_supportedEncryptionTypes() already rejected any name
+         * that doesn't map to an AD-expressible enctype, so
+         * flags->supportedEncryptionTypes is always a non-empty, valid
+         * bitmask here; only whether the local library can actually
+         * use what was requested remains to be checked. */
         unsigned int unsupported =
             unsupported_ms_kerb_enctypes(flags->supportedEncryptionTypes);
         if (unsupported) {
