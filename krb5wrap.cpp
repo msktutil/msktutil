@@ -35,7 +35,7 @@ void krb5_error_exit( const char *func, int err_code) {
 }
 
 void krb5_warn( const char *func, int err_code) {
-   fprintf( stderr, "Warning: krb5 function %s failed: %s", func, error_message(err_code));
+   fprintf( stderr, "Warning: krb5 function %s failed: %s\n", func, error_message(err_code));
 }
 
 #ifdef HEIMDAL
@@ -127,7 +127,7 @@ KRB5Creds::KRB5Creds(KRB5Principal &principal,
                                      const_cast<char*>(tkt_service),
                                      NULL);
     if (ret) {
-        throw KRB5Exception("krb5_get_init_creds_keytab", ret);
+        throw KRB5Exception("krb5_get_init_creds_password", ret);
     }
 }
 

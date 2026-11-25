@@ -176,7 +176,7 @@ int set_password(msktutil_flags *flags)
 
         if (!ret && response) {
             fprintf(stderr,
-                    "Error: Unable to set machine password for %s: (%d) %s\n",
+                    "Error: Unable to set password for %s: (%d) %s\n",
                     flags->sAMAccountName.c_str(),
                     response,
                     (char *) resp_code_string.data);

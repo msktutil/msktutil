@@ -107,6 +107,17 @@ Unreleased
   account's password, so writing a service account's password there
   was never meaningful and risked clobbering the real machine secret.
   Now rejected
+- Fix several misleading/inconsistent messages: a password-auth
+  failure logged the wrong krb5 function name
+  (krb5_get_init_creds_keytab instead of _password); the LDAP connect
+  error referenced a function that no longer exists in the code; an
+  SPN-conflict error always said "computer account" even when the
+  conflicting object is a service account, so it now says "account"
+  since the type isn't actually known at that point; set_password()
+  said "machine password" regardless of account type; get_default_ou()'s
+  fallback warning always said "computer OU" even though the code
+  right below it correctly distinguishes user vs. computer; krb5_warn()
+  was missing its trailing newline, running into whatever printed next
 
 Release 1.2.2
 

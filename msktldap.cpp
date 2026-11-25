@@ -70,7 +70,8 @@ void get_default_ou(msktutil_flags *flags)
     ldap_msgfree(mesg);
     if (dn.empty()) {
         fprintf(stderr,
-                "Warning: could not get default computer OU from AD.\n"
+                "Warning: could not get default %s OU from AD.\n",
+                flags->use_service_account ? "user" : "computer"
             );
         std::string default_ou = flags->use_service_account ?
                                  "CN=Users," : "CN=Computers,";
@@ -403,7 +404,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
                 ret = -1;
             } else if (dn != found_dn) {
                 fprintf(stderr,
-                        "Error: another computer account (%s) has the "
+                        "Error: another account (%s) has the "
                         "principal %s\n",
                         found_dn.c_str(),
                         principal.c_str()
