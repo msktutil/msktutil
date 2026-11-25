@@ -118,6 +118,10 @@ Unreleased
   fallback warning always said "computer OU" even though the code
   right below it correctly distinguishes user vs. computer; krb5_warn()
   was missing its trailing newline, running into whatever printed next
+- Bugfix: MS_KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96's availability check
+  tested HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96 instead of the
+  AES256 variant; on a krb5 build where the two declarations diverge,
+  this could silently misreport AES256 support
 
 Release 1.2.2
 
