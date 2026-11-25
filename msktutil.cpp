@@ -484,6 +484,8 @@ void do_help()
     fprintf(stdout, "\n");
     fprintf(stdout, "  delete                 Deletes the host or service account from Active Directory.\n");
     fprintf(stdout, "\n");
+    fprintf(stdout, "  reset                  Resets the current machine account's password to the default.\n");
+    fprintf(stdout, "\n");
     fprintf(stdout, "  cleanup                Deletes entries from the keytab that are no longer needed.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Common options: \n");
@@ -867,39 +869,48 @@ int main(int argc, char *argv [])
     initialize_g_context();
 
     int i;
-    int start_i;
-    start_i = 2;
     msktutil_exec *exec = Globals::exec();
     msktutil_flags *flags = Globals::flags();
 
-    if (argc > 1) {
-        /* determine MODE */
-        if (!strcmp(argv[1], "create")) {
-            exec->set_mode(MODE_CREATE);
-        } else if (!strcmp(argv[1], "update")) {
-            exec->set_mode(MODE_UPDATE);
-        } else if (!strcmp(argv[1], "auto-update")) {
-            exec->set_mode(MODE_AUTO_UPDATE);
-        } else if (!strcmp(argv[1], "pre-create")) {
-            exec->set_mode(MODE_PRECREATE);
-        } else if (!strcmp(argv[1], "flush")) {
-            exec->set_mode(MODE_FLUSH);
-        } else if (!strcmp(argv[1], "cleanup")) {
-            exec->set_mode(MODE_CLEANUP);
-        } else if (!strcmp(argv[1], "delete")) {
-            exec->set_mode(MODE_DELETE);
-        } else if (!strcmp(argv[1], "reset")) {
-            exec->set_mode(MODE_RESET);
-        }
+    if (argc > 1 &&
+        (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--version"))) {
+        do_version();
+        return 0;
+    }
+    if (argc > 1 &&
+        (!strcmp(argv[1], "--help") || !strcmp(argv[1], "--usage"))) {
+        do_help();
+        return 0;
     }
 
-    if (exec->mode == MODE_NONE) {
-        /* compatibility for old command line syntax (e.g. "--create"
-         * or "-c" instead of "create") */
-        start_i = 1;
+    if (argc <= 1) {
+        goto error;
     }
 
-    for (i = start_i; i < argc; i++) {
+    /* determine MODE */
+    if (!strcmp(argv[1], "create")) {
+        exec->set_mode(MODE_CREATE);
+    } else if (!strcmp(argv[1], "update")) {
+        exec->set_mode(MODE_UPDATE);
+    } else if (!strcmp(argv[1], "auto-update")) {
+        exec->set_mode(MODE_AUTO_UPDATE);
+    } else if (!strcmp(argv[1], "pre-create")) {
+        exec->set_mode(MODE_PRECREATE);
+        flags->user_creds_only = true;
+    } else if (!strcmp(argv[1], "flush")) {
+        exec->set_mode(MODE_FLUSH);
+    } else if (!strcmp(argv[1], "cleanup")) {
+        exec->set_mode(MODE_CLEANUP);
+    } else if (!strcmp(argv[1], "delete")) {
+        exec->set_mode(MODE_DELETE);
+    } else if (!strcmp(argv[1], "reset")) {
+        exec->set_mode(MODE_RESET);
+    } else {
+        fprintf(stderr, "Unknown command: '%s'\n", argv[1]);
+        goto error;
+    }
+
+    for (i = 2; i < argc; i++) {
 
         /* Display Version Message and exit */
         if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
@@ -911,37 +922,6 @@ int main(int argc, char *argv [])
         if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--usage")) {
             do_help();
             return 0;
-        }
-
-        /* Flush the keytab */
-        if (!strcmp(argv[i], "--flush") || !strcmp(argv[i], "-f")) {
-            exec->set_mode(MODE_FLUSH);
-            continue;
-        }
-
-        /* Update All Principals */
-        if (!strcmp(argv[i], "--update") || !strcmp(argv[i], "-u")) {
-            exec->set_mode(MODE_UPDATE);
-            continue;
-        }
-
-        /* Update All Principals, if needed */
-        if (!strcmp(argv[i], "--auto-update")) {
-            exec->set_mode(MODE_AUTO_UPDATE);
-            continue;
-        }
-
-        /* Create 'Default' Keytab */
-        if (!strcmp(argv[i], "--create") || !strcmp(argv[i], "-c")) {
-            exec->set_mode(MODE_CREATE);
-            continue;
-        }
-
-        /* Pre-create computer account for another host */
-        if (!strcmp(argv[i], "--precreate")) {
-            exec->set_mode(MODE_PRECREATE);
-            flags->user_creds_only = true;
-            continue;
         }
 
         /* Service Principal Name */
@@ -1437,10 +1417,6 @@ int main(int argc, char *argv [])
         }
     }
 
-    if (exec->mode == MODE_NONE && !exec->add_principals.empty()) {
-        exec->set_mode(MODE_UPDATE);
-    }
-
     if (exec->mode == MODE_CLEANUP &&
         flags->cleanup_days == -1 &&
         flags->cleanup_enctype == VALUE_IGNORE) {
@@ -1449,12 +1425,6 @@ int main(int argc, char *argv [])
                     "--remove-enctype\n"
                 );
             goto error;
-    }
-
-    if (exec->mode == MODE_NONE) {
-        /* Default, no options present */
-        fprintf(stderr, "Error: no command given\n");
-        goto error;
     }
 
     /* delete mode will only work with admin credentials */
@@ -1475,7 +1445,7 @@ int main(int argc, char *argv [])
     }
 
 error:
-    fprintf(stderr, "\nFor help, try running %s --help\n\n", PACKAGE_NAME);
+    fprintf(stderr, "Type '%s --help' for usage.\n", PACKAGE_NAME);
     return 1;
 }
 

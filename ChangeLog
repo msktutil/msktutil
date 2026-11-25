@@ -80,6 +80,14 @@ Unreleased
   the build failed outright ("Don't know how to make msktutil") on any
   platform without GNU make installed. List the object files
   explicitly instead
+- Behavior change: a command (create/update/auto-update/pre-create/
+  flush/cleanup/delete/reset) is now required, same as git/svn; the
+  undocumented legacy flags that used to select a mode on their own
+  (--create/-c, --update/-u, --flush/-f, --auto-update, --precreate),
+  and the implicit fallback to "update" mode when --service was given
+  with no command at all, are gone. --help/--version still work with
+  no command. Fixes pre-create not actually implying --user-creds-only
+  the way --precreate did and the documentation always claimed
 
 Release 1.2.2
 

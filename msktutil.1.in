@@ -78,8 +78,12 @@ tell whether it already existed on the account before @PACKAGE_NAME@ ever touche
 .TP
 .B cleanup
 Deletes entries from the keytab that are no longer needed.
+.TP
 .B delete
 Deletes the host or service account from Active Directory.
+.TP
+.B reset
+Resets the current machine account's password to the default.
 .SH OPTIONS
 .SS COMMON OPTIONS
 .TP
