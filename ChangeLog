@@ -132,6 +132,13 @@ Unreleased
   garbled message instead. Only treat result_code as authoritative
   when the call itself succeeded, matching the ccache-based branch
   right above it, which already got this right
+- Bugfix: DnsSrvHost::validate()'s default-port fallback declared a
+  new "service" string inside the if-block instead of assigning to
+  the "service" parameter it shadowed, so the computed port string
+  was discarded before reaching getaddrinfo(); not currently
+  reachable (the one call site always passes an explicit service
+  string), but a latent trap for any future caller relying on the
+  documented default
 
 Release 1.2.2
 

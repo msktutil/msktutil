@@ -171,7 +171,7 @@ bool DnsSrvHost::validate(bool nocanon, std::string service) {
     if (service.empty()) {
         std::stringstream srvtmp;
         srvtmp << m_port;
-        std::string service = srvtmp.str();
+        service = srvtmp.str();
     }
     ret = getaddrinfo(srvname.c_str(), service.c_str(), &hints, &hostaddrinfo);
 
