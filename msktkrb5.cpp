@@ -108,6 +108,45 @@ unsigned int unsupported_ms_kerb_enctypes(unsigned int ms_enctypes)
     return unsupported;
 }
 
+/* "<name> (<raw>)" for a single krb5_enctype, e.g.
+ * "aes256-cts-hmac-sha1-96 (18)" -- for log/error messages, so a
+ * krb5_enctype number is never shown without the name it stands for.
+ * Falls back to just the raw number if the library doesn't recognize
+ * <enctype> at all (shouldn't normally happen, but logging must never
+ * throw). */
+std::string describe_enctype(krb5_enctype enctype)
+{
+    try {
+        return sform("%s (%d)", enctype_to_name(enctype).c_str(), enctype);
+    } catch (KRB5Exception &) {
+        return sform("(%d)", enctype);
+    }
+}
+
+/* "<name>, <name>, ... (0x<hex>)" for an msDs-supportedEncryptionTypes
+ * style AD bitmask, e.g. "arcfour-hmac, aes256-cts-hmac-sha1-96
+ * (0x14)" -- for log/error messages, so the bitmask is never shown
+ * without the names it stands for. An AD bit outside the set this
+ * build knows about (e.g. one of the policy bits in msktutil.h's
+ * comment, or a future enctype) is silently omitted from the name
+ * list but still included in the raw hex value. */
+std::string describe_ms_kerb_enctypes(unsigned int ms_enctypes)
+{
+    std::string names;
+    for (size_t i = 0; i < ms_kerb_enctype_table_len; i++) {
+        if (ms_enctypes & ms_kerb_enctype_table[i].ad_bit) {
+            if (!names.empty()) {
+                names += ", ";
+            }
+            names += enctype_to_name(ms_kerb_enctype_table[i].enctype);
+        }
+    }
+    if (names.empty()) {
+        names = "none";
+    }
+    return sform("%s (0x%x)", names.c_str(), ms_enctypes);
+}
+
 void get_default_keytab(msktutil_flags *flags)
 {
     char keytab_name[MAX_KEYTAB_NAME_LEN];
@@ -386,7 +425,7 @@ void cleanup_keytab(msktutil_flags *flags)
             continue;
         }
         KRB5Principal principal(it->principal());
-        VERBOSE("Deleting %s with kvno=%d, enctype=%d from keytab", principal.name().c_str(), it->kvno(), it->enctype());
+        VERBOSE("Deleting %s (kvno=%d, enctype=%s) from keytab", principal.name().c_str(), it->kvno(), describe_enctype(it->enctype()).c_str());
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 
@@ -418,7 +457,7 @@ void cleanup_keytab(msktutil_flags *flags)
             continue;
         }
         KRB5Principal principal(it->principal());
-        VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab", principal.name().c_str(), it->kvno(), it->enctype());
+        VERBOSE("Deleting %s (kvno=%d, enctype=%s) from keytab", principal.name().c_str(), it->kvno(), describe_enctype(it->enctype()).c_str());
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 }
@@ -443,7 +482,7 @@ static void remove_keytab_entries_qualified(
         std::string principal_name(principal.name());
         for (size_t i = 0; i < remove_principal_names.size(); ++i) {
             if (principal_name.compare(remove_principal_names[i]) == 0) {
-                VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab", principal.name().c_str(), it->kvno(), it->enctype());
+                VERBOSE("Deleting %s (kvno=%d, enctype=%s) from keytab", principal.name().c_str(), it->kvno(), describe_enctype(it->enctype()).c_str());
                 keytab.removeEntry(principal, it->kvno(), it->enctype());
             }
         }
@@ -541,7 +580,7 @@ void add_keytab_entries(msktutil_flags *flags)
                 continue;
             }
 
-            VERBOSE("Adding %s (kvno=%d, enctype=%d) to keytab", add_principal.c_str(), sam->kvno(), sam->enctype());
+            VERBOSE("Adding %s (kvno=%d, enctype=%s) to keytab", add_principal.c_str(), sam->kvno(), describe_enctype(sam->enctype()).c_str());
 
             KRB5Principal princ(add_principal);
             krb5_keyblock keyblock(sam->keyblock());
@@ -611,8 +650,8 @@ static void prune_keytab(KRB5Keytab& keytab, KRB5Principal &principal, krb5_time
             continue;
 
         KRB5Principal principal(it->principal());
-        VERBOSE("Deleting %s (kvno=%d, enctype=%d) from keytab",
-                principal.name().c_str(), it->kvno(), it->enctype());
+        VERBOSE("Deleting %s (kvno=%d, enctype=%s) from keytab",
+                principal.name().c_str(), it->kvno(), describe_enctype(it->enctype()).c_str());
         keytab.removeEntry(principal, it->kvno(), it->enctype());
     }
 }
@@ -624,7 +663,8 @@ void add_principal_keytab(const std::string &principal_arg, msktutil_flags *flag
         qualify_principal_name(principal_arg, flags, &eupn);
 
     VERBOSE("Adding principal to keytab: %s", principal_string.c_str());
-    VERBOSE("Using supportedEncryptionTypes: %d", flags->ad_supportedEncryptionTypes);
+    VERBOSE("Using supportedEncryptionTypes: %s",
+            describe_ms_kerb_enctypes(flags->ad_supportedEncryptionTypes).c_str());
 
     /* FIXME: Why do we use a fixed magic number instead of reusing
      * flags->cleanup_days for update as well? */
@@ -652,7 +692,8 @@ void add_principal_keytab(const std::string &principal_arg, msktutil_flags *flag
                 "of password-based keytab entries");
     } else {
         for(size_t i = 0; i < enc_types.size(); ++i) {
-            VERBOSE("  Adding entry of enctype 0x%x", enc_types[i]);
+            VERBOSE("  Adding entry of enctype %s",
+                    describe_enctype(enc_types[i]).c_str());
             keytab.addEntry(princ, flags->kvno,
                             static_cast<krb5_enctype>(enc_types[i]),
                             password, salt);

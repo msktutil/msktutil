@@ -300,8 +300,8 @@ int ldap_set_supportedEncryptionTypes(const std::string &dn,
         }
     } else {
         VERBOSE("No need to change msDs-supportedEncryptionTypes they "
-                "are %d",
-                flags->ad_supportedEncryptionTypes);
+                "are %s",
+                describe_ms_kerb_enctypes(flags->ad_supportedEncryptionTypes).c_str());
         ret = LDAP_SUCCESS;
     }
 
@@ -673,8 +673,8 @@ bool ldap_check_account(msktutil_flags *flags)
     if (!supportedEncryptionTypes.empty()) {
         flags->ad_supportedEncryptionTypes = atoi(supportedEncryptionTypes.c_str());
         flags->ad_enctypes = VALUE_ON; /* actual value found in AD */
-        VERBOSE("Found supportedEncryptionTypes: %d",
-                flags->ad_supportedEncryptionTypes);
+        VERBOSE("Found supportedEncryptionTypes: %s",
+                describe_ms_kerb_enctypes(flags->ad_supportedEncryptionTypes).c_str());
 
         /* This was set outside of this run (by AD/ADUC, a previous
          * msktutil run against an older Kerberos library, or anything
@@ -686,12 +686,12 @@ bool ldap_check_account(msktutil_flags *flags)
             unsupported_ms_kerb_enctypes(flags->ad_supportedEncryptionTypes);
         if (unsupported) {
             fprintf(stderr,
-                    "Error: msDs-supportedEncryptionTypes on %s is 0x%x, "
-                    "which includes enctype(s) (0x%x) not supported by "
+                    "Error: msDs-supportedEncryptionTypes on %s is %s, "
+                    "which includes enctype(s) %s not supported by "
                     "the local Kerberos library\n",
                     flags->sAMAccountName.c_str(),
-                    flags->ad_supportedEncryptionTypes,
-                    unsupported
+                    describe_ms_kerb_enctypes(flags->ad_supportedEncryptionTypes).c_str(),
+                    describe_ms_kerb_enctypes(unsupported).c_str()
                 );
             ldap_msgfree(mesg);
             exit(1);
@@ -703,8 +703,8 @@ bool ldap_check_account(msktutil_flags *flags)
          * case regardless of domain functional level. */
         flags->ad_supportedEncryptionTypes = DEFAULT_MS_KERB_ENCTYPES;
         flags->ad_enctypes = VALUE_OFF; /* this is the assumed default */
-        VERBOSE("Found default supportedEncryptionTypes: %d",
-                flags->ad_supportedEncryptionTypes);
+        VERBOSE("Assuming default supportedEncryptionTypes: %s",
+                describe_ms_kerb_enctypes(flags->ad_supportedEncryptionTypes).c_str());
     }
 
     if (!flags->use_service_account) {

@@ -184,6 +184,16 @@ Unreleased
   this build supports, rather than a static list that could include
   names an older linked Kerberos library doesn't actually recognize
   (#159)
+- Improvement: every log/error message that showed an enctype now
+  shows its name alongside the raw number, instead of a bare number
+  with no indication of which numbering scheme it's in -- a
+  krb5_enctype (e.g. 18) and an msDs-supportedEncryptionTypes AD
+  bitmask (e.g. 0x10) are unrelated numbering schemes that happened to
+  be logged right next to each other with nothing to tell them apart.
+  A single krb5_enctype now shows as "<name> (<decimal>)" (e.g.
+  "aes256-cts-hmac-sha1-96 (18)"); an AD bitmask now shows as "<name>,
+  <name>, ... (<hex>)" (e.g. "arcfour-hmac, aes256-cts-hmac-sha1-96
+  (0x14)") (#171)
 
 Release 1.2.2
 

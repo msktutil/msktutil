@@ -287,6 +287,8 @@ extern void get_default_ou(msktutil_flags *);
 extern unsigned int unsupported_ms_kerb_enctypes(unsigned int ms_enctypes);
 extern unsigned int ad_bit_for_enctype(krb5_enctype enctype);
 extern std::vector<krb5_enctype> ms_kerb_enctypes();
+extern std::string describe_enctype(krb5_enctype enctype);
+extern std::string describe_ms_kerb_enctypes(unsigned int ms_enctypes);
 
 extern void ldap_get_base_dn(msktutil_flags *);
 extern std::string get_default_samaccountname(msktutil_flags *);
