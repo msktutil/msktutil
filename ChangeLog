@@ -151,6 +151,13 @@ Unreleased
   the same misconception (suggesting a servicePrincipalName as an
   example value); corrected to say a client-capable principal (e.g.
   userPrincipalName) is required instead
+- Bugfix: find_working_creds() tried AD's machine-account default
+  password convention (strip trailing $, truncate, lowercase) even
+  for a service account, whose password was never set that way --
+  a guaranteed-failing KDC round trip on every service-account run
+  that reached this probe. Skip it for service accounts, matching how
+  the keytab-based AUTH_FROM_PASSWORD consumer in set_password()
+  already assumed a machine account
 
 Release 1.2.2
 

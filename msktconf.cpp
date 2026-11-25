@@ -314,8 +314,11 @@ int find_working_creds(msktutil_flags *flags)
      * 1) Use principal from keytab. Try both:
      *    a) sAMAccountName
      *    b) (for a machine account) sAMAccountName_uppercase
-     * 2) Use principal sAMAccountName with default password
-     *    (sAMAccountName_nodollar)
+     * 2) (for a machine account) use principal sAMAccountName with
+     *    AD's machine-account default password convention
+     *    (sAMAccountName_nodollar, truncated/lowercased). A service
+     *    account's password was never set this way, so there's
+     *    nothing to try here for one.
      * 3) Use supplied credentials (--old-account-password)
      *    When the supplied password has expired (e.g. because
      *    the service account has been newly created) we cannot find
@@ -358,7 +361,8 @@ int find_working_creds(msktutil_flags *flags)
                                      ccache_name.c_str())) {
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
         }
-        if (try_machine_password(flags, ccache_name.c_str())) {
+        if (!flags->use_service_account &&
+            try_machine_password(flags, ccache_name.c_str())) {
             return AUTH_FROM_PASSWORD;
         }
         if (strlen(flags->old_account_password.c_str())) {
