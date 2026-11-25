@@ -199,7 +199,7 @@ public:
     std::string old_account_password;
     std::string site;
     LDAPConnection* ldap;
-    std::string ad_computerDn;
+    std::string ad_dn;
     std::string ad_dnsHostName;
     std::vector<std::string> ad_principals;
 

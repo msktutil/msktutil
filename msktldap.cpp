@@ -362,7 +362,7 @@ int ldap_add_principal(const std::string &principal, msktutil_flags *flags)
 {
     int ret;
     LDAPConnection *ldap = flags->ldap;
-    std::string dn = flags->ad_computerDn;
+    std::string dn = flags->ad_dn;
 
     VERBOSE("Checking that adding principal %s to %s won't cause a conflict",
             principal.c_str(),
@@ -430,9 +430,9 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
 {
     VERBOSE("Removing servicePrincipalName %s from %s",
             principal.c_str(),
-            flags->ad_computerDn.c_str());
+            flags->ad_dn.c_str());
 
-    int ret = flags->ldap->remove_attr(flags->ad_computerDn,
+    int ret = flags->ldap->remove_attr(flags->ad_dn,
                                        "servicePrincipalName",
                                        principal);
     if (ret == LDAP_SUCCESS) {
@@ -449,7 +449,7 @@ int ldap_remove_principal(const std::string &principal, msktutil_flags *flags)
 
 void ldap_check_account_strings(msktutil_flags *flags)
 {
-    const std::string &dn = flags->ad_computerDn;
+    const std::string &dn = flags->ad_dn;
     LDAPConnection *ldap = flags->ldap;
 
     if (flags->use_service_account) {
@@ -638,7 +638,7 @@ bool ldap_check_account(msktutil_flags *flags)
         VERBOSE("Found computer account");
     }
     mesg = ldap->first_entry(mesg);
-    flags->ad_computerDn = ldap->get_one_val(mesg, "distinguishedName");
+    flags->ad_dn = ldap->get_one_val(mesg, "distinguishedName");
 
     std::string uac = ldap->get_one_val(mesg, "userAccountControl");
     if (!uac.empty()) {
@@ -776,9 +776,9 @@ void ldap_create_account(msktutil_flags *flags)
                 flags->sAMAccountName_nodollar.c_str()
             );
     }
-    flags->ad_computerDn = sform("cn=%s,%s",
-                                 flags->sAMAccountName_nodollar.c_str(),
-                                 flags->ldap_ou.c_str());
+    flags->ad_dn = sform("cn=%s,%s",
+                        flags->sAMAccountName_nodollar.c_str(),
+                        flags->ldap_ou.c_str());
     LDAP_mod mod_attrs;
 
     if (flags->use_service_account) {
@@ -799,7 +799,7 @@ void ldap_create_account(msktutil_flags *flags)
 
     mod_attrs.add("sAMAccountName", flags->sAMAccountName);
     mod_attrs.add("unicodePwd", "\"" + flags->password  + "\"", true);
-    ldap->add(flags->ad_computerDn, mod_attrs);
+    ldap->add(flags->ad_dn, mod_attrs);
 
     /* Defaults, will attempt to reset later */
     flags->ad_supportedEncryptionTypes = DEFAULT_MS_KERB_ENCTYPES;

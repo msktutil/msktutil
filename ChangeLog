@@ -94,6 +94,9 @@ Unreleased
   value (and an unused "dn" string) it never writes anywhere -- a
   leftover copy of the same construction ldap_create_account() actually
   uses when adding a new LDAP object
+- Rename msktutil_flags::ad_computerDn to ad_dn: the field holds the
+  current account's DN for both machine and service accounts, not
+  something computer-account-specific
 
 Release 1.2.2
 
