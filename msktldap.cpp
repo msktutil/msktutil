@@ -615,19 +615,6 @@ bool ldap_check_account(msktutil_flags *flags)
                                 "unicodePwd",
                                 NULL};
 
-    std::string dn;
-
-    const char *vals_objectClass[] = {"top",
-                                      "person",
-                                      "organizationalPerson",
-                                      "user"};
-
-    std::vector<std::string> v_user_objectClass(vals_objectClass,
-                                                myend(vals_objectClass));
-    std::vector<std::string> v_machine_objectClass(vals_objectClass,
-                                                   myend(vals_objectClass));
-    v_machine_objectClass.push_back("computer");
-
     LDAPConnection *ldap = flags->ldap;
 
     if (flags->use_service_account) {

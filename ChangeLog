@@ -90,6 +90,10 @@ Unreleased
   the way --precreate did and the documentation always claimed
 - Bugfix: --help's description of --service was missing its trailing
   newline, running into the next option's text
+- Remove dead code: ldap_check_account() built an objectClass attribute
+  value (and an unused "dn" string) it never writes anywhere -- a
+  leftover copy of the same construction ldap_create_account() actually
+  uses when adding a new LDAP object
 
 Release 1.2.2
 
