@@ -122,6 +122,16 @@ Unreleased
   tested HAVE_DECL_ENCTYPE_AES128_CTS_HMAC_SHA1_96 instead of the
   AES256 variant; on a krb5 build where the two declarations diverge,
   this could silently misreport AES256 support
+- Bugfix: set_password()'s keytab/default/supplied-password branch
+  treated a nonzero kpasswd result_code as always fatal, even when the
+  underlying call also returned a nonzero error of its own; under
+  Heimdal, an unreachable kpasswd server sets both result_code and the
+  function's own return code non-zero at once, with no
+  result_code_string, so this could format "%s" against a NULL
+  pointer and always hid the real "can't reach any KDC" error behind a
+  garbled message instead. Only treat result_code as authoritative
+  when the call itself succeeded, matching the ccache-based branch
+  right above it, which already got this right
 
 Release 1.2.2
 
