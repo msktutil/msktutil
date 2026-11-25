@@ -210,17 +210,14 @@ int set_password(msktutil_flags *flags)
         /* Use the machine's credentials */
         if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
             flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
-            flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB ||
-            flags->auth_type == AUTH_FROM_HOSTNAME_KEYTAB) {
+            flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
             std::string princ_name;
             if (flags->auth_type == AUTH_FROM_SAM_KEYTAB) {
                 princ_name = flags->sAMAccountName;
             } else if (flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB) {
                 princ_name = flags->sAMAccountName_uppercase;
-            } else if (flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
-                princ_name = flags->keytab_auth_princ;
             } else {
-                princ_name = "host/" + flags->hostname;
+                princ_name = flags->keytab_auth_princ;
             }
             VERBOSE("Trying to use keytab for %s to change password",
                     princ_name.c_str());

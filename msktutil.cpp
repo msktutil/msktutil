@@ -515,7 +515,9 @@ void do_help()
     fprintf(stdout, "  --keytab-auth-as <name>\n");
     fprintf(stdout, "                         First try to authenticate to AD as principal <name>, using\n");
     fprintf(stdout, "                         creds from the keytab, instead of using the account name\n");
-    fprintf(stdout, "                         principal or the host principal, etc.\n");
+    fprintf(stdout, "                         principal. <name> must be a client-capable principal (e.g.\n");
+    fprintf(stdout, "                         a userPrincipalName); AD never accepts a\n");
+    fprintf(stdout, "                         servicePrincipalName as a client principal.\n");
     fprintf(stdout, "  --server <address>     Use a specific domain controller instead of looking\n");
     fprintf(stdout, "                         up in DNS based upon realm.\n");
     fprintf(stdout, "  --server-behind-nat    Ignore server IP validation error caused by NAT.\n");

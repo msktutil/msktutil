@@ -154,12 +154,12 @@ account password.  Default: /etc/krb5.keytab
 .TP
 --keytab-auth-as <name>
 Specifies which principal name we should try to use, when we authenticate from a keytab. Normally,
-@PACKAGE_NAME@ will try to use the account name or the host principal for the current host. If
-this option is specified, instead @PACKAGE_NAME@ will try to use the given principal name first,
-and only fall back to the default behavior if we fail to authenticate with the given name. This
-option can be useful if you do not know the current password for the relevant account, do not have
-a keytab with the account principal, but you do have a keytab with a service principal associated
-with that account.
+@PACKAGE_NAME@ will try to use the account name principal (and, for a machine account, its
+uppercase variant). If this option is specified, instead @PACKAGE_NAME@ will try to use the given
+principal name first, and only fall back to the default behavior if we fail to authenticate with
+the given name. <name> must be a principal AD will accept as a client, such as a
+userPrincipalName; a servicePrincipalName can never be used here, since AD never accepts a
+servicePrincipalName as a client principal.
 .TP
 --server <server>
 Specifies to use <server> as the domain controller.  This affects both Kerberos and LDAP operations.

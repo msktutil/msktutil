@@ -313,8 +313,7 @@ int find_working_creds(msktutil_flags *flags)
     /* We try some different ways, in order:
      * 1) Use principal from keytab. Try both:
      *    a) sAMAccountName
-     *    b) host/full-hostname (for compat with older msktutil which
-     *       didn't write the first).
+     *    b) (for a machine account) sAMAccountName_uppercase
      * 2) Use principal sAMAccountName with default password
      *    (sAMAccountName_nodollar)
      * 3) Use supplied credentials (--old-account-password)
@@ -328,7 +327,6 @@ int find_working_creds(msktutil_flags *flags)
      *    cache.
     */
     if (!flags->user_creds_only) {
-        std::string host_princ = "host/" + flags->hostname;
         /*
          * NOTE: we have to use an actual file for the credential
          * cache, and not a MEMORY: type, because libsasl may be using
@@ -359,12 +357,6 @@ int find_working_creds(msktutil_flags *flags)
                                      flags->sAMAccountName_uppercase,
                                      ccache_name.c_str())) {
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
-        }
-        if (access(flags->keytab_file.c_str(), R_OK) == 0 &&
-            try_machine_keytab_princ(flags,
-                                     host_princ,
-                                     ccache_name.c_str())) {
-            return AUTH_FROM_HOSTNAME_KEYTAB;
         }
         if (try_machine_password(flags, ccache_name.c_str())) {
             return AUTH_FROM_PASSWORD;

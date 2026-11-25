@@ -139,6 +139,18 @@ Unreleased
   reachable (the one call site always passes an explicit service
   string), but a latent trap for any future caller relying on the
   documented default
+- Bugfix: find_working_creds() tried authenticating as the host/
+  servicePrincipalName from the local keytab as a fallback -- AD never
+  accepts a servicePrincipalName as a client principal (confirmed
+  empirically against production AD: the KDC rejects it with "Client
+  not found in Kerberos database" even when the same account's
+  sAMAccountName entry in the same keytab authenticates fine), so this
+  was a guaranteed-failing round trip on every run that reached it.
+  Removed, along with the now-dead AUTH_FROM_HOSTNAME_KEYTAB case in
+  set_password(). --keytab-auth-as's --help/man page text repeated
+  the same misconception (suggesting a servicePrincipalName as an
+  example value); corrected to say a client-capable principal (e.g.
+  userPrincipalName) is required instead
 
 Release 1.2.2
 
