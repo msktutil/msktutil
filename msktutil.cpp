@@ -363,14 +363,24 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
      * LDAP. */
     flags->auth_type = find_working_creds(flags);
     if (flags->auth_type == AUTH_NONE) {
-        fprintf(stderr,
-                "Error: Could not find any credentials to authenticate with. "
-                "Neither keytab,\n"
-                "default machine password, nor calling user's tickets worked. "
-                "Try\n\"kinit\"ing yourself some tickets with permission to "
-                "create computer\nobjects, or pre-creating the computer "
-                "object in AD and selecting\n'reset account'.\n"
-            );
+        if (flags->use_service_account) {
+            fprintf(stderr,
+                    "Error: Could not find any credentials to authenticate "
+                    "with. Neither keytab\nnor calling user's tickets "
+                    "worked. Try \"kinit\"ing yourself some tickets with\n"
+                    "permission to manage this service account, or supply "
+                    "its current password\nwith --old-account-password.\n"
+                );
+        } else {
+            fprintf(stderr,
+                    "Error: Could not find any credentials to authenticate "
+                    "with. Neither keytab,\ndefault machine password, nor "
+                    "calling user's tickets worked. Try\n\"kinit\"ing "
+                    "yourself some tickets with permission to create "
+                    "computer\nobjects, or pre-creating the computer object "
+                    "in AD and selecting\n'reset account'.\n"
+                );
+        }
         exit(1);
     }
 
@@ -572,8 +582,9 @@ void do_help()
     fprintf(stdout, "  -n, --no-canonical-name\n");
     fprintf(stdout, "                         Do not attempt to canonicalize hostname while\n");
     fprintf(stdout, "                         creating Kerberos principal(s).\n");
-    fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with machine keytab:\n");
-    fprintf(stdout, "                         only use user's credentials (from e.g. kinit).\n");
+    fprintf(stdout, "  --user-creds-only      Don't attempt to authenticate with the account's\n");
+    fprintf(stdout, "                         own keytab or default password: only use the\n");
+    fprintf(stdout, "                         calling user's credentials (from e.g. kinit).\n");
     fprintf(stdout, "  --auto-update-interval <days>\n");
     fprintf(stdout, "                         Number of <days> when auto-update will change the\n");
     fprintf(stdout, "                         account password. Defaults to 30 days.\n");

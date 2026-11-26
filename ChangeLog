@@ -204,6 +204,14 @@ Unreleased
   setting). The same gap existed on the LDAP side too (bind/search/
   modify calls had no timeout at all); LDAPConnection now sets
   LDAP_OPT_NETWORK_TIMEOUT and LDAP_OPT_TIMEOUT to the same 5 seconds
+- Fix several messages that referenced machine-account-only concepts
+  (the default machine password, pre-creating the computer object,
+  "machine keytab") even when they apply to, or fire for, a service
+  account too: the "could not find any credentials" fatal error now
+  has a service-account-specific variant that doesn't mention the
+  machine-only recovery steps; --user-creds-only's --help text no
+  longer says "machine keytab", since it skips keytab-based auth for
+  either account type
 
 Release 1.2.2
 
