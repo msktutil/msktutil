@@ -223,6 +223,12 @@ Unreleased
   RFC/AD value worth cross-referencing), auth_types is purely an
   internal enum with no meaning outside this one source file, so the
   number itself is dropped rather than shown alongside the name
+- Rename AUTH_FROM_PASSWORD to AUTH_FROM_DEFAULT_MACHINE_PASSWORD and
+  try_machine_password() to try_default_machine_password(), and fix
+  its/set_password()'s VERBOSE text to say "default machine password"
+  instead of plain "password" -- all three were ambiguous next to the
+  sibling AUTH_FROM_SUPPLIED_PASSWORD/try_supplied_password(), which is
+  a different, --old-account-password-driven probe
 
 Release 1.2.2
 

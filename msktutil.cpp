@@ -240,15 +240,24 @@ void qualify_principal_vec(std::vector<std::string> &principals,
 static const char *auth_type_name(int auth_type)
 {
     switch (auth_type) {
-    case AUTH_NONE:                       return "none";
-    case AUTH_FROM_SAM_KEYTAB:             return "keytab (sAMAccountName)";
-    case AUTH_FROM_SAM_UPPERCASE_KEYTAB:   return "keytab (sAMAccountName, uppercase)";
-    case AUTH_FROM_PASSWORD:               return "default machine password";
-    case AUTH_FROM_USER_CREDS:             return "calling user's credentials";
-    case AUTH_FROM_SUPPLIED_PASSWORD:      return "--old-account-password";
-    case AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD: return "--old-account-password (expired)";
-    case AUTH_FROM_EXPLICIT_KEYTAB:        return "keytab (--keytab-auth-as)";
-    default:                              return "unknown";
+    case AUTH_NONE:
+        return "none";
+    case AUTH_FROM_SAM_KEYTAB:
+        return "keytab (sAMAccountName)";
+    case AUTH_FROM_SAM_UPPERCASE_KEYTAB:
+        return "keytab (sAMAccountName, uppercase)";
+    case AUTH_FROM_DEFAULT_MACHINE_PASSWORD:
+        return "default machine password";
+    case AUTH_FROM_USER_CREDS:
+        return "calling user's credentials";
+    case AUTH_FROM_SUPPLIED_PASSWORD:
+        return "--old-account-password";
+    case AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD:
+        return "--old-account-password (expired)";
+    case AUTH_FROM_EXPLICIT_KEYTAB:
+        return "keytab (--keytab-auth-as)";
+    default:
+        return "unknown";
     }
 }
 

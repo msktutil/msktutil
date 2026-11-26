@@ -207,7 +207,6 @@ int set_password(msktutil_flags *flags)
         }
     } else {
         KRB5Creds creds;
-        /* Use the machine's credentials */
         if (flags->auth_type == AUTH_FROM_SAM_KEYTAB ||
             flags->auth_type == AUTH_FROM_SAM_UPPERCASE_KEYTAB ||
             flags->auth_type == AUTH_FROM_EXPLICIT_KEYTAB) {
@@ -226,8 +225,9 @@ int set_password(msktutil_flags *flags)
             KRB5Principal principal(princ_name);
             KRB5Creds local_creds(principal, keytab, "kadmin/changepw");
             creds.move_from(local_creds);
-        } else if (flags->auth_type == AUTH_FROM_PASSWORD) {
-            VERBOSE("Trying to use default password for %s to change password",
+        } else if (flags->auth_type == AUTH_FROM_DEFAULT_MACHINE_PASSWORD) {
+            VERBOSE("Trying to use default machine password for %s to "
+                    "change password",
                     flags->sAMAccountName.c_str());
 
             KRB5Principal principal(flags->sAMAccountName);

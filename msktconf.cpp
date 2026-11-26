@@ -225,10 +225,10 @@ bool try_keytab_principal(msktutil_flags *flags,
 }
 
 
-bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
+bool try_default_machine_password(msktutil_flags *flags, const char *ccache_name)
 {
     try {
-        VERBOSE("Trying to authenticate %s with password",
+        VERBOSE("Trying to authenticate %s with default machine password",
                 flags->sAMAccountName.c_str());
         KRB5Principal principal(flags->sAMAccountName);
         KRB5Creds creds(principal,
@@ -241,7 +241,7 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
         return true;
     } catch (KRB5Exception &e) {
         VERBOSE("%s", e.what());
-        VERBOSE("Authentication with password failed");
+        VERBOSE("Authentication with default machine password failed");
         return false;
     }
 }
@@ -315,9 +315,10 @@ bool try_user_creds()
 int find_working_creds(msktutil_flags *flags)
 {
     /* We try some different ways, in order:
-     * 1) Use principal from keytab. Try both:
-     *    a) sAMAccountName
-     *    b) (for a machine account) sAMAccountName_uppercase
+     * 1) Use principal from keytab. Try, in order:
+     *    a) the explicit principal given via --keytab-auth-as, if any
+     *    b) sAMAccountName
+     *    c) (for a machine account) sAMAccountName_uppercase
      * 2) (for a machine account) use principal sAMAccountName with
      *    AD's machine-account default password convention
      *    (sAMAccountName_nodollar, truncated/lowercased). A service
@@ -366,8 +367,8 @@ int find_working_creds(msktutil_flags *flags)
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
         }
         if (!flags->use_service_account &&
-            try_machine_password(flags, ccache_name.c_str())) {
-            return AUTH_FROM_PASSWORD;
+            try_default_machine_password(flags, ccache_name.c_str())) {
+            return AUTH_FROM_DEFAULT_MACHINE_PASSWORD;
         }
         if (strlen(flags->old_account_password.c_str())) {
             if (try_supplied_password(flags, ccache_name.c_str())) {
