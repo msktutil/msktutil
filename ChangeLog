@@ -212,6 +212,11 @@ Unreleased
   machine-only recovery steps; --user-creds-only's --help text no
   longer says "machine keytab", since it skips keytab-based auth for
   either account type
+- Rename find_working_creds()'s try_machine_keytab_princ()/
+  try_machine_supplied_password() to try_keytab_principal()/
+  try_supplied_password(): neither is actually machine-account-only
+  (both are used identically for service accounts), unlike
+  try_machine_password(), which keeps its name since it genuinely is
 
 Release 1.2.2
 

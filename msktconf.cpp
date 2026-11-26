@@ -202,9 +202,9 @@ void switch_default_ccache(const char *ccache_name)
 }
 
 
-bool try_machine_keytab_princ(msktutil_flags *flags,
-                              const std::string &principal_name,
-                              const char *ccache_name)
+bool try_keytab_principal(msktutil_flags *flags,
+                          const std::string &principal_name,
+                          const char *ccache_name)
 {
     try {
         VERBOSE("Trying to authenticate %s from local keytab",
@@ -247,8 +247,8 @@ bool try_machine_password(msktutil_flags *flags, const char *ccache_name)
 }
 
 
-bool try_machine_supplied_password(msktutil_flags *flags,
-                                   const char *ccache_name)
+bool try_supplied_password(msktutil_flags *flags,
+                           const char *ccache_name)
 {
     try {
         VERBOSE("Trying to authenticate %s with supplied password",
@@ -348,21 +348,21 @@ int find_working_creds(msktutil_flags *flags)
 
         if (!flags->keytab_auth_princ.empty() &&
             access(flags->keytab_file.c_str(), R_OK) == 0 &&
-            try_machine_keytab_princ(flags,
-                                     flags->keytab_auth_princ,
-                                     ccache_name.c_str())) {
+            try_keytab_principal(flags,
+                                 flags->keytab_auth_princ,
+                                 ccache_name.c_str())) {
             return AUTH_FROM_EXPLICIT_KEYTAB;
         }
         if (access(flags->keytab_file.c_str(), R_OK) == 0 &&
-            try_machine_keytab_princ(flags,
-                                     flags->sAMAccountName,
-                                     ccache_name.c_str())) {
+            try_keytab_principal(flags,
+                                 flags->sAMAccountName,
+                                 ccache_name.c_str())) {
             return AUTH_FROM_SAM_KEYTAB;
         }
         if (access(flags->keytab_file.c_str(), R_OK) == 0 &&
-            try_machine_keytab_princ(flags,
-                                     flags->sAMAccountName_uppercase,
-                                     ccache_name.c_str())) {
+            try_keytab_principal(flags,
+                                 flags->sAMAccountName_uppercase,
+                                 ccache_name.c_str())) {
             return AUTH_FROM_SAM_UPPERCASE_KEYTAB;
         }
         if (!flags->use_service_account &&
@@ -370,7 +370,7 @@ int find_working_creds(msktutil_flags *flags)
             return AUTH_FROM_PASSWORD;
         }
         if (strlen(flags->old_account_password.c_str())) {
-            if (try_machine_supplied_password(flags, ccache_name.c_str())) {
+            if (try_supplied_password(flags, ccache_name.c_str())) {
                 return AUTH_FROM_SUPPLIED_PASSWORD;
             }
             if (flags->password_expired) {
