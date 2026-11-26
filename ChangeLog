@@ -217,6 +217,12 @@ Unreleased
   try_supplied_password(): neither is actually machine-account-only
   (both are used identically for service accounts), unlike
   try_machine_password(), which keeps its name since it genuinely is
+- Improvement: the "Authenticated using method N" verbose message now
+  names the method (e.g. "calling user's credentials") instead of a
+  bare integer -- unlike an enctype number (an external, documented
+  RFC/AD value worth cross-referencing), auth_types is purely an
+  internal enum with no meaning outside this one source file, so the
+  number itself is dropped rather than shown alongside the name
 
 Release 1.2.2
 

@@ -235,6 +235,23 @@ void qualify_principal_vec(std::vector<std::string> &principals,
 }
 
 
+/* Name for an auth_types value, for log messages -- so flags->auth_type
+ * is never shown as a bare, meaningless number. */
+static const char *auth_type_name(int auth_type)
+{
+    switch (auth_type) {
+    case AUTH_NONE:                       return "none";
+    case AUTH_FROM_SAM_KEYTAB:             return "keytab (sAMAccountName)";
+    case AUTH_FROM_SAM_UPPERCASE_KEYTAB:   return "keytab (sAMAccountName, uppercase)";
+    case AUTH_FROM_PASSWORD:               return "default machine password";
+    case AUTH_FROM_USER_CREDS:             return "calling user's credentials";
+    case AUTH_FROM_SUPPLIED_PASSWORD:      return "--old-account-password";
+    case AUTH_FROM_SUPPLIED_EXPIRED_PASSWORD: return "--old-account-password (expired)";
+    case AUTH_FROM_EXPLICIT_KEYTAB:        return "keytab (--keytab-auth-as)";
+    default:                              return "unknown";
+    }
+}
+
 int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
 {
     int ret;
@@ -399,7 +416,7 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
         }
     }
 
-    VERBOSE("Authenticated using method %d", flags->auth_type);
+    VERBOSE("Authenticated using %s", auth_type_name(flags->auth_type));
 
     flags->ldap = new LDAPConnection(flags->server,
                                      flags->sasl_mechanisms,
