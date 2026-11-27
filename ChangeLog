@@ -229,6 +229,14 @@ Unreleased
   instead of plain "password" -- all three were ambiguous next to the
   sibling AUTH_FROM_SUPPLIED_PASSWORD/try_supplied_password(), which is
   a different, --old-account-password-driven probe
+- Behavior change: a service account has no host identity of its own,
+  so an unqualified --service name is now rejected for one instead of
+  being silently qualified with the invoking machine's own hostname --
+  a value with no relationship to the service account being managed,
+  and liable to produce a different, equally arbitrary SPN depending
+  on which machine happened to run msktutil. -h/--hostname is now
+  likewise rejected together with --use-service-account, since it has
+  no remaining effect for a service account.
 
 Release 1.2.2
 

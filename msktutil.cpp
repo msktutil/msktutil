@@ -197,16 +197,13 @@ void qualify_principal_vec(std::vector<std::string> &principals,
     std::string short_hostname;
     std::string::size_type len = principals.size();
 
-    if (!flags->hostname.empty()) {
+    if (!flags->use_service_account && !flags->hostname.empty()) {
         /* The short form of an unqualified principal (e.g. the default
          * "host" entry) is the account's own name -- its NetBIOS name,
          * per Microsoft's SPN definition -- not a truncated hostname;
          * matches Samba's "net ads join" (machine_name) and adcli
-         * (computer_name). A service account has no host identity of
-         * its own, so keep deriving its short form from --hostname. */
-        short_hostname = flags->use_service_account
-            ? get_short_hostname(flags)
-            : flags->sAMAccountName_nodollar;
+         * (computer_name). */
+        short_hostname = flags->sAMAccountName_nodollar;
         if (flags->hostname == short_hostname)
             short_hostname = "";
     }
@@ -217,10 +214,27 @@ void qualify_principal_vec(std::vector<std::string> &principals,
             continue;
         }
 
+        if (flags->use_service_account) {
+            /* A service account has no host identity of its own --
+             * its SPNs are opaque to msktutil, with no required
+             * relationship to any hostname. There is no safe fallback
+             * to qualify an unqualified one with, so require the
+             * administrator to spell it out. */
+            fprintf(stderr,
+                    "Error: service principal %s must be fully "
+                    "qualified (<service>/<host>) for a service "
+                    "account.\n",
+                    principals[i].c_str()
+                );
+            exit(1);
+        }
+
         if (flags->hostname.empty()) {
             fprintf(stderr,
                     "Error: default hostname unspecified, "
-                    "and service argument missing hostname.\n"
+                    "and service principal %s is missing a "
+                    "hostname.\n",
+                    principals[i].c_str()
                 );
             exit(1);
         }
@@ -319,8 +333,10 @@ int finalize_exec(msktutil_exec *exec, msktutil_flags *flags)
                 );
             exit(1);
         }
-    } else if (flags->hostname.empty()) {
-        /* Canonicalize the hostname if need be */
+    } else if (flags->hostname.empty() && !flags->use_service_account) {
+        /* Canonicalize the hostname if need be. A service account has
+         * no host identity of its own and --hostname is rejected for
+         * it above, so flags->hostname has no use left for one. */
         flags->hostname = get_default_hostname(flags->no_canonical_name);
     }
 
@@ -583,6 +599,8 @@ void do_help()
     fprintf(stdout, "                         account password for authentication.\n");
     fprintf(stdout, "                         This option is mutually exclusive with --user-creds-only.\n");
     fprintf(stdout, "  -h, --hostname <fqdn>  Use <fqdn> as current hostname, used verbatim.\n");
+    fprintf(stdout, "                         Only valid for a machine account; a service\n");
+    fprintf(stdout, "                         account has no host identity of its own.\n");
     fprintf(stdout, "  --password <new_password>\n");
     fprintf(stdout, "                         Specify the new account password instead of generating\n");
     fprintf(stdout, "                         a random one. Consider the password policy settings when\n");
@@ -639,11 +657,12 @@ void do_help()
     fprintf(stdout, "  --allow-weak-crypto    Enables the usage of DES keys for authentication\n");
     fprintf(stdout, "  --no-pac               Sets the service principal to not include a PAC.\n");
     fprintf(stdout, "  --disable-no-pac       Sets the service principal to include a PAC.\n");
-    fprintf(stdout, "  -s, --service <name>   Adds the service <name> for the current host or the\n");
-    fprintf(stdout, "                         given service account. The service is of the form\n");
-    fprintf(stdout, "                         <service>/<hostname>.\n");
-    fprintf(stdout, "                         If the hostname is omitted, assumes current hostname,\n");
-    fprintf(stdout, "                         and adds the short and the full hostname.\n");
+    fprintf(stdout, "  -s, --service <name>   Adds the service <name>. The service is of the form\n");
+    fprintf(stdout, "                         <service>/<hostname>. For a machine account, if the\n");
+    fprintf(stdout, "                         hostname is omitted, assumes current hostname, and\n");
+    fprintf(stdout, "                         adds the short and the full hostname. A service\n");
+    fprintf(stdout, "                         account has no host identity of its own, so <name>\n");
+    fprintf(stdout, "                         must always be fully qualified for one.\n");
     fprintf(stdout, "                         Default for machine accounts, if not given: host/.\n");
     fprintf(stdout, "                         Default for service accounts: None.\n");
     fprintf(stdout, "  --remove-service <name> Same, but removes instead of adds.\n");
@@ -1448,6 +1467,15 @@ int main(int argc, char *argv [])
     if (flags->set_samba_secret && flags->use_service_account) {
         fprintf(stderr,
                 "Error: --set-samba-secret can only be used with a "
+                "machine account, not --use-service-account\n");
+        goto error;
+    }
+
+    /* A service account has no host identity of its own, so a
+     * hostname has nothing to attach to for one. */
+    if (!flags->hostname.empty() && flags->use_service_account) {
+        fprintf(stderr,
+                "Error: -h/--hostname can only be used with a "
                 "machine account, not --use-service-account\n");
         goto error;
     }

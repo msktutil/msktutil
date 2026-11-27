@@ -144,7 +144,9 @@ Overrides the current hostname with <fqdn>, which is expected to be a fully-qual
 and is used verbatim, with no further resolution or canonicalization.  If this is not specified,
 the local hostname is determined and canonicalized automatically.  Unless --computer-name/
 --account-name is given explicitly, this also determines the default computer account name.  The
-hostname is also used to set the dNSHostName attribute.
+hostname is also used to set the dNSHostName attribute.  Only valid for a machine account; a
+service account has no host identity of its own, so this option is rejected together with
+--use-service-account.
 .TP
 -k, --keytab <file>
 Specifies to use <file> for the keytab.  This option can also be specified by setting the
@@ -276,12 +278,11 @@ administrator credentials.
 .TP
 -s, --service <principal>
 Specifies a service principal to add to the account (and thus keytab, if appropriate).  The service is of
-the form <service>/<hostname>.  If the hostname is omitted, assumes current hostname.  May be specified
-multiple times. When creating machine accounts, entries for the host service are created by default,
-unless --service is given. Unqualified service names (without a '/' component) are qualified with
-the full hostname and, for machine accounts, the account's own (NetBIOS) name.  For service accounts,
-which have no host identity of their own, the short form uses the first component of the hostname
-instead.
+the form <service>/<hostname>.  May be specified multiple times. When creating machine accounts, entries
+for the host service are created by default, unless --service is given.  For a machine account, if the
+hostname is omitted, assumes current hostname, and the unqualified name is qualified with both the full
+hostname and the account's own (NetBIOS) name.  A service account has no host identity of its own, so
+<principal> must always be given fully qualified for one; an unqualified service name is rejected.
 .TP
 --remove-service <principal>
 Specifies a service principal to remove from the account (and keytab if appropriate).
