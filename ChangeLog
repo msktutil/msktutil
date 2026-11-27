@@ -237,6 +237,14 @@ Unreleased
   on which machine happened to run msktutil. -h/--hostname is now
   likewise rejected together with --use-service-account, since it has
   no remaining effect for a service account.
+- Behavior change: drop the undocumented --usage alias for --help, and
+  stop recognizing -v/--version after the mode argument -- other
+  tools with a similar <command> <mode> [options] structure don't
+  combine their own --version with a subcommand either, and
+  msktutil's own --help/--usage text never documented this form in
+  the first place. -v/--version remains valid standalone
+  (msktutil -v); --help remains valid both standalone and after a
+  mode argument, matching the common "<command> --help" convention.
 
 Release 1.2.2
 

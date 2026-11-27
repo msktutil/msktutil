@@ -988,8 +988,7 @@ int main(int argc, char *argv [])
         do_version();
         return 0;
     }
-    if (argc > 1 &&
-        (!strcmp(argv[1], "--help") || !strcmp(argv[1], "--usage"))) {
+    if (argc > 1 && !strcmp(argv[1], "--help")) {
         do_help();
         return 0;
     }
@@ -1023,14 +1022,8 @@ int main(int argc, char *argv [])
 
     for (i = 2; i < argc; i++) {
 
-        /* Display Version Message and exit */
-        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
-            do_version();
-            return 0;
-        }
-
         /* Display Help Messages and exit */
-        if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--usage")) {
+        if (!strcmp(argv[i], "--help")) {
             do_help();
             return 0;
         }
